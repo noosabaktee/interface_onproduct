@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row g-4 align-items-stretch">
+    <div class="col-lg-7">
+        <form method="post" class="bg-white border rounded-3 p-4 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h2 class="h5 mb-1">Processor Allocation</h2>
+                    <p class="text-secondary mb-0">Maksimal 16 processor untuk proses komputasi.</p>
+                </div>
+                <span class="badge rounded-pill text-bg-primary px-3 py-2">{{ processor_count }} cores</span>
+            </div>
+
+            <label for="processorRange" class="form-label fw-semibold">Jumlah Processor</label>
+            <input type="range" class="form-range" min="1" max="16" step="1" value="{{ processor_count }}" id="processorRange" data-sync-target="processorInput">
+
+            <div class="input-group input-group-lg mt-3">
+                <span class="input-group-text"><i class="bi bi-cpu"></i></span>
+                <input type="number" class="form-control" min="1" max="16" value="{{ processor_count }}" name="processor_count" id="processorInput" data-sync-target="processorRange">
+                <span class="input-group-text">processor</span>
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-check2-circle me-1"></i>Terapkan
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="col-lg-5">
+        <div class="bg-dark text-white rounded-3 p-4 h-100 processor-panel">
+            <div class="processor-grid mb-4" aria-hidden="true">
+                {% for item in range(16) %}
+                    <span class="{% if item < processor_count %}active{% endif %}"></span>
+                {% endfor %}
+            </div>
+            <h2 class="h5">Parallel Run Ready</h2>
+            <p class="text-white-50 mb-0">Konfigurasi ini nanti bisa dipakai untuk menulis nilai `numberOfSubdomains` dan menjalankan proses decompose saat fitur solver disambungkan.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

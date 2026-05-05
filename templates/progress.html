@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-white border rounded-3 p-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h2 class="h5 mb-1">{{ progress_title }}</h2>
+            <p class="text-secondary mb-0">{{ status_label }}</p>
+        </div>
+        <span class="fw-semibold">{{ progress_value }}%</span>
+    </div>
+    <div class="progress" role="progressbar" aria-valuenow="{{ progress_value }}" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: {{ progress_value }}%"></div>
+    </div>
+</div>
+
+<div class="bg-white border rounded-3 p-4 mt-4" data-terminal data-task-key="{{ task_key }}">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <div>
+            <h2 class="h5 mb-1">Terminal {{ title }}</h2>
+            <p class="text-secondary mb-0">Output command akan muncul di area ini saat proses berjalan.</p>
+        </div>
+        <button class="btn btn-primary" type="button" data-terminal-start>
+            <i class="bi bi-terminal me-1"></i>{{ action_label }}
+        </button>
+    </div>
+    <pre class="terminal-window mb-0" data-terminal-output>Menunggu command dijalankan...</pre>
+</div>
+{% endblock %}
