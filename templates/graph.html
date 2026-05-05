@@ -1,19 +1,29 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="bg-white border rounded-3 p-4">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
-            <h2 class="h5 mb-1">History Graph</h2>
-            <p class="text-secondary mb-0">Area untuk grafik history hasil simulasi.</p>
+<div class="dashboard-wrapper">
+    <div class="hero-strip">
+        <div class="section-head mb-0">
+            <div>
+                <h2 class="hero-title">History Graph</h2>
+                <p class="hero-copy">Area untuk grafik history hasil simulasi dan tren performa run.</p>
+            </div>
+            <span class="pill-note"><i class="bi bi-graph-up-arrow"></i> Plot</span>
         </div>
-        <i class="bi bi-graph-up-arrow fs-3 text-primary"></i>
     </div>
 
-    <div class="ratio ratio-21x9 border rounded bg-body-tertiary d-flex align-items-center justify-content-center">
-        <div class="text-center p-4">
-            <p class="fw-semibold mb-1">Matplotlib belum aktif di environment ini.</p>
-            <p class="text-secondary mb-0">Template halaman sudah siap untuk disambungkan ke output plot berikutnya.</p>
+    <div class="card-custom">
+        <div class="empty-state chart-area">
+            <div>
+                <i class="bi bi-bar-chart-line fs-1 mb-3 d-block"></i>
+                {% if matplotlib_ready %}
+                    <div class="fw-bold mb-1">Matplotlib ready</div>
+                    <div class="small">Hubungkan output plot ke template ini.</div>
+                {% else %}
+                    <div class="fw-bold mb-1">Matplotlib belum aktif</div>
+                    <div class="small">Template halaman sudah siap untuk disambungkan ke output plot berikutnya.</div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>

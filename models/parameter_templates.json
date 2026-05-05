@@ -1,0 +1,639 @@
+[
+  {
+    "key": "0",
+    "title": "Initial Conditions (t = 0)",
+    "sections": [
+      {
+        "number": "0",
+        "title": "Initial Conditions (t = 0)",
+        "group_key": "0",
+        "fields": [
+          {
+            "name": "Chamber gas temperature (initial)",
+            "unit": "K",
+            "placeholder": "380 K  (107 \u00b0C)",
+            "input_type": "number",
+            "field_name": "chamber_gas_temperature_initial"
+          },
+          {
+            "name": "Chamber gas velocity (initial)",
+            "unit": "m/s",
+            "placeholder": "(0  0  0)",
+            "input_type": "text",
+            "field_name": "chamber_gas_velocity_initial"
+          },
+          {
+            "name": "Chamber H2O mass fraction (initial)",
+            "unit": "\u2014",
+            "placeholder": "0  (dry air)",
+            "input_type": "text",
+            "field_name": "chamber_h2o_mass_fraction_initial"
+          },
+          {
+            "name": "Chamber pressure (initial)",
+            "unit": "Pa",
+            "placeholder": "1.0 \u00d7 10\u2075",
+            "input_type": "number",
+            "field_name": "chamber_pressure_initial"
+          },
+          {
+            "name": "Chamber reduced pressure (initial)",
+            "unit": "Pa",
+            "placeholder": "9.997 \u00d7 10\u2074",
+            "input_type": "number",
+            "field_name": "chamber_reduced_pressure_initial"
+          },
+          {
+            "name": "Turbulent kinetic energy k (initial)",
+            "unit": "m\u00b2/s\u00b2",
+            "placeholder": "1.35",
+            "input_type": "number",
+            "field_name": "turbulent_kinetic_energy_k_initial"
+          },
+          {
+            "name": "Specific dissipation rate \u03c9 (initial)",
+            "unit": "s\u207b\u00b9",
+            "placeholder": "26",
+            "input_type": "number",
+            "field_name": "specific_dissipation_rate_initial"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "1",
+    "title": "Boundary Conditions",
+    "sections": [
+      {
+        "number": "1.1",
+        "title": "Inlet Gas Boundary Conditions",
+        "group_key": "1",
+        "fields": [
+          {
+            "name": "Inlet gas temperature (TIC)",
+            "unit": "K  (\u00b0C)",
+            "placeholder": "448 K  (175 \u00b0C)",
+            "input_type": "number",
+            "field_name": "inlet_gas_temperature_tic"
+          },
+          {
+            "name": "Inlet gas velocity (X-direction)",
+            "unit": "m/s",
+            "placeholder": "19",
+            "input_type": "number",
+            "field_name": "inlet_gas_velocity_x_direction"
+          },
+          {
+            "name": "Inlet H2O mass fraction",
+            "unit": "\u2014",
+            "placeholder": "0  (dry air assumed)",
+            "input_type": "text",
+            "field_name": "inlet_h2o_mass_fraction"
+          },
+          {
+            "name": "Inlet turbulence intensity",
+            "unit": "\u2014",
+            "placeholder": "0.05  (5 %)",
+            "input_type": "text",
+            "field_name": "inlet_turbulence_intensity"
+          },
+          {
+            "name": "Inlet turbulence mixing length",
+            "unit": "m",
+            "placeholder": "8.2000000000000003E-2",
+            "input_type": "number",
+            "field_name": "inlet_turbulence_mixing_length"
+          }
+        ]
+      },
+      {
+        "number": "1.2",
+        "title": "Outlet Boundary Conditions",
+        "group_key": "1",
+        "fields": [
+          {
+            "name": "Outlet pressure \u2014 outletMilk 0\u20133 (side outlets)",
+            "unit": "Pa",
+            "placeholder": "9.997 \u00d7 10\u2074",
+            "input_type": "number",
+            "field_name": "outlet_pressure_outletmilk_0_3_side_outlets"
+          },
+          {
+            "name": "Outlet pressure \u2014 outletMilk4 (bottom to EFB)",
+            "unit": "Pa",
+            "placeholder": "1.0 \u00d7 10\u2075",
+            "input_type": "number",
+            "field_name": "outlet_pressure_outletmilk4_bottom_to_efb"
+          },
+          {
+            "name": "Ratio of specific heats \u03b3 \u2014 waveTransmissive BC",
+            "unit": "\u2014",
+            "placeholder": "1.4",
+            "input_type": "number",
+            "field_name": "ratio_of_specific_heats_wavetransmissive_bc"
+          },
+          {
+            "name": "Acoustic damping length lInf",
+            "unit": "m",
+            "placeholder": "0.1",
+            "input_type": "number",
+            "field_name": "acoustic_damping_length_linf"
+          }
+        ]
+      },
+      {
+        "number": "1.3",
+        "title": "Wall & Obstacle Thermal Boundary Conditions",
+        "group_key": "1",
+        "fields": [
+          {
+            "name": "Wall heat transfer coefficient h \u2014 chamber walls",
+            "unit": "W/m\u00b2/K",
+            "placeholder": "10",
+            "input_type": "number",
+            "field_name": "wall_heat_transfer_coefficient_h_chamber_walls"
+          },
+          {
+            "name": "Ambient temperature Ta \u2014 chamber walls",
+            "unit": "K",
+            "placeholder": "300 K  (27 \u00b0C)",
+            "input_type": "number",
+            "field_name": "ambient_temperature_ta_chamber_walls"
+          },
+          {
+            "name": "Initial wall temperature \u2014 chamber walls",
+            "unit": "K",
+            "placeholder": "350 K  (77 \u00b0C)",
+            "input_type": "number",
+            "field_name": "initial_wall_temperature_chamber_walls"
+          },
+          {
+            "name": "Initial wall temperature \u2014 obstacles (nozzle zone)",
+            "unit": "K",
+            "placeholder": "350 K  (77 \u00b0C)",
+            "input_type": "number",
+            "field_name": "initial_wall_temperature_obstacles_nozzle_zone"
+          },
+          {
+            "name": "h \u2014 internal obstacles",
+            "unit": "W/m\u00b2/K",
+            "placeholder": "10",
+            "input_type": "number",
+            "field_name": "h_internal_obstacles"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "2",
+    "title": "Droplet & Nozzle",
+    "sections": [
+      {
+        "number": "2.1",
+        "title": "Parcel / Droplet Initial Properties (constantProperties)",
+        "group_key": "2",
+        "fields": [
+          {
+            "name": "Droplet initial temperature T0",
+            "unit": "K",
+            "placeholder": "346 K  (73 \u00b0C)",
+            "input_type": "number",
+            "field_name": "droplet_initial_temperature_t0"
+          },
+          {
+            "name": "Droplet bulk density \u03c1\u2080",
+            "unit": "kg/m\u00b3",
+            "placeholder": "1140",
+            "input_type": "number",
+            "field_name": "droplet_bulk_density"
+          },
+          {
+            "name": "Droplet specific heat capacity Cp\u2080",
+            "unit": "J/kg/K",
+            "placeholder": "2930",
+            "input_type": "number",
+            "field_name": "droplet_specific_heat_capacity_cp"
+          },
+          {
+            "name": "Young's modulus (contact stiffness)",
+            "unit": "Pa",
+            "placeholder": "1 \u00d7 10\u2076",
+            "input_type": "number",
+            "field_name": "young_s_modulus_contact_stiffness"
+          },
+          {
+            "name": "Poisson's ratio",
+            "unit": "\u2014",
+            "placeholder": "0.35",
+            "input_type": "number",
+            "field_name": "poisson_s_ratio"
+          }
+        ]
+      },
+      {
+        "number": "2.2",
+        "title": "Nozzle Injection Configuration",
+        "group_key": "2",
+        "fields": [
+          {
+            "name": "Total feed mass (massTotal)",
+            "unit": "kg",
+            "placeholder": "58.33",
+            "input_type": "number",
+            "field_name": "total_feed_mass_masstotal"
+          },
+          {
+            "name": "Nozzle operating pressure",
+            "unit": "bar",
+            "placeholder": "80 / 105 / 135  (independent variable)",
+            "input_type": "number",
+            "field_name": "nozzle_operating_pressure"
+          },
+          {
+            "name": "Nozzle outer diameter (orifice)",
+            "unit": "m",
+            "placeholder": "0.0035  (3.5 mm)",
+            "input_type": "number",
+            "field_name": "nozzle_outer_diameter_orifice"
+          },
+          {
+            "name": "Spray direction",
+            "unit": "\u2014",
+            "placeholder": "(0  0  \u22121)  downward",
+            "input_type": "text",
+            "field_name": "spray_direction"
+          },
+          {
+            "name": "Inner spray half-angle \u03b8_inner",
+            "unit": "\u00b0",
+            "placeholder": "8",
+            "input_type": "number",
+            "field_name": "inner_spray_half_angle_inner"
+          },
+          {
+            "name": "Outer spray half-angle \u03b8_outer",
+            "unit": "\u00b0",
+            "placeholder": "22",
+            "input_type": "number",
+            "field_name": "outer_spray_half_angle_outer"
+          },
+          {
+            "name": "Discharge coefficient Cd",
+            "unit": "\u2014",
+            "placeholder": "0.85",
+            "input_type": "number",
+            "field_name": "discharge_coefficient_cd"
+          },
+          {
+            "name": "Parcels per second",
+            "unit": "s\u207b\u00b9",
+            "placeholder": "1.5 \u00d7 10\u2074",
+            "input_type": "number",
+            "field_name": "parcels_per_second"
+          },
+          {
+            "name": "Flow rate ramp-up profile",
+            "unit": "\u2014",
+            "placeholder": "table: 0 s \u2192 0, 0.05 s \u2192 0.25, 0.5 s \u2192 1.0",
+            "input_type": "text",
+            "field_name": "flow_rate_ramp_up_profile"
+          }
+        ]
+      },
+      {
+        "number": "2.3",
+        "title": "Droplet Size Distribution \u2014 Rosin-Rammler Parameters",
+        "group_key": "2",
+        "fields": [
+          {
+            "name": "Minimum droplet diameter",
+            "unit": "m  (\u03bcm)",
+            "placeholder": "2 \u00d7 10\u207b\u2075  (20 \u03bcm)",
+            "input_type": "number",
+            "field_name": "minimum_droplet_diameter"
+          },
+          {
+            "name": "Maximum droplet diameter",
+            "unit": "m  (\u03bcm)",
+            "placeholder": "4 \u00d7 10\u207b\u2074  (400 \u03bcm)",
+            "input_type": "number",
+            "field_name": "maximum_droplet_diameter"
+          },
+          {
+            "name": "Rosin-Rammler characteristic diameter d",
+            "unit": "m  (\u03bcm)",
+            "placeholder": "1.5 \u00d7 10\u207b\u2074  (150 \u03bcm)",
+            "input_type": "number",
+            "field_name": "rosin_rammler_characteristic_diameter_d"
+          },
+          {
+            "name": "Rosin-Rammler spread parameter n",
+            "unit": "\u2014",
+            "placeholder": "2.2999999999999998",
+            "input_type": "number",
+            "field_name": "rosin_rammler_spread_parameter_n"
+          }
+        ]
+      },
+      {
+        "number": "2.4",
+        "title": "Droplet Composition (singleMixtureFraction)",
+        "group_key": "2",
+        "fields": [
+          {
+            "name": "Liquid mass fraction Y_liquid (water)",
+            "unit": "\u2014",
+            "placeholder": "0.52",
+            "input_type": "number",
+            "field_name": "liquid_mass_fraction_y_liquid_water"
+          },
+          {
+            "name": "Solid mass fraction Y_solid (milk solids proxy)",
+            "unit": "\u2014",
+            "placeholder": "0.48",
+            "input_type": "number",
+            "field_name": "solid_mass_fraction_y_solid_milk_solids_proxy"
+          },
+          {
+            "name": "Gas mass fraction Y_gas (initial)",
+            "unit": "\u2014",
+            "placeholder": "0",
+            "input_type": "number",
+            "field_name": "gas_mass_fraction_y_gas_initial"
+          },
+          {
+            "name": "Evaporation model",
+            "unit": "\u2014",
+            "placeholder": "liquidEvaporation  (active liquid: H2O)",
+            "input_type": "text",
+            "field_name": "evaporation_model"
+          },
+          {
+            "name": "Water activity correction (a_w)",
+            "unit": "\u2014",
+            "placeholder": "Not applied  (a_w implicitly = 1.0)",
+            "input_type": "text",
+            "field_name": "water_activity_correction_a_w"
+          }
+        ]
+      },
+      {
+        "number": "2.5",
+        "title": "Droplet-Wall Interaction Model",
+        "group_key": "2",
+        "fields": [
+          {
+            "name": "Wall interaction \u2014 obstacles (type)",
+            "unit": "\u2014",
+            "placeholder": "stick",
+            "input_type": "text",
+            "field_name": "wall_interaction_obstacles_type"
+          },
+          {
+            "name": "Wall interaction \u2014 chamber walls (type)",
+            "unit": "\u2014",
+            "placeholder": "stick",
+            "input_type": "text",
+            "field_name": "wall_interaction_chamber_walls_type"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "3",
+    "title": "Thermophysical Properties",
+    "sections": [
+      {
+        "number": "3",
+        "title": "Carrier Gas & Solid Thermophysical Properties (thermophysicalProperties)",
+        "group_key": "3",
+        "fields": [
+          {
+            "name": "Air specific heat capacity Cp_air",
+            "unit": "J/kg/K",
+            "placeholder": "1006",
+            "input_type": "number",
+            "field_name": "air_specific_heat_capacity_cp_air"
+          },
+          {
+            "name": "Air dynamic viscosity \u03bc_air",
+            "unit": "Pa\u00b7s",
+            "placeholder": "1.8 \u00d7 10\u207b\u2075",
+            "input_type": "number",
+            "field_name": "air_dynamic_viscosity_air"
+          },
+          {
+            "name": "Air Prandtl number Pr_air",
+            "unit": "\u2014",
+            "placeholder": "0.7",
+            "input_type": "number",
+            "field_name": "air_prandtl_number_pr_air"
+          },
+          {
+            "name": "Water vapour specific heat Cp_H2O",
+            "unit": "J/kg/K",
+            "placeholder": "1860",
+            "input_type": "number",
+            "field_name": "water_vapour_specific_heat_cp_h2o"
+          },
+          {
+            "name": "Solid proxy density \u03c1_ash (WMP dry particle)",
+            "unit": "kg/m\u00b3",
+            "placeholder": "1290",
+            "input_type": "number",
+            "field_name": "solid_proxy_density_ash_wmp_dry_particle"
+          },
+          {
+            "name": "Solid proxy Cp_ash (dry milk solid)",
+            "unit": "J/kg/K",
+            "placeholder": "1570",
+            "input_type": "number",
+            "field_name": "solid_proxy_cp_ash_dry_milk_solid"
+          },
+          {
+            "name": "Solid proxy \u03ba_ash (single-particle conductivity)",
+            "unit": "W/m/K",
+            "placeholder": "0.125",
+            "input_type": "number",
+            "field_name": "solid_proxy_ash_single_particle_conductivity"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "4",
+    "title": "Physical Sub-Models",
+    "sections": [
+      {
+        "number": "4",
+        "title": "Physical Sub-Models: Heat Transfer, Dispersion, Drag, Turbulence",
+        "group_key": "4",
+        "fields": [
+          {
+            "name": "Droplet\u2013gas heat transfer model",
+            "unit": "\u2014",
+            "placeholder": "RanzMarshall  (BirdCorrection = true)",
+            "input_type": "text",
+            "field_name": "droplet_gas_heat_transfer_model"
+          },
+          {
+            "name": "Turbulent dispersion model",
+            "unit": "\u2014",
+            "placeholder": "none  (disabled for numerical stability)",
+            "input_type": "text",
+            "field_name": "turbulent_dispersion_model"
+          },
+          {
+            "name": "Drag model",
+            "unit": "\u2014",
+            "placeholder": "sphereDrag + gravity",
+            "input_type": "text",
+            "field_name": "drag_model"
+          },
+          {
+            "name": "Gas-phase turbulence model",
+            "unit": "\u2014",
+            "placeholder": "k-\u03c9 SST",
+            "input_type": "text",
+            "field_name": "gas_phase_turbulence_model"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "5",
+    "title": "Numerical Settings",
+    "sections": [
+      {
+        "number": "5",
+        "title": "Numerical Settings (system/ dictionaries)",
+        "group_key": "5",
+        "fields": [
+          {
+            "name": "Maximum Courant number maxCo",
+            "unit": "\u2014",
+            "placeholder": "1",
+            "input_type": "number",
+            "field_name": "maximum_courant_number_maxco"
+          },
+          {
+            "name": "Phase-fraction Courant number maxAlphaCo",
+            "unit": "\u2014",
+            "placeholder": "0.5",
+            "input_type": "number",
+            "field_name": "phase_fraction_courant_number_maxalphaco"
+          },
+          {
+            "name": "Acoustic Courant number maxAcousticCo",
+            "unit": "\u2014",
+            "placeholder": "0.5",
+            "input_type": "number",
+            "field_name": "acoustic_courant_number_maxacousticco"
+          },
+          {
+            "name": "Maximum time step maxDeltaT",
+            "unit": "s",
+            "placeholder": "1 \u00d7 10\u207b\u00b3",
+            "input_type": "number",
+            "field_name": "maximum_time_step_maxdeltat"
+          },
+          {
+            "name": "Velocity limiter \u2014 maximum gas velocity",
+            "unit": "m/s",
+            "placeholder": "80",
+            "input_type": "number",
+            "field_name": "velocity_limiter_maximum_gas_velocity"
+          },
+          {
+            "name": "PIMPLE outer correctors nOuterCorrectors",
+            "unit": "\u2014",
+            "placeholder": "3",
+            "input_type": "number",
+            "field_name": "pimple_outer_correctors_noutercorrectors"
+          },
+          {
+            "name": "Residual control \u2014 enabled",
+            "unit": "\u2014",
+            "placeholder": "p_rgh \u2264 1\u00d710\u207b\u2074, U \u2264 1\u00d710\u207b\u2075, k|\u03c9|h \u2264 1\u00d710\u207b\u2075",
+            "input_type": "text",
+            "field_name": "residual_control_enabled"
+          },
+          {
+            "name": "Minimum temperature limiter TMin",
+            "unit": "K",
+            "placeholder": "250",
+            "input_type": "number",
+            "field_name": "minimum_temperature_limiter_tmin"
+          },
+          {
+            "name": "Particle sub-cycle count nCoSubCycles",
+            "unit": "\u2014",
+            "placeholder": "15",
+            "input_type": "number",
+            "field_name": "particle_sub_cycle_count_ncosubcycles"
+          },
+          {
+            "name": "Parallel decomposition \u2014 number of subdomains",
+            "unit": "\u2014",
+            "placeholder": "16  (scotch method)",
+            "input_type": "text",
+            "field_name": "parallel_decomposition_number_of_subdomains"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "6",
+    "title": "Validation Parameters",
+    "sections": [
+      {
+        "number": "6",
+        "title": "Validation Parameters \u2014 Simulation Output vs Field Data",
+        "group_key": "6",
+        "fields": [
+          {
+            "name": "Outlet air temperature TOC \u2014 validation target",
+            "unit": "\u00b0C",
+            "placeholder": "Target: 95 \u00b0C  (368 K)",
+            "input_type": "text",
+            "field_name": "outlet_air_temperature_toc_validation_target"
+          },
+          {
+            "name": "Chamber pressure \u2014 validation",
+            "unit": "mbar",
+            "placeholder": "\u22120.3  (gauge)",
+            "input_type": "text",
+            "field_name": "chamber_pressure_validation"
+          },
+          {
+            "name": "EFB inlet temperature \u2014 indirect validation",
+            "unit": "\u00b0C",
+            "placeholder": "55\u201365 \u00b0C  (sensor range)",
+            "input_type": "number",
+            "field_name": "efb_inlet_temperature_indirect_validation"
+          },
+          {
+            "name": "EFB outlet temperature \u2014 indirect validation",
+            "unit": "\u00b0C",
+            "placeholder": "35\u201355 \u00b0C  (sensor range)",
+            "input_type": "number",
+            "field_name": "efb_outlet_temperature_indirect_validation"
+          },
+          {
+            "name": "Powder moisture content at chamber outlet \u2014 MC validation",
+            "unit": "% w.b.",
+            "placeholder": "~15\u201330 %  (estimated at chamber outlet)",
+            "input_type": "text",
+            "field_name": "powder_moisture_content_at_chamber_outlet_mc_validation"
+          }
+        ]
+      }
+    ]
+  }
+]

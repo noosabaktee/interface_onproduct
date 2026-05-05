@@ -1,8 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="bg-white border rounded-3 p-4">
-    <h2 class="h5">{{ page_title }}</h2>
-    <p class="text-secondary mb-0">{{ page_text }}</p>
+<div class="dashboard-wrapper">
+    <div class="hero-strip">
+        <div class="section-head mb-0">
+            <div>
+                <h2 class="hero-title">{{ page_title }}</h2>
+                <p class="hero-copy">{{ page_text }}</p>
+            </div>
+            <span class="pill-note"><i class="bi bi-file-earmark-text"></i> Summary</span>
+        </div>
+    </div>
 </div>
 {% endblock %}

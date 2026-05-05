@@ -1,29 +1,31 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="bg-white border rounded-3 p-4">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
-            <h2 class="h5 mb-1">{{ progress_title }}</h2>
-            <p class="text-secondary mb-0">{{ status_label }}</p>
+<div class="dashboard-wrapper">
+    <div class="hero-strip">
+        <div class="section-head mb-0">
+            <div>
+                <h2 class="hero-title">{{ progress_title }}</h2>
+                <p class="hero-copy">{{ status_label }}</p>
+            </div>
+            <span class="pill-note">{{ progress_value }}%</span>
         </div>
-        <span class="fw-semibold">{{ progress_value }}%</span>
+        <div class="progress mt-3" role="progressbar" aria-valuenow="{{ progress_value }}" aria-valuemin="0" aria-valuemax="100" style="height: 12px; border-radius: 999px; background: var(--border-color);">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: {{ progress_value }}%"></div>
+        </div>
     </div>
-    <div class="progress" role="progressbar" aria-valuenow="{{ progress_value }}" aria-valuemin="0" aria-valuemax="100">
-        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: {{ progress_value }}%"></div>
-    </div>
-</div>
 
-<div class="bg-white border rounded-3 p-4 mt-4" data-terminal data-task-key="{{ task_key }}">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-        <div>
-            <h2 class="h5 mb-1">Terminal {{ title }}</h2>
-            <p class="text-secondary mb-0">Output command akan muncul di area ini saat proses berjalan.</p>
+    <div class="card-custom terminal-panel" data-terminal data-task-key="{{ task_key }}">
+        <div class="section-head">
+            <div>
+                <h3 class="section-title">Terminal {{ title }}</h3>
+                <p class="section-subtitle">Output command muncul di area log ketika proses dijalankan.</p>
+            </div>
+            <button class="btn btn-outline-primary" type="button" data-terminal-start>
+                <i class="bi bi-terminal me-1"></i>{{ action_label }}
+            </button>
         </div>
-        <button class="btn btn-primary" type="button" data-terminal-start>
-            <i class="bi bi-terminal me-1"></i>{{ action_label }}
-        </button>
+        <pre class="terminal mb-0" data-terminal-output>Menunggu command dijalankan...</pre>
     </div>
-    <pre class="terminal-window mb-0" data-terminal-output>Menunggu command dijalankan...</pre>
 </div>
 {% endblock %}

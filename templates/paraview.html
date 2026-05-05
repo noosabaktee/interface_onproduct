@@ -1,5 +1,44 @@
 {% extends "base.html" %}
 
 {% block content %}
-<p>halaman paraview</p>
+<div class="dashboard-wrapper">
+    <div class="hero-strip">
+        <div class="section-head mb-0">
+            <div>
+                <h2 class="hero-title">Paraview Visualization</h2>
+                <p class="hero-copy">3D visualization slot for solver results, field rendering, and inspection of the spray domain.</p>
+            </div>
+            <span class="pill-note"><i class="bi bi-display"></i> Viewer</span>
+        </div>
+    </div>
+
+    <div class="card-custom">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="empty-state chart-area">
+                    <div>
+                        <i class="bi bi-box-seam fs-1 mb-3 d-block"></i>
+                        <div class="fw-bold mb-1">Paraview viewer placeholder</div>
+                        <div class="small">Sediakan integrasi render di tahap berikutnya.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="field-card h-100">
+                    <div class="section-head">
+                        <div>
+                            <h3 class="section-title">Render Notes</h3>
+                            <p class="section-subtitle">Quick context for result inspection.</p>
+                        </div>
+                    </div>
+                    <ul class="list-unstyled mb-0 text-muted small d-grid gap-2">
+                        <li><i class="bi bi-check2 me-2 text-success"></i>Slice and contour overlays</li>
+                        <li><i class="bi bi-check2 me-2 text-success"></i>Particle tracks and spray dispersion</li>
+                        <li><i class="bi bi-check2 me-2 text-success"></i>Boundary and wall temperature fields</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

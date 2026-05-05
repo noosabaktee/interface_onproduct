@@ -9,13 +9,26 @@ dashboard_bp = Blueprint("dashboard", __name__)
 
 @dashboard_bp.route("/")
 def index():
-    return redirect(url_for("dashboard.input_parameter"))
+    return redirect(url_for("dashboard.dashboard"))
+
+
+@dashboard_bp.route("/dashboard")
+def dashboard():
+    return render_template(
+        "dashboard.html",
+        title="Dashboard",
+    )
 
 
 @dashboard_bp.route("/input-parameter")
 def input_parameter():
     groups = load_parameter_groups()
-    return render_template("input_parameter.html", groups=groups, title="Input Parameter")
+    return render_template(
+        "input_parameter.html",
+        groups=groups,
+        title="Input Parameter",
+        active_group_key="1",
+    )
 
 
 @dashboard_bp.route("/set-processor", methods=["GET", "POST"])

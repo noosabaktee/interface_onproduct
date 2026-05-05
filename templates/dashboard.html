@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <div class="hero-strip">
+        <h2 class="hero-title">CFD Simulation Platform</h2>
+        <p class="hero-copy">Integrated computational fluid dynamics workspace for on-product simulation, parameter control, meshing, solver execution, and result inspection.</p>
+    </div>
+
+    <div class="workflow-stepper">
+        <a class="wf-node wf-node-link" href="#" aria-label="Geometry">
+            <div class="wf-icon"><i class="bi bi-box"></i></div>
+            <div class="wf-label">1. Geometry</div>
+        </a>
+        <div class="wf-line"></div>
+        <a class="wf-node wf-node-link" href="{{ url_for('dashboard.meshing') }}">
+            <div class="wf-icon"><i class="bi bi-grid-3x3"></i></div>
+            <div class="wf-label">2. Meshing</div>
+        </a>
+        <div class="wf-line"></div>
+        <a class="wf-node wf-node-link" href="{{ url_for('dashboard.input_parameter') }}">
+            <div class="wf-icon"><i class="bi bi-funnel"></i></div>
+            <div class="wf-label">3. Boundary<br>Condition</div>
+        </a>
+        <div class="wf-line"></div>
+        <a class="wf-node wf-node-link" href="{{ url_for('dashboard.solver') }}">
+            <div class="wf-icon"><i class="bi bi-gear-wide-connected"></i></div>
+            <div class="wf-label">4. Solving</div>
+        </a>
+        <div class="wf-line"></div>
+        <a class="wf-node wf-node-link result-node" href="{{ url_for('dashboard.paraview') }}">
+            <div class="wf-icon"><i class="bi bi-bar-chart-fill"></i></div>
+            <div class="wf-label">5. Result</div>
+        </a>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <p class="stat-card-label">Simulation Queue</p>
+                    <p class="stat-card-value">08</p>
+                </div>
+                <div class="stat-card-icon" style="background:#008f4c;"><i class="bi bi-list-check"></i></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <p class="stat-card-label">Active Runs</p>
+                    <p class="stat-card-value">03</p>
+                </div>
+                <div class="stat-card-icon" style="background:#2563eb;"><i class="bi bi-lightning-charge"></i></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <p class="stat-card-label">Success Rate</p>
+                    <p class="stat-card-value">92%</p>
+                </div>
+                <div class="stat-card-icon" style="background:#10b981;"><i class="bi bi-check2-circle"></i></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <p class="stat-card-label">Runtime Avg.</p>
+                    <p class="stat-card-value">14m</p>
+                </div>
+                <div class="stat-card-icon" style="background:#f26522;"><i class="bi bi-clock-history"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="chart-panel card-custom h-100">
+                <div class="section-head">
+                    <div>
+                        <h3 class="section-title">Activity Trend</h3>
+                        <p class="section-subtitle">Weekly simulation activity and workload distribution.</p>
+                    </div>
+                    <span class="pill-note"><i class="bi bi-graph-up"></i> Live view</span>
+                </div>
+                <div class="chart-area">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="chart-panel card-custom h-100">
+                <div class="section-head">
+                    <div>
+                        <h3 class="section-title">Status Breakdown</h3>
+                        <p class="section-subtitle">Current result distribution across simulation states.</p>
+                    </div>
+                    <span class="pill-note"><i class="bi bi-pie-chart"></i> Overview</span>
+                </div>
+                <div class="chart-area">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

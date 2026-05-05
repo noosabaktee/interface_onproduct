@@ -1,60 +1,205 @@
-document.querySelectorAll("[data-sync-target]").forEach((control) => {
-    control.addEventListener("input", () => {
-        const target = document.getElementById(control.dataset.syncTarget);
-        if (!target) {
+function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    const icon = document.getElementById("themeIcon");
+    if (icon) {
+        icon.className = theme === "dark" ? "bi bi-sun-fill text-warning" : "bi bi-moon-fill";
+    }
+}
+
+function initThemeToggle() {
+    const savedTheme = localStorage.getItem("theme") || "light";
+    applyTheme(savedTheme);
+
+    const toggle = document.querySelector("[data-theme-toggle]");
+    if (!toggle) {
+        return;
+    }
+
+    toggle.addEventListener("click", () => {
+        const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+        const nextTheme = currentTheme === "dark" ? "light" : "dark";
+        localStorage.setItem("theme", nextTheme);
+        applyTheme(nextTheme);
+        renderDashboardCharts();
+    });
+}
+
+function initSynchronizedInputs() {
+    document.querySelectorAll("[data-sync-target]").forEach((control) => {
+        const syncTarget = document.getElementById(control.dataset.syncTarget);
+        if (!syncTarget) {
             return;
         }
 
-        const value = Math.max(1, Math.min(16, Number(control.value || 1)));
-        control.value = value;
-        target.value = value;
+        const syncValue = () => {
+            const min = Number(control.min || syncTarget.min || 1);
+            const max = Number(control.max || syncTarget.max || 16);
+            let value = Number(control.value || syncTarget.value || min);
+            if (Number.isNaN(value)) {
+                value = min;
+            }
+            value = Math.max(min, Math.min(max, value));
+            control.value = value;
+            syncTarget.value = value;
+            updateCoreVisuals(value);
+        };
+
+        control.addEventListener("input", syncValue);
+        syncTarget.addEventListener("input", syncValue);
+        syncValue();
     });
-});
+}
 
-document.querySelectorAll("[data-terminal]").forEach((terminal) => {
-    const taskKey = terminal.dataset.taskKey;
-    const startButton = terminal.querySelector("[data-terminal-start]");
-    const output = terminal.querySelector("[data-terminal-output]");
-    let timer = null;
+function updateCoreVisuals(activeCount) {
+    const grid = document.getElementById("core-grid");
+    if (!grid) {
+        return;
+    }
 
-    const renderState = (state) => {
-        output.textContent = state.lines.length
-            ? state.lines.join("\n")
-            : "Menunggu command dijalankan...";
-        output.scrollTop = output.scrollHeight;
-        startButton.disabled = state.running;
-        startButton.innerHTML = state.running
-            ? '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Running'
-            : `<i class="bi bi-terminal me-1"></i>${startButton.dataset.label}`;
+    const maxCores = 16;
+    grid.innerHTML = "";
+    for (let i = 0; i < maxCores; i += 1) {
+        const box = document.createElement("div");
+        box.className = `core-box${i < activeCount ? "" : " inactive"}`;
+        box.innerHTML = '<i class="bi bi-cpu-fill"></i>';
+        grid.appendChild(box);
+    }
+}
 
-        if (state.running && !timer) {
-            timer = setInterval(fetchLogs, 700);
-        } else if (!state.running && timer) {
-            clearInterval(timer);
-            timer = null;
+function initTerminalBlocks() {
+    document.querySelectorAll("[data-terminal]").forEach((terminal) => {
+        const taskKey = terminal.dataset.taskKey;
+        const startButton = terminal.querySelector("[data-terminal-start]");
+        const output = terminal.querySelector("[data-terminal-output]");
+        if (!taskKey || !startButton || !output) {
+            return;
         }
-    };
 
-    const fetchLogs = () => {
-        fetch(`/terminal/${taskKey}/logs`)
-            .then((response) => response.json())
-            .then(renderState)
-            .catch(() => {
-                output.textContent = "Gagal mengambil log terminal.";
-            });
-    };
+        let timer = null;
 
-    startButton.dataset.label = startButton.textContent.trim();
-    startButton.addEventListener("click", () => {
-        fetch(`/terminal/${taskKey}/start`, { method: "POST" })
-            .then((response) => response.json())
-            .then((state) => {
-                renderState(state);
-            })
-            .catch(() => {
-                output.textContent = "Gagal menjalankan command.";
-            });
+        const renderState = (state) => {
+            output.textContent = state.lines.length ? state.lines.join("\n") : "Menunggu command dijalankan...";
+            output.scrollTop = output.scrollHeight;
+            startButton.disabled = state.running;
+            startButton.innerHTML = state.running
+                ? '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Running'
+                : `<i class="bi bi-terminal me-1"></i>${startButton.dataset.label}`;
+
+            if (state.running && !timer) {
+                timer = setInterval(fetchLogs, 700);
+            } else if (!state.running && timer) {
+                clearInterval(timer);
+                timer = null;
+            }
+        };
+
+        const fetchLogs = () => {
+            fetch(`/terminal/${taskKey}/logs`)
+                .then((response) => response.json())
+                .then(renderState)
+                .catch(() => {
+                    output.textContent = "Gagal mengambil log terminal.";
+                });
+        };
+
+        startButton.dataset.label = startButton.textContent.trim();
+        startButton.addEventListener("click", () => {
+            fetch(`/terminal/${taskKey}/start`, { method: "POST" })
+                .then((response) => response.json())
+                .then((state) => renderState(state))
+                .catch(() => {
+                    output.textContent = "Gagal menjalankan command.";
+                });
+        });
+
+        fetchLogs();
     });
+}
 
-    fetchLogs();
+let activityChart = null;
+let statusChart = null;
+
+function renderDashboardCharts() {
+    const activityCanvas = document.getElementById("activityChart");
+    const statusCanvas = document.getElementById("statusChart");
+    if (!window.Chart || (!activityCanvas && !statusCanvas)) {
+        return;
+    }
+
+    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+    const gridColor = isDark ? "#374151" : "#e5e7eb";
+    const textColor = isDark ? "#9ca3af" : "#6b7280";
+
+    if (activityCanvas) {
+        if (activityChart) {
+            activityChart.destroy();
+        }
+        activityChart = new Chart(activityCanvas.getContext("2d"), {
+            type: "line",
+            data: {
+                labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+                datasets: [{
+                    label: "Simulations",
+                    data: [12, 19, 15, 25, 22, 30, 28],
+                    borderColor: "#008f4c",
+                    backgroundColor: "rgba(0, 143, 76, 0.15)",
+                    borderWidth: 3,
+                    pointBackgroundColor: "#ffffff",
+                    pointBorderColor: "#008f4c",
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: textColor, stepSize: 10 },
+                        grid: { color: gridColor, drawBorder: false }
+                    },
+                    x: {
+                        ticks: { color: textColor },
+                        grid: { display: false, drawBorder: false }
+                    }
+                }
+            }
+        });
+    }
+
+    if (statusCanvas) {
+        if (statusChart) {
+            statusChart.destroy();
+        }
+        statusChart = new Chart(statusCanvas.getContext("2d"), {
+            type: "doughnut",
+            data: {
+                labels: ["Success", "Failed", "Running"],
+                datasets: [{
+                    data: [75, 15, 10],
+                    backgroundColor: ["#10b981", "#f26522", "#008f4c"],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "74%",
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    initThemeToggle();
+    initSynchronizedInputs();
+    initTerminalBlocks();
+    renderDashboardCharts();
+    window.addEventListener("resize", renderDashboardCharts);
 });
