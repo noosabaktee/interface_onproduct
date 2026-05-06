@@ -1,13 +1,44 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="card-custom text-center p-5 my-auto">
-    <i class="bi bi-graph-up-arrow text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
-    <h4 class="fw-bold text-main mt-4">Simulation History Graph</h4>
-    {% if matplotlib_ready %}
-        <p class="text-muted mt-2">Matplotlib is ready.<br>The page template can now be connected to Python plot outputs.</p>
-    {% else %}
-        <p class="text-muted mt-2">Matplotlib is not yet active in this environment.<br>The page template is ready to be connected to Python plot outputs.</p>
-    {% endif %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-graph-up-arrow text-primary" style="font-size: 1.5rem;"></i>
+            <h4 class="mb-0">Simulation History Graph</h4>
+        </div>
+        <p class="text-muted mb-0">Tampilan 9 grafik dari folder <code>grafik/output</code>. Tekan tombol untuk
+            memperbarui grafik dari log run terbaru.</p>
+    </div>
+    <form method="post" action="{{ url_for('dashboard.update_graph') }}">
+        <button type="submit" class="btn btn-primary px-4 py-2">
+            <i class="bi bi-arrow-clockwise me-2"></i> Update Graph
+        </button>
+    </form>
 </div>
+
+{% if images %}
+<div class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-4">
+    {% for image in images %}
+    <div class="col">
+        <div class="card h-100 shadow-sm border-0 overflow-hidden">
+            <div class="ratio ratio-16x9 bg-light">
+                <img src="{{ url_for('dashboard.graph_image', filename=image) }}" class="card-img-top object-fit-cover"
+                    alt="{{ image }}">
+            </div>
+            <div class="card-body py-3 px-3">
+                <h3 class="h6 mb-1 text-truncate">{{ image.replace('.png','').replace('_',' ') | title }}</h3>
+                <p class="text-muted small mb-0">{{ image }}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card-custom text-center p-5 my-auto">
+    <i class="bi bi-image text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+    <h4 class="fw-bold text-main mt-4">Tidak ada grafik</h4>
+    <p class="text-muted mt-2">Folder <code>grafik/output</code> kosong atau belum berisi file PNG.</p>
+</div>
+{% endif %}
 {% endblock %}

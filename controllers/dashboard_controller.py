@@ -1,3 +1,7 @@
+from pathlib import Path
+import subprocess
+import sys
+
 from flask import abort, Blueprint, flash, jsonify, redirect, render_template, request, send_file, url_for
 
 from models.parameter_model import load_parameter_groups, save_parameter_values, IGNORED_FIELD_NAMES
@@ -5,6 +9,11 @@ from models.paraview_model import get_internal_mesh_path, get_paraview_case, get
 from models.terminal_runner import get_command_state, start_command
 
 dashboard_bp = Blueprint("dashboard", __name__)
+
+APP_ROOT = Path(__file__).resolve().parents[1]
+GRAFIK_OUTPUT_PATH = APP_ROOT / "grafik" / "output"
+GRAFIK_SCRIPT = APP_ROOT / "grafik" / "2plot_residuals.py"
+GRAFIK_LOG_RUN = APP_ROOT.parent / "sprayDryer-6.0.0-onProduct-Trial02" / "log.run"
 
 
 @dashboard_bp.route("/")
@@ -138,13 +147,69 @@ def paraview_internal_mesh():
     return send_file(mesh_path, mimetype="application/xml", conditional=True, max_age=0)
 
 
+def _list_graph_images():
+    if not GRAFIK_OUTPUT_PATH.exists():
+        return []
+    return sorted([path.name for path in GRAFIK_OUTPUT_PATH.glob("*.png")])
+
+
 @dashboard_bp.route("/graph")
 def graph():
     return render_template(
         "graph.html",
         title="Graph",
-        matplotlib_ready=False,
+        images=_list_graph_images(),
     )
+
+
+@dashboard_bp.route("/graph/image/<path:filename>")
+def graph_image(filename):
+    file_path = GRAFIK_OUTPUT_PATH / filename
+    try:
+        resolved = file_path.resolve()
+    except OSError:
+        abort(404)
+
+    if not resolved.is_file() or resolved.parent != GRAFIK_OUTPUT_PATH.resolve():
+        abort(404)
+
+    return send_file(resolved, mimetype="image/png", conditional=True, max_age=0)
+
+
+@dashboard_bp.route("/graph/update", methods=["POST"])
+def update_graph():
+    if not GRAFIK_SCRIPT.exists() or not GRAFIK_LOG_RUN.exists():
+        flash("File script atau log tidak ditemukan untuk pembaruan grafik.", "danger")
+        return redirect(url_for("dashboard.graph"))
+
+    try:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "grafik/2plot_residuals.py",
+                "../sprayDryer-6.0.0-onProduct-Trial02/log.run",
+                "--output",
+                "grafik/output",
+                "--linear",
+                "--dpi",
+                "150",
+            ],
+            cwd=APP_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    except Exception as exc:
+        flash(f"Gagal memperbarui grafik: {exc}", "danger")
+        return redirect(url_for("dashboard.graph"))
+
+    if result.returncode != 0:
+        error_text = (result.stderr or result.stdout or "Unknown error").strip().splitlines()[-1]
+        flash(f"Update grafik gagal: {error_text}", "danger")
+    else:
+        flash("Grafik berhasil diperbarui.", "success")
+
+    return redirect(url_for("dashboard.graph"))
 
 
 @dashboard_bp.route("/report")
