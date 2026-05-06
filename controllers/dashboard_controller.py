@@ -1,9 +1,8 @@
 from flask import abort, Blueprint, flash, jsonify, redirect, render_template, request, send_file, url_for
 
-from models.parameter_model import load_parameter_groups
+from models.parameter_model import load_parameter_groups, save_parameter_values, IGNORED_FIELD_NAMES
 from models.paraview_model import get_internal_mesh_path, get_paraview_case, get_surface_path, launch_case_file
 from models.terminal_runner import get_command_state, start_command
-
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -21,14 +20,25 @@ def dashboard():
     )
 
 
-@dashboard_bp.route("/input-parameter")
+@dashboard_bp.route("/input-parameter", methods=["GET", "POST"])
 def input_parameter():
+    active_group_key = request.form.get("active_group_key", "0")
+    if request.method == "POST":
+        updated, skipped = save_parameter_values(request.form, active_group_key)
+        if updated:
+            flash(f"{updated} parameter berhasil disimpan ke file case.", "success")
+        else:
+            flash("Tidak ada parameter yang berubah. Cek input atau location yang belum didukung.", "warning")
+        if skipped:
+            flash("Location belum diproses untuk: " + ", ".join(skipped), "warning")
+
     groups = load_parameter_groups()
     return render_template(
         "input_parameter.html",
         groups=groups,
         title="Input Parameter",
-        active_group_key="0",
+        IGNORED_FIELD_NAMES=IGNORED_FIELD_NAMES,
+        active_group_key=active_group_key,
     )
 
 

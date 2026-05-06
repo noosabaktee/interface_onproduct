@@ -64,7 +64,9 @@
                                 data-bs-parent="#accordion-{{ group.key }}"
                             >
                                 <div class="accordion-body">
-                                    <div class="row g-4">
+                                    <form method="post" action="{{ url_for('dashboard.input_parameter') }}">
+                                        <input type="hidden" name="active_group_key" value="{{ group.key }}">
+                                        <div class="row g-4">
                                         {% for field in section.fields %}
                                             <div class="col-md-4 col-sm-6">
                                                 <label class="form-label" for="field-{{ group.key }}-{{ section_id }}-{{ loop.index }}">
@@ -78,7 +80,9 @@
                                                             id="field-{{ group.key }}-{{ section_id }}-{{ loop.index }}"
                                                             name="{{ field.field_name }}"
                                                             value="{{ field.default_value }}"
+                                                            step="any"
                                                             placeholder="{{ field.placeholder }}"
+                                                            {{ 'disabled' if field.field_name in IGNORED_FIELD_NAMES else '' }}
                                                         >
                                                         <span class="input-group-text">{{ field.unit }}</span>
                                                     </div>
@@ -89,17 +93,20 @@
                                                         id="field-{{ group.key }}-{{ section_id }}-{{ loop.index }}"
                                                         name="{{ field.field_name }}"
                                                         value="{{ field.default_value }}"
+                                                        step="any"
                                                         placeholder="{{ field.placeholder }}"
+                                                        {{ 'disabled' if field.field_name in IGNORED_FIELD_NAMES else '' }}
                                                     >
                                                 {% endif %}
                                             </div>
                                         {% endfor %}
                                         <div class="col-12 mt-4 text-end">
-                                            <button type="button" class="btn btn-primary px-4 py-2">
+                                            <button type="submit" class="btn btn-primary px-4 py-2">
                                                 <i class="bi bi-save me-2"></i> Save Parameters
                                             </button>
                                         </div>
-                                    </div>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
