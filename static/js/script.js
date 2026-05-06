@@ -77,13 +77,31 @@ function initTerminalBlocks() {
 
         let timer = null;
 
+        const defaultLogs = {
+            meshing: [
+                "[SYSTEM] Initializing OpenFOAM Environment...",
+                "[INFO] Waiting for user command...",
+                "> blockMesh",
+                "> surfaceFeatureExtract",
+                "> snappyHexMesh -overwrite",
+                "_"
+            ],
+            solver: [
+                "[SYSTEM] Initializing OpenFOAM Solver...",
+                "[INFO] Preparing parallel decomposition...",
+                "> decomposePar",
+                "> mpirun -np 16 sprayFoam -parallel",
+                "_"
+            ]
+        };
+
         const renderState = (state) => {
-            output.textContent = state.lines.length ? state.lines.join("\n") : "Menunggu command dijalankan...";
+            output.textContent = state.lines.length ? state.lines.join("\n") : (defaultLogs[taskKey] || ["Menunggu command dijalankan..."]).join("\n");
             output.scrollTop = output.scrollHeight;
             startButton.disabled = state.running;
             startButton.innerHTML = state.running
                 ? '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Running'
-                : `<i class="bi bi-terminal me-1"></i>${startButton.dataset.label}`;
+                : `<i class="bi bi-play-fill me-1"></i>${startButton.dataset.label}`;
 
             if (state.running && !timer) {
                 timer = setInterval(fetchLogs, 700);
@@ -189,7 +207,7 @@ function renderDashboardCharts() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: "74%",
+                cutout: "75%",
                 plugins: { legend: { display: false } }
             }
         });

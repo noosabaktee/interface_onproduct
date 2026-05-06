@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="dashboard-wrapper">
-    <div class="hero-strip">
-        <h2 class="hero-title">CFD Simulation Platform</h2>
-        <p class="hero-copy">Integrated computational fluid dynamics workspace for on-product simulation, parameter control, meshing, solver execution, and result inspection.</p>
+<div class="dashboard-wrapper p-4 p-md-5">
+    <div class="text-center mb-4 flex-shrink-0">
+        <h2 class="fw-bold text-main mb-2" style="letter-spacing: -0.5px;">CFD Simulation Platform</h2>
+        <p class="text-muted fs-6 mx-auto mb-0" style="max-width: 600px;">
+            Integrated computational fluid dynamics simulation system. Follow the guideline below to start a new simulation or monitor your computational performance metrics.
+        </p>
     </div>
 
     <div class="workflow-stepper">
@@ -34,71 +36,70 @@
         </a>
     </div>
 
-    <div class="row g-3">
-        <div class="col-md-6 col-xl-3">
-            <div class="stat-card">
+    <div class="row g-3 mb-4 position-relative z-2 flex-shrink-0">
+        <div class="col-md-3 col-sm-6">
+            <div class="card-custom m-0 h-100 p-3 d-flex align-items-center flex-row gap-3">
+                <div class="stat-card-icon" style="background-color: var(--primary-brand);"><i class="bi bi-play-fill"></i></div>
                 <div>
-                    <p class="stat-card-label">Simulation Queue</p>
-                    <p class="stat-card-value">08</p>
+                    <div class="text-muted small fw-bold text-uppercase" style="font-size:0.7rem;">Total Runs</div>
+                    <h4 class="fw-bold m-0 text-main">1,248</h4>
                 </div>
-                <div class="stat-card-icon" style="background:#008f4c;"><i class="bi bi-list-check"></i></div>
             </div>
         </div>
-        <div class="col-md-6 col-xl-3">
-            <div class="stat-card">
+        <div class="col-md-3 col-sm-6">
+            <div class="card-custom m-0 h-100 p-3 d-flex align-items-center flex-row gap-3">
+                <div class="stat-card-icon" style="background-color: var(--accent-brand);"><i class="bi bi-clock-history"></i></div>
                 <div>
-                    <p class="stat-card-label">Active Runs</p>
-                    <p class="stat-card-value">03</p>
+                    <div class="text-muted small fw-bold text-uppercase" style="font-size:0.7rem;">Compute Hrs</div>
+                    <h4 class="fw-bold m-0 text-main">452h</h4>
                 </div>
-                <div class="stat-card-icon" style="background:#2563eb;"><i class="bi bi-lightning-charge"></i></div>
             </div>
         </div>
-        <div class="col-md-6 col-xl-3">
-            <div class="stat-card">
+        <div class="col-md-3 col-sm-6">
+            <div class="card-custom m-0 h-100 p-3 d-flex align-items-center flex-row gap-3">
+                <div class="stat-card-icon" style="background-color: #10B981;"><i class="bi bi-check-circle"></i></div>
                 <div>
-                    <p class="stat-card-label">Success Rate</p>
-                    <p class="stat-card-value">92%</p>
+                    <div class="text-muted small fw-bold text-uppercase" style="font-size:0.7rem;">Success Rate</div>
+                    <h4 class="fw-bold m-0 text-main">92%</h4>
                 </div>
-                <div class="stat-card-icon" style="background:#10b981;"><i class="bi bi-check2-circle"></i></div>
             </div>
         </div>
-        <div class="col-md-6 col-xl-3">
-            <div class="stat-card">
+        <div class="col-md-3 col-sm-6">
+            <div class="card-custom m-0 h-100 p-3 d-flex align-items-center flex-row gap-3">
+                <div class="stat-card-icon" style="background-color: #6366f1;"><i class="bi bi-cpu"></i></div>
                 <div>
-                    <p class="stat-card-label">Runtime Avg.</p>
-                    <p class="stat-card-value">14m</p>
+                    <div class="text-muted small fw-bold text-uppercase" style="font-size:0.7rem;">Active Nodes</div>
+                    <h4 class="fw-bold m-0 text-main">16/32</h4>
                 </div>
-                <div class="stat-card-icon" style="background:#f26522;"><i class="bi bi-clock-history"></i></div>
             </div>
         </div>
     </div>
 
-    <div class="row g-3">
-        <div class="col-lg-8">
-            <div class="chart-panel card-custom h-100">
-                <div class="section-head">
-                    <div>
-                        <h3 class="section-title">Activity Trend</h3>
-                        <p class="section-subtitle">Weekly simulation activity and workload distribution.</p>
-                    </div>
-                    <span class="pill-note"><i class="bi bi-graph-up"></i> Live view</span>
+    <div class="row g-4 position-relative z-2 flex-shrink-0" style="padding-bottom: 20px;">
+        <div class="col-lg-8 col-md-12">
+            <div class="card-custom m-0 h-100 p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h6 class="fw-bold text-main m-0">Simulation Activity (Last 7 Days)</h6>
+                    <select class="form-select form-select-sm shadow-none w-auto border-color text-muted fw-bold">
+                        <option>Weekly</option>
+                        <option>Monthly</option>
+                    </select>
                 </div>
-                <div class="chart-area">
+                <div style="height: 250px; width: 100%;">
                     <canvas id="activityChart"></canvas>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="chart-panel card-custom h-100">
-                <div class="section-head">
-                    <div>
-                        <h3 class="section-title">Status Breakdown</h3>
-                        <p class="section-subtitle">Current result distribution across simulation states.</p>
-                    </div>
-                    <span class="pill-note"><i class="bi bi-pie-chart"></i> Overview</span>
-                </div>
-                <div class="chart-area">
+        <div class="col-lg-4 col-md-12">
+            <div class="card-custom m-0 h-100 p-4 d-flex flex-column">
+                <h6 class="fw-bold text-main mb-4">Current Status Breakdown</h6>
+                <div class="flex-grow-1" style="position: relative; min-height: 200px;">
                     <canvas id="statusChart"></canvas>
+                </div>
+                <div class="d-flex justify-content-center gap-3 mt-4 small fw-bold text-muted">
+                    <div><i class="bi bi-circle-fill text-success-custom fs-6"></i> Success</div>
+                    <div><i class="bi bi-circle-fill fs-6" style="color: var(--accent-brand);"></i> Failed</div>
+                    <div><i class="bi bi-circle-fill text-primary fs-6"></i> Running</div>
                 </div>
             </div>
         </div>

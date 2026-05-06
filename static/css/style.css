@@ -53,6 +53,24 @@ body {
     color: var(--text-main) !important;
 }
 
+.text-primary {
+    color: var(--primary-brand) !important;
+}
+
+.text-success-custom {
+    color: #10b981 !important;
+}
+
+.bg-primary {
+    background-color: var(--primary-brand) !important;
+    color: #fff !important;
+}
+
+.bg-success-custom {
+    background-color: #10b981;
+    color: #fff;
+}
+
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -450,10 +468,14 @@ body {
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 28px;
+    padding: 30px;
     display: flex;
     flex-direction: column;
     gap: 20px;
+}
+
+.module-content.page-dashboard-dashboard {
+    padding: 0;
 }
 
 .flash-stack {
@@ -675,7 +697,6 @@ body {
 .dashboard-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 20px;
 }
 
 .hero-strip {
@@ -709,6 +730,7 @@ body {
     border: 1px solid var(--border-color);
     background: var(--bg-surface);
     box-shadow: var(--shadow-md);
+    margin-bottom: 25px;
 }
 
 .wf-node {

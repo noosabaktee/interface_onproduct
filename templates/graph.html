@@ -1,30 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="dashboard-wrapper">
-    <div class="hero-strip">
-        <div class="section-head mb-0">
-            <div>
-                <h2 class="hero-title">History Graph</h2>
-                <p class="hero-copy">Area untuk grafik history hasil simulasi dan tren performa run.</p>
-            </div>
-            <span class="pill-note"><i class="bi bi-graph-up-arrow"></i> Plot</span>
-        </div>
-    </div>
-
-    <div class="card-custom">
-        <div class="empty-state chart-area">
-            <div>
-                <i class="bi bi-bar-chart-line fs-1 mb-3 d-block"></i>
-                {% if matplotlib_ready %}
-                    <div class="fw-bold mb-1">Matplotlib ready</div>
-                    <div class="small">Hubungkan output plot ke template ini.</div>
-                {% else %}
-                    <div class="fw-bold mb-1">Matplotlib belum aktif</div>
-                    <div class="small">Template halaman sudah siap untuk disambungkan ke output plot berikutnya.</div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+<div class="card-custom text-center p-5 my-auto">
+    <i class="bi bi-graph-up-arrow text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+    <h4 class="fw-bold text-main mt-4">Simulation History Graph</h4>
+    {% if matplotlib_ready %}
+        <p class="text-muted mt-2">Matplotlib is ready.<br>The page template can now be connected to Python plot outputs.</p>
+    {% else %}
+        <p class="text-muted mt-2">Matplotlib is not yet active in this environment.<br>The page template is ready to be connected to Python plot outputs.</p>
+    {% endif %}
 </div>
 {% endblock %}

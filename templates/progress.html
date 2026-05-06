@@ -1,31 +1,34 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="dashboard-wrapper">
-    <div class="hero-strip">
-        <div class="section-head mb-0">
-            <div>
-                <h2 class="hero-title">{{ progress_title }}</h2>
-                <p class="hero-copy">{{ status_label }}</p>
+<div class="row g-4 h-100">
+    <div class="col-12 flex-shrink-0">
+        <div class="card-custom m-0">
+            <div class="d-flex justify-content-between align-items-end mb-3">
+                <div>
+                    <h5 class="fw-bold text-main m-0">{{ progress_title }}</h5>
+                    <p class="small text-muted m-0 mt-1">{{ status_label }}</p>
+                </div>
+                <h3 class="fw-bold text-primary m-0">{{ progress_value }}%</h3>
             </div>
-            <span class="pill-note">{{ progress_value }}%</span>
-        </div>
-        <div class="progress mt-3" role="progressbar" aria-valuenow="{{ progress_value }}" aria-valuemin="0" aria-valuemax="100" style="height: 12px; border-radius: 999px; background: var(--border-color);">
-            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: {{ progress_value }}%"></div>
+            <div class="progress" role="progressbar" aria-valuenow="{{ progress_value }}" aria-valuemin="0" aria-valuemax="100" style="height: 12px; border-radius: 6px; background-color: var(--border-color);">
+                <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" style="width: {{ progress_value }}%"></div>
+            </div>
         </div>
     </div>
 
-    <div class="card-custom terminal-panel" data-terminal data-task-key="{{ task_key }}">
-        <div class="section-head">
-            <div>
-                <h3 class="section-title">Terminal {{ title }}</h3>
-                <p class="section-subtitle">Output command muncul di area log ketika proses dijalankan.</p>
+    <div class="col-12 flex-grow-1 d-flex flex-column">
+        <div class="card-custom flex-grow-1 d-flex flex-column m-0" data-terminal data-task-key="{{ task_key }}">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h6 class="fw-bold text-main m-0">
+                    <i class="bi bi-terminal-fill text-primary me-2 fs-5"></i> {{ title }} Terminal Log
+                </h6>
+                <button class="btn btn-outline-primary shadow-sm" type="button" data-terminal-start>
+                    <i class="bi bi-play-fill me-1"></i> {{ action_label }}
+                </button>
             </div>
-            <button class="btn btn-outline-primary" type="button" data-terminal-start>
-                <i class="bi bi-terminal me-1"></i>{{ action_label }}
-            </button>
+            <pre class="terminal flex-grow-1 mb-0" data-terminal-output>Menunggu command dijalankan...</pre>
         </div>
-        <pre class="terminal mb-0" data-terminal-output>Menunggu command dijalankan...</pre>
     </div>
 </div>
 {% endblock %}

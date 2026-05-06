@@ -11,118 +11,102 @@
     '6': '6. Validation'
 } %}
 
-<div class="dashboard-wrapper">
-    <div class="hero-strip">
-        <div class="section-head mb-0">
-            <div>
-                <h2 class="hero-title">Input Parameter</h2>
-                <p class="hero-copy">Static parameter template for the CFD workflow. All tabs remain complete and the values are now sourced from local JSON.</p>
-            </div>
-            <span class="pill-note"><i class="bi bi-filetype-json"></i> Static template</span>
-        </div>
+{% if not groups %}
+    <div class="card-custom text-center p-5 my-auto">
+        <i class="bi bi-exclamation-triangle text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+        <h4 class="fw-bold text-main mt-4">Parameter Template Not Found</h4>
+        <p class="text-muted mt-2">Pastikan file JSON template tersedia di folder models.</p>
     </div>
+{% else %}
+    <ul class="nav cms-tabs flex-shrink-0" id="parameterTabs" role="tablist">
+        {% for group in groups %}
+            <li class="nav-item" role="presentation">
+                <button
+                    class="nav-link {% if group.key == active_group_key %}active{% elif loop.first and not active_group_key %}active{% endif %}"
+                    id="tab-{{ group.key }}"
+                    data-bs-toggle="tab"
+                    data-bs-target="#pane-{{ group.key }}"
+                    type="button"
+                    role="tab"
+                    aria-controls="pane-{{ group.key }}"
+                    aria-selected="{% if group.key == active_group_key or (loop.first and not active_group_key) %}true{% else %}false{% endif %}"
+                >
+                    {{ tab_titles.get(group.key, group.key ~ '. ' ~ group.title) }}
+                </button>
+            </li>
+        {% endfor %}
+    </ul>
 
-    {% if not groups %}
-        <div class="empty-state">
-            <div>
-                <i class="bi bi-exclamation-triangle fs-1 mb-3 d-block"></i>
-                <div class="fw-bold mb-1">Parameter template tidak ditemukan</div>
-                <div class="small">Pastikan file JSON template tersedia di folder models.</div>
-            </div>
-        </div>
-    {% else %}
-        <div class="card-custom">
-            <ul class="nav cms-tabs" id="parameterTabs" role="tablist">
-                {% for group in groups %}
-                    <li class="nav-item" role="presentation">
-                        <button
-                            class="nav-link {% if group.key == active_group_key %}active{% elif loop.first and not active_group_key %}active{% endif %}"
-                            id="tab-{{ group.key }}"
-                            data-bs-toggle="tab"
-                            data-bs-target="#pane-{{ group.key }}"
-                            type="button"
-                            role="tab"
-                            aria-controls="pane-{{ group.key }}"
-                            aria-selected="{% if group.key == active_group_key or (loop.first and not active_group_key) %}true{% else %}false{% endif %}"
-                        >
-                            {{ tab_titles.get(group.key, group.key ~ '. ' ~ group.title) }}
-                        </button>
-                    </li>
-                {% endfor %}
-            </ul>
-
-            <div class="tab-content">
-                {% for group in groups %}
-                    {% set group_active = group.key == active_group_key or (loop.first and not active_group_key) %}
-                    <div class="tab-pane fade {% if group_active %}show active{% endif %}" id="pane-{{ group.key }}" role="tabpanel" aria-labelledby="tab-{{ group.key }}" tabindex="0">
-                        <div class="accordion accordion-custom" id="accordion-{{ group.key }}">
-                            {% for section in group.sections %}
-                                {% set section_id = 'section-' ~ group.key ~ '-' ~ loop.index %}
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header" id="heading-{{ section_id }}">
-                                        <button
-                                            class="accordion-button {% if not loop.first %}collapsed{% endif %}"
-                                            type="button"
-                                            data-bs-toggle="collapse"
-                                            data-bs-target="#collapse-{{ section_id }}"
-                                            aria-expanded="{% if loop.first %}true{% else %}false{% endif %}"
-                                            aria-controls="collapse-{{ section_id }}"
-                                        >
-                                            {{ section.number }} {{ section.title }}
-                                        </button>
-                                    </h2>
-                                    <div
-                                        id="collapse-{{ section_id }}"
-                                        class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
-                                        aria-labelledby="heading-{{ section_id }}"
-                                        data-bs-parent="#accordion-{{ group.key }}"
-                                    >
-                                        <div class="accordion-body">
-                                            <div class="row g-3">
-                                                {% for field in section.fields %}
-                                                    <div class="col-12 col-md-6 col-xl-4">
-                                                        <div class="field-card">
-                                                            <label class="form-label" for="field-{{ group.key }}-{{ section_id }}-{{ loop.index }}">
-                                                                {{ field.name }}
-                                                            </label>
-                                                            <div class="input-group field-value">
-                                                                <input
-                                                                    type="{{ field.input_type }}"
-                                                                    class="form-control"
-                                                                    id="field-{{ group.key }}-{{ section_id }}-{{ loop.index }}"
-                                                                    name="{{ field.field_name }}"
-                                                                    value="{{ field.default_value }}"
-                                                                    placeholder="{{ field.placeholder }}"
-                                                                >
-                                                                {% if field.unit and field.unit not in ['-', '--', '—'] %}
-                                                                    <span class="input-group-text">{{ field.unit }}</span>
-                                                                {% endif %}
-                                                            </div>
-                                                            {% if field.placeholder %}
-                                                                <div class="field-note">Default: {{ field.placeholder }}</div>
-                                                            {% endif %}
-                                                        </div>
+    <div class="tab-content flex-shrink-0">
+        {% for group in groups %}
+            {% set group_active = group.key == active_group_key or (loop.first and not active_group_key) %}
+            <div class="tab-pane fade {% if group_active %}show active{% endif %}" id="pane-{{ group.key }}" role="tabpanel" aria-labelledby="tab-{{ group.key }}" tabindex="0">
+                <div class="accordion accordion-custom" id="accordion-{{ group.key }}">
+                    {% for section in group.sections %}
+                        {% set section_id = 'section-' ~ group.key ~ '-' ~ loop.index %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading-{{ section_id }}">
+                                <button
+                                    class="accordion-button {% if not loop.first %}collapsed text-muted{% endif %}"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#collapse-{{ section_id }}"
+                                    aria-expanded="{% if loop.first %}true{% else %}false{% endif %}"
+                                    aria-controls="collapse-{{ section_id }}"
+                                >
+                                    {{ section.number }} {{ section.title }}
+                                </button>
+                            </h2>
+                            <div
+                                id="collapse-{{ section_id }}"
+                                class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
+                                aria-labelledby="heading-{{ section_id }}"
+                                data-bs-parent="#accordion-{{ group.key }}"
+                            >
+                                <div class="accordion-body">
+                                    <div class="row g-4">
+                                        {% for field in section.fields %}
+                                            <div class="col-md-4 col-sm-6">
+                                                <label class="form-label" for="field-{{ group.key }}-{{ section_id }}-{{ loop.index }}">
+                                                    {{ field.name }}
+                                                </label>
+                                                {% if field.unit and field.unit not in ['-', '--', 'â€”'] %}
+                                                    <div class="input-group">
+                                                        <input
+                                                            type="{{ field.input_type }}"
+                                                            class="form-control shadow-none"
+                                                            id="field-{{ group.key }}-{{ section_id }}-{{ loop.index }}"
+                                                            name="{{ field.field_name }}"
+                                                            value="{{ field.default_value }}"
+                                                            placeholder="{{ field.placeholder }}"
+                                                        >
+                                                        <span class="input-group-text">{{ field.unit }}</span>
                                                     </div>
-                                                {% endfor %}
+                                                {% else %}
+                                                    <input
+                                                        type="{{ field.input_type }}"
+                                                        class="form-control shadow-none"
+                                                        id="field-{{ group.key }}-{{ section_id }}-{{ loop.index }}"
+                                                        name="{{ field.field_name }}"
+                                                        value="{{ field.default_value }}"
+                                                        placeholder="{{ field.placeholder }}"
+                                                    >
+                                                {% endif %}
                                             </div>
-
-                                            <div class="d-flex justify-content-end gap-2 mt-4">
-                                                <button type="button" class="btn btn-outline-primary">
-                                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
-                                                </button>
-                                                <button type="button" class="btn btn-primary">
-                                                    <i class="bi bi-save me-1"></i>Save Parameters
-                                                </button>
-                                            </div>
+                                        {% endfor %}
+                                        <div class="col-12 mt-4 text-end">
+                                            <button type="button" class="btn btn-primary px-4 py-2">
+                                                <i class="bi bi-save me-2"></i> Save Parameters
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            {% endfor %}
+                            </div>
                         </div>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             </div>
-        </div>
-    {% endif %}
-</div>
+        {% endfor %}
+    </div>
+{% endif %}
 {% endblock %}

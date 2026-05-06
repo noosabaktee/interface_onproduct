@@ -28,18 +28,18 @@ def input_parameter():
         "input_parameter.html",
         groups=groups,
         title="Input Parameter",
-        active_group_key="1",
+        active_group_key="0",
     )
 
 
 @dashboard_bp.route("/set-processor", methods=["GET", "POST"])
 def set_processor():
-    processor_count = 4
+    processor_count = 16
     if request.method == "POST":
         try:
             processor_count = int(request.form.get("processor_count", processor_count))
         except ValueError:
-            processor_count = 4
+            processor_count = 16
 
         processor_count = max(1, min(processor_count, 16))
         flash(f"Jumlah processor diset ke {processor_count}.", "success")
@@ -58,9 +58,9 @@ def meshing():
         title="Meshing",
         progress_title="Meshing Progress",
         progress_value=35,
-        status_label="Preparing mesh dictionaries",
+        status_label="Preparing mesh dictionaries and block generation...",
         task_key="meshing",
-        action_label="Jalankan Meshing",
+        action_label="Execute Meshing",
     )
 
 
@@ -71,9 +71,9 @@ def solver():
         title="Solver",
         progress_title="Solver Progress",
         progress_value=12,
-        status_label="Waiting for processor setup",
+        status_label="Waiting for processor setup and initial fields...",
         task_key="solver",
-        action_label="Jalankan Solver",
+        action_label="Execute Solver",
     )
 
 

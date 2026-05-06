@@ -1,15 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="dashboard-wrapper">
-    <div class="hero-strip">
-        <div class="section-head mb-0">
-            <div>
-                <h2 class="hero-title">{{ page_title }}</h2>
-                <p class="hero-copy">{{ page_text }}</p>
-            </div>
-            <span class="pill-note"><i class="bi bi-file-earmark-text"></i> Summary</span>
-        </div>
-    </div>
+<div class="card-custom text-center p-5 my-auto">
+    <i class="bi bi-clipboard-data text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+    <h4 class="fw-bold text-main mt-4">Summary Report</h4>
+    <p class="text-muted mt-2">This area is prepared for PDF compilation of parameter summaries, simulation status, and on-product data validation results.</p>
 </div>
 {% endblock %}

@@ -27,6 +27,16 @@
                 ('dashboard.graph', 'Graph', 'bi-graph-up-arrow'),
                 ('dashboard.report', 'Report', 'bi-clipboard-data')
             ] %}
+            {% set title_icons = {
+                'dashboard.dashboard': 'bi-speedometer2',
+                'dashboard.input_parameter': 'bi-sliders2',
+                'dashboard.set_processor': 'bi-cpu',
+                'dashboard.meshing': 'bi-bounding-box',
+                'dashboard.solver': 'bi-play-circle-fill',
+                'dashboard.paraview': 'bi-display',
+                'dashboard.graph': 'bi-graph-up-arrow',
+                'dashboard.report': 'bi-clipboard-data'
+            } %}
 
             {% for endpoint, label, icon in nav_items %}
                 <a class="module-icon {% if request.endpoint == endpoint %}active{% endif %}" href="{{ url_for(endpoint) }}" title="{{ label }}">
@@ -46,8 +56,8 @@
                 <div class="d-flex align-items-center gap-3 flex-grow-1 min-w-0">
                     <div class="min-w-0">
                         <div class="eyebrow">Kalbe Nutritionals | R&amp;D</div>
-                        <h1 class="page-title mb-0">
-                            <i class="bi bi-activity"></i>
+                        <h1 class="page-title mb-0" id="page-title">
+                            <i class="bi {{ title_icons.get(request.endpoint, 'bi-activity') }} text-primary"></i>
                             <span>{{ title or 'Dashboard' }}</span>
                         </h1>
                     </div>
@@ -71,7 +81,7 @@
                 <div class="tech-grid"></div>
             </div>
 
-            <main class="module-content active">
+            <main class="module-content active page-{{ request.endpoint|replace('.', '-') }}">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         <div class="flash-stack">
