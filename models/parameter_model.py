@@ -60,10 +60,6 @@ def save_parameter_values(form_data, active_group_key):
                 if value == "":
                     continue
 
-                if field_name == "residual_control_enabled":
-                    updated += _write_residual_tolerances(value)
-                    continue
-
                 for location in _iter_locations(field.get("location")):
                     if _write_location_value(location, value):
                         updated += 1
@@ -86,8 +82,6 @@ def _default_value(field):
 def _read_field_value(field):
     if _should_skip_field(field):
         return None
-    if field.get("field_name") == "residual_control_enabled":
-        return _read_location_value("system/fvSolution > PIMPLE > residualControl > p_rgh > tolerance")
 
     for location in _iter_locations(field.get("location")):
         value = _read_location_value(location)
@@ -167,15 +161,6 @@ def _write_location_value(location, value):
 
     file_path.write_text(replacement, encoding="utf-8")
     return True
-
-
-def _write_residual_tolerances(value):
-    locations = [
-        "system/fvSolution > PIMPLE > residualControl > p_rgh > tolerance",
-        "system/fvSolution > PIMPLE > residualControl > U > tolerance",
-        "system/fvSolution > PIMPLE > residualControl > (k|omega|h) > tolerance",
-    ]
-    return sum(1 for location in locations if _write_location_value(location, value))
 
 
 def _find_block(text, key, start, end):

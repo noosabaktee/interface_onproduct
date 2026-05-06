@@ -644,12 +644,28 @@
             "location": "system/fvSolution > PIMPLE > nOuterCorrectors"
           },
           {
-            "name": "Residual control \u2014 enabled",
+            "name": "Residual control \u2014 p_rgh tolerance",
             "unit": "\u2014",
-            "placeholder": "p_rgh \u2264 1\u00d710\u207b\u2074, U \u2264 1\u00d710\u207b\u2075, k|\u03c9|h \u2264 1\u00d710\u207b\u2075",
-            "input_type": "text",
-            "field_name": "residual_control_enabled",
-            "location": "system/fvSolution > PIMPLE > residualControl > tolerance"
+            "placeholder": "1e-4",
+            "input_type": "number",
+            "field_name": "residual_control_tolerance_prgh",
+            "location": "system/fvSolution > PIMPLE > residualControl > p_rgh > tolerance"
+          },
+          {
+            "name": "Residual control \u2014 U tolerance",
+            "unit": "\u2014",
+            "placeholder": "1e-5",
+            "input_type": "number",
+            "field_name": "residual_control_tolerance_u",
+            "location": "system/fvSolution > PIMPLE > residualControl > U > tolerance"
+          },
+          {
+            "name": "Residual control \u2014 (k|omega|h) tolerance",
+            "unit": "\u2014",
+            "placeholder": "1e-5",
+            "input_type": "number",
+            "field_name": "residual_control_tolerance_k_omega_h",
+            "location": "system/fvSolution > PIMPLE > residualControl > (k|omega|h) > tolerance"
           },
           {
             "name": "Minimum temperature limiter TMin",
