@@ -1,7 +1,7 @@
 from flask import abort, Blueprint, flash, jsonify, redirect, render_template, request, send_file, url_for
 
 from models.parameter_model import load_parameter_groups
-from models.paraview_model import get_paraview_case, get_surface_path, launch_case_file
+from models.paraview_model import get_internal_mesh_path, get_paraview_case, get_surface_path, launch_case_file
 from models.terminal_runner import get_command_state, start_command
 
 
@@ -117,6 +117,15 @@ def paraview_surface(surface_id):
         abort(404)
 
     return send_file(surface_path, mimetype="application/xml", conditional=True, max_age=0)
+
+
+@dashboard_bp.get("/paraview/internal-mesh")
+def paraview_internal_mesh():
+    mesh_path = get_internal_mesh_path()
+    if mesh_path is None:
+        abort(404)
+
+    return send_file(mesh_path, mimetype="application/xml", conditional=True, max_age=0)
 
 
 @dashboard_bp.route("/graph")

@@ -27,15 +27,15 @@ async function initParaviewViewer(viewer) {
     const { OrbitControls } = await import(ORBIT_CONTROLS_URL);
 
     const state = createScene(THREE, OrbitControls, mount);
-    bindSurfaceButtons(viewer, state, status);
+    bindMeshButtons(viewer, state, status);
 
-    const defaultSurface = viewer.querySelector("[data-surface-url].active")
-        || viewer.querySelector("[data-surface-url]");
+    const defaultMesh = viewer.querySelector("[data-mesh-url].active")
+        || viewer.querySelector("[data-mesh-url]");
 
-    if (defaultSurface) {
-        await loadSurface(defaultSurface, state, status);
+    if (defaultMesh) {
+        await loadMesh(defaultMesh, state, status);
     } else {
-        setStatus(status, "Surface VTP tidak ditemukan.", "error");
+        setStatus(status, "internalMesh tidak ditemukan.", "error");
     }
 }
 
@@ -103,28 +103,28 @@ function createScene(THREE, OrbitControls, mount) {
     return state;
 }
 
-function bindSurfaceButtons(viewer, state, status) {
-    viewer.querySelectorAll("[data-surface-url]").forEach((button) => {
+function bindMeshButtons(viewer, state, status) {
+    viewer.querySelectorAll("[data-mesh-url]").forEach((button) => {
         button.addEventListener("click", () => {
-            viewer.querySelectorAll("[data-surface-url]").forEach((item) => item.classList.remove("active"));
+            viewer.querySelectorAll("[data-mesh-url]").forEach((item) => item.classList.remove("active"));
             button.classList.add("active");
-            loadSurface(button, state, status).catch((error) => {
-                setStatus(status, `Surface gagal dimuat: ${error.message}`, "error");
+            loadMesh(button, state, status).catch((error) => {
+                setStatus(status, `Mesh gagal dimuat: ${error.message}`, "error");
             });
         });
     });
 }
 
-async function loadSurface(button, state, status) {
-    const surfaceUrl = button.dataset.surfaceUrl;
-    const surfaceName = button.dataset.surfaceName || "surface";
-    if (!surfaceUrl) {
+async function loadMesh(button, state, status) {
+    const meshUrl = button.dataset.meshUrl;
+    const meshName = button.dataset.meshName || "internalMesh";
+    if (!meshUrl) {
         return;
     }
 
-    setStatus(status, `Loading ${surfaceName}...`, "loading");
+    setStatus(status, `Loading ${meshName}...`, "loading");
 
-    const response = await fetch(surfaceUrl);
+    const response = await fetch(meshUrl);
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
     }
@@ -136,7 +136,7 @@ async function loadSurface(button, state, status) {
     clearCurrentMesh(state);
 
     const material = new state.THREE.MeshStandardMaterial({
-        color: 0x50d890,
+        color: 0x102a83,
         metalness: 0.08,
         roughness: 0.62,
         side: state.THREE.DoubleSide,
@@ -150,7 +150,7 @@ async function loadSurface(button, state, status) {
 
     setStatus(
         status,
-        `${surfaceName} | ${formatNumber(polyData.numberOfPoints)} points | ${formatNumber(polyData.numberOfPolys)} polys`,
+        `${meshName} | ${formatNumber(polyData.numberOfPoints)} points | ${formatNumber(polyData.numberOfPolys)} faces`,
         "ready",
     );
 }

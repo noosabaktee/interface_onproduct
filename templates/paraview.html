@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% set default_surface = case.default_surface %}
+{% set internal_mesh = case.internal_mesh %}
 <div class="dashboard-wrapper paraview-page">
     <div class="hero-strip">
         <div class="section-head mb-0">
@@ -42,12 +42,12 @@
     <section class="paraview-workspace" data-paraview-viewer>
         <div class="paraview-toolbar">
             <div>
-                <h3 class="section-title">3D Surface Preview</h3>
+                <h3 class="section-title">3D internalMesh Preview</h3>
                 <p class="section-subtitle">
-                    {% if default_surface %}
-                        {{ default_surface.label }} from {{ default_surface.time }}
+                    {% if internal_mesh and internal_mesh.available %}
+                        {{ internal_mesh.label }} from {{ case.foam_name }}
                     {% else %}
-                        No VTP surface found
+                        internalMesh belum tersedia
                     {% endif %}
                 </p>
             </div>
@@ -63,34 +63,32 @@
             </div>
         </div>
 
-        {% if case.surfaces %}
+        {% if internal_mesh and internal_mesh.available %}
             <div class="surface-switcher" aria-label="Surface selector">
-                {% for surface in case.surfaces %}
-                    <button
-                        class="btn btn-outline-primary surface-button {% if default_surface and surface.id == default_surface.id %}active{% endif %}"
-                        type="button"
-                        data-surface-url="{{ url_for('dashboard.paraview_surface', surface_id=surface.id) }}"
-                        data-surface-name="{{ surface.label }}"
-                        title="{{ surface.name }}"
-                    >
-                        <i class="bi bi-layers"></i>
-                        <span>{{ surface.label }}</span>
-                        <small>{{ surface.size }}</small>
-                    </button>
-                {% endfor %}
+                <button
+                    class="btn btn-outline-primary surface-button active"
+                    type="button"
+                    data-mesh-url="{{ url_for('dashboard.paraview_internal_mesh') }}"
+                    data-mesh-name="{{ internal_mesh.label }}"
+                    title="{{ internal_mesh.name }}"
+                >
+                    <i class="bi bi-box"></i>
+                    <span>{{ internal_mesh.label }}</span>
+                    <small>{{ internal_mesh.faces_label }} faces</small>
+                </button>
             </div>
         {% endif %}
 
         <div class="paraview-scene-frame">
-            {% if default_surface %}
-                <div class="paraview-scene" data-paraview-scene aria-label="3D OpenFOAM surface preview"></div>
+            {% if internal_mesh and internal_mesh.available %}
+                <div class="paraview-scene" data-paraview-scene aria-label="3D OpenFOAM internalMesh preview"></div>
                 <div class="paraview-status" data-paraview-status>Preparing viewer...</div>
             {% else %}
                 <div class="empty-state chart-area">
                     <div>
                         <i class="bi bi-exclamation-circle fs-1 mb-3 d-block"></i>
-                        <div class="fw-bold mb-1">Surface data belum ada</div>
-                        <div class="small">Generate output VTP dari case OpenFOAM untuk preview 3D.</div>
+                        <div class="fw-bold mb-1">internalMesh belum bisa dibaca</div>
+                        <div class="small">Pastikan folder constant/polyMesh berisi points, faces, dan boundary.</div>
                     </div>
                 </div>
             {% endif %}
@@ -118,24 +116,29 @@
         <section class="paraview-detail-panel">
             <div class="section-head">
                 <div>
-                    <h3 class="section-title">Surface Data</h3>
-                    <p class="section-subtitle">{{ case.surfaces|length }} VTP assets</p>
+                    <h3 class="section-title">Mesh Data</h3>
+                    <p class="section-subtitle">Satu objek utama dari case .foam</p>
                 </div>
             </div>
             <div class="surface-list">
-                {% for surface in case.surfaces %}
+                {% if internal_mesh and internal_mesh.available %}
                     <div class="surface-row">
-                        <span>{{ surface.label }}</span>
-                        <strong>{{ surface.points_label }} pts</strong>
-                        <em>{{ surface.polys_label }} polys</em>
+                        <span>{{ internal_mesh.label }}</span>
+                        <strong>{{ internal_mesh.points_label }} source pts</strong>
+                        <em>{{ internal_mesh.faces_label }} faces</em>
+                    </div>
+                    <div class="surface-row">
+                        <span>Preview cache</span>
+                        <strong>{{ internal_mesh.size }}</strong>
+                        <em>{% if internal_mesh.cache_exists %}ready{% else %}created on first load{% endif %}</em>
                     </div>
                 {% else %}
                     <div class="surface-row">
-                        <span>No surface files</span>
+                        <span>No internalMesh</span>
                         <strong>-</strong>
                         <em>-</em>
                     </div>
-                {% endfor %}
+                {% endif %}
             </div>
         </section>
 
