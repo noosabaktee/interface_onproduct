@@ -13,49 +13,56 @@
             "unit": "K",
             "placeholder": "380 K  (107 \u00b0C)",
             "input_type": "number",
-            "field_name": "chamber_gas_temperature_initial"
+            "field_name": "chamber_gas_temperature_initial",
+            "location": "0/T > internalField"
           },
           {
             "name": "Chamber gas velocity (initial)",
             "unit": "m/s",
             "placeholder": "(0  0  0)",
             "input_type": "text",
-            "field_name": "chamber_gas_velocity_initial"
+            "field_name": "chamber_gas_velocity_initial",
+            "location": "0/U > internalField"
           },
           {
             "name": "Chamber H2O mass fraction (initial)",
             "unit": "\u2014",
             "placeholder": "0  (dry air)",
             "input_type": "text",
-            "field_name": "chamber_h2o_mass_fraction_initial"
+            "field_name": "chamber_h2o_mass_fraction_initial",
+            "location": "0/H2O > internalField"
           },
           {
             "name": "Chamber pressure (initial)",
             "unit": "Pa",
             "placeholder": "1.0 \u00d7 10\u2075",
             "input_type": "number",
-            "field_name": "chamber_pressure_initial"
+            "field_name": "chamber_pressure_initial",
+            "location": "0/p > internalField"
           },
           {
             "name": "Chamber reduced pressure (initial)",
             "unit": "Pa",
             "placeholder": "9.997 \u00d7 10\u2074",
             "input_type": "number",
-            "field_name": "chamber_reduced_pressure_initial"
+            "field_name": "chamber_reduced_pressure_initial",
+            "location": "0/p_rgh > internalField"
           },
           {
             "name": "Turbulent kinetic energy k (initial)",
             "unit": "m\u00b2/s\u00b2",
             "placeholder": "1.35",
             "input_type": "number",
-            "field_name": "turbulent_kinetic_energy_k_initial"
+            "field_name": "turbulent_kinetic_energy_k_initial",
+            "location": "0/k > internalField"
           },
           {
             "name": "Specific dissipation rate \u03c9 (initial)",
             "unit": "s\u207b\u00b9",
             "placeholder": "26",
             "input_type": "number",
-            "field_name": "specific_dissipation_rate_initial"
+            "field_name": "specific_dissipation_rate_initial",
+            "location": "0/omega > internalField"
           }
         ]
       }
@@ -75,35 +82,40 @@
             "unit": "K  (\u00b0C)",
             "placeholder": "448 K  (175 \u00b0C)",
             "input_type": "number",
-            "field_name": "inlet_gas_temperature_tic"
+            "field_name": "inlet_gas_temperature_tic",
+            "location": "0/T > inletGas > value"
           },
           {
             "name": "Inlet gas velocity (X-direction)",
             "unit": "m/s",
             "placeholder": "19",
             "input_type": "number",
-            "field_name": "inlet_gas_velocity_x_direction"
+            "field_name": "inlet_gas_velocity_x_direction",
+            "location": "0/U > inletGas > value"
           },
           {
             "name": "Inlet H2O mass fraction",
             "unit": "\u2014",
             "placeholder": "0  (dry air assumed)",
             "input_type": "text",
-            "field_name": "inlet_h2o_mass_fraction"
+            "field_name": "inlet_h2o_mass_fraction",
+            "location": "0/H2O > inletGas > value"
           },
           {
             "name": "Inlet turbulence intensity",
             "unit": "\u2014",
             "placeholder": "0.05  (5 %)",
             "input_type": "text",
-            "field_name": "inlet_turbulence_intensity"
+            "field_name": "inlet_turbulence_intensity",
+            "location": "0/k > inletGas > intensity"
           },
           {
             "name": "Inlet turbulence mixing length",
             "unit": "m",
             "placeholder": "8.2000000000000003E-2",
             "input_type": "number",
-            "field_name": "inlet_turbulence_mixing_length"
+            "field_name": "inlet_turbulence_mixing_length",
+            "location": "0/omega > inletGas > mixingLength"
           }
         ]
       },
@@ -117,28 +129,44 @@
             "unit": "Pa",
             "placeholder": "9.997 \u00d7 10\u2074",
             "input_type": "number",
-            "field_name": "outlet_pressure_outletmilk_0_3_side_outlets"
+            "field_name": "outlet_pressure_outletmilk_0_3_side_outlets",
+            "location": [
+              "0/p_rgh > outletMilk > value",
+              "0/p_rgh > outletMilk > fieldInf"
+            ]
           },
           {
             "name": "Outlet pressure \u2014 outletMilk4 (bottom to EFB)",
             "unit": "Pa",
             "placeholder": "1.0 \u00d7 10\u2075",
             "input_type": "number",
-            "field_name": "outlet_pressure_outletmilk4_bottom_to_efb"
+            "field_name": "outlet_pressure_outletmilk4_bottom_to_efb",
+            "location": [
+              "0/p_rgh > outletMilk4 > value",
+              "0/p_rgh > outletMilk4 > fieldInf"
+            ]
           },
           {
             "name": "Ratio of specific heats \u03b3 \u2014 waveTransmissive BC",
             "unit": "\u2014",
             "placeholder": "1.4",
             "input_type": "number",
-            "field_name": "ratio_of_specific_heats_wavetransmissive_bc"
+            "field_name": "ratio_of_specific_heats_wavetransmissive_bc",
+            "location": [
+              "0/p_rgh > outletMilk > gamma",
+              "0/p_rgh > outletMilk4 > gamma"
+            ]
           },
           {
             "name": "Acoustic damping length lInf",
             "unit": "m",
             "placeholder": "0.1",
             "input_type": "number",
-            "field_name": "acoustic_damping_length_linf"
+            "field_name": "acoustic_damping_length_linf",
+            "location": [
+              "0/p_rgh > outletMilk > lInf",
+              "0/p_rgh > outletMilk4 > lInf"
+            ]
           }
         ]
       },
@@ -152,35 +180,48 @@
             "unit": "W/m\u00b2/K",
             "placeholder": "10",
             "input_type": "number",
-            "field_name": "wall_heat_transfer_coefficient_h_chamber_walls"
+            "field_name": "wall_heat_transfer_coefficient_h_chamber_walls",
+            "location": "0/T > walls > h"
           },
           {
             "name": "Ambient temperature Ta \u2014 chamber walls",
             "unit": "K",
             "placeholder": "300 K  (27 \u00b0C)",
             "input_type": "number",
-            "field_name": "ambient_temperature_ta_chamber_walls"
+            "field_name": "ambient_temperature_ta_chamber_walls",
+            "location": "0/T > walls > Ta"
           },
           {
             "name": "Initial wall temperature \u2014 chamber walls",
             "unit": "K",
             "placeholder": "350 K  (77 \u00b0C)",
             "input_type": "number",
-            "field_name": "initial_wall_temperature_chamber_walls"
+            "field_name": "initial_wall_temperature_chamber_walls",
+            "location": "0/T > walls > value"
           },
           {
             "name": "Initial wall temperature \u2014 obstacles (nozzle zone)",
             "unit": "K",
             "placeholder": "350 K  (77 \u00b0C)",
             "input_type": "number",
-            "field_name": "initial_wall_temperature_obstacles_nozzle_zone"
+            "field_name": "initial_wall_temperature_obstacles_nozzle_zone",
+            "location": [
+              "0/T > obstacle0 > value",
+              "0/T > obstacle1 > value",
+              "0/T > obstacle2 > value"
+            ]
           },
           {
             "name": "h \u2014 internal obstacles",
             "unit": "W/m\u00b2/K",
             "placeholder": "10",
             "input_type": "number",
-            "field_name": "h_internal_obstacles"
+            "field_name": "h_internal_obstacles",
+            "location": [
+              "0/T > obstacle0 > h",
+              "0/T > obstacle1 > h",
+              "0/T > obstacle2 > h"
+            ]
           }
         ]
       }
@@ -200,35 +241,40 @@
             "unit": "K",
             "placeholder": "346 K  (73 \u00b0C)",
             "input_type": "number",
-            "field_name": "droplet_initial_temperature_t0"
+            "field_name": "droplet_initial_temperature_t0",
+            "location": "constant/reactingCloud1Properties > constantProperties > T0"
           },
           {
             "name": "Droplet bulk density \u03c1\u2080",
             "unit": "kg/m\u00b3",
             "placeholder": "1140",
             "input_type": "number",
-            "field_name": "droplet_bulk_density"
+            "field_name": "droplet_bulk_density",
+            "location": "constant/reactingCloud1Properties > constantProperties > rho0"
           },
           {
             "name": "Droplet specific heat capacity Cp\u2080",
             "unit": "J/kg/K",
             "placeholder": "2930",
             "input_type": "number",
-            "field_name": "droplet_specific_heat_capacity_cp"
+            "field_name": "droplet_specific_heat_capacity_cp",
+            "location": "constant/reactingCloud1Properties > constantProperties > Cp0"
           },
           {
             "name": "Young's modulus (contact stiffness)",
             "unit": "Pa",
             "placeholder": "1 \u00d7 10\u2076",
             "input_type": "number",
-            "field_name": "young_s_modulus_contact_stiffness"
+            "field_name": "young_s_modulus_contact_stiffness",
+            "location": "constant/reactingCloud1Properties > youngsModulus"
           },
           {
             "name": "Poisson's ratio",
             "unit": "\u2014",
             "placeholder": "0.35",
             "input_type": "number",
-            "field_name": "poisson_s_ratio"
+            "field_name": "poisson_s_ratio",
+            "location": "constant/reactingCloud1Properties > poissonsRatio"
           }
         ]
       },
@@ -242,63 +288,72 @@
             "unit": "kg",
             "placeholder": "58.33",
             "input_type": "number",
-            "field_name": "total_feed_mass_masstotal"
+            "field_name": "total_feed_mass_masstotal",
+            "location": "constant/reactingCloud1Properties > milkSpray > massTotal"
           },
           {
             "name": "Nozzle operating pressure",
             "unit": "bar",
             "placeholder": "80 / 105 / 135  (independent variable)",
             "input_type": "number",
-            "field_name": "nozzle_operating_pressure"
+            "field_name": "nozzle_operating_pressure",
+            "location": "constant/reactingCloud1Properties > sizeDistribution (indirect)"
           },
           {
             "name": "Nozzle outer diameter (orifice)",
             "unit": "m",
             "placeholder": "0.0035  (3.5 mm)",
             "input_type": "number",
-            "field_name": "nozzle_outer_diameter_orifice"
+            "field_name": "nozzle_outer_diameter_orifice",
+            "location": "constant/reactingCloud1Properties > milkSpray > outerDiameter"
           },
           {
             "name": "Spray direction",
             "unit": "\u2014",
             "placeholder": "(0  0  \u22121)  downward",
             "input_type": "text",
-            "field_name": "spray_direction"
+            "field_name": "spray_direction",
+            "location": "constant/reactingCloud1Properties > milkSpray > direction"
           },
           {
             "name": "Inner spray half-angle \u03b8_inner",
             "unit": "\u00b0",
             "placeholder": "8",
             "input_type": "number",
-            "field_name": "inner_spray_half_angle_inner"
+            "field_name": "inner_spray_half_angle_inner",
+            "location": "constant/reactingCloud1Properties > milkSpray > thetaInner"
           },
           {
             "name": "Outer spray half-angle \u03b8_outer",
             "unit": "\u00b0",
             "placeholder": "22",
             "input_type": "number",
-            "field_name": "outer_spray_half_angle_outer"
+            "field_name": "outer_spray_half_angle_outer",
+            "location": "constant/reactingCloud1Properties > milkSpray > thetaOuter"
           },
           {
             "name": "Discharge coefficient Cd",
             "unit": "\u2014",
             "placeholder": "0.85",
             "input_type": "number",
-            "field_name": "discharge_coefficient_cd"
+            "field_name": "discharge_coefficient_cd",
+            "location": "constant/reactingCloud1Properties > milkSpray > Cd"
           },
           {
             "name": "Parcels per second",
             "unit": "s\u207b\u00b9",
             "placeholder": "1.5 \u00d7 10\u2074",
             "input_type": "number",
-            "field_name": "parcels_per_second"
+            "field_name": "parcels_per_second",
+            "location": "constant/reactingCloud1Properties > milkSpray > parcelsPerSecond"
           },
           {
             "name": "Flow rate ramp-up profile",
             "unit": "\u2014",
             "placeholder": "table: 0 s \u2192 0, 0.05 s \u2192 0.25, 0.5 s \u2192 1.0",
             "input_type": "text",
-            "field_name": "flow_rate_ramp_up_profile"
+            "field_name": "flow_rate_ramp_up_profile",
+            "location": "constant/reactingCloud1Properties > flowRateProfile"
           }
         ]
       },
@@ -312,28 +367,32 @@
             "unit": "m  (\u03bcm)",
             "placeholder": "2 \u00d7 10\u207b\u2075  (20 \u03bcm)",
             "input_type": "number",
-            "field_name": "minimum_droplet_diameter"
+            "field_name": "minimum_droplet_diameter",
+            "location": "constant/reactingCloud1Properties > sizeDistribution > minValue"
           },
           {
             "name": "Maximum droplet diameter",
             "unit": "m  (\u03bcm)",
             "placeholder": "4 \u00d7 10\u207b\u2074  (400 \u03bcm)",
             "input_type": "number",
-            "field_name": "maximum_droplet_diameter"
+            "field_name": "maximum_droplet_diameter",
+            "location": "constant/reactingCloud1Properties > sizeDistribution > maxValue"
           },
           {
             "name": "Rosin-Rammler characteristic diameter d",
             "unit": "m  (\u03bcm)",
             "placeholder": "1.5 \u00d7 10\u207b\u2074  (150 \u03bcm)",
             "input_type": "number",
-            "field_name": "rosin_rammler_characteristic_diameter_d"
+            "field_name": "rosin_rammler_characteristic_diameter_d",
+            "location": "constant/reactingCloud1Properties > sizeDistribution > d"
           },
           {
             "name": "Rosin-Rammler spread parameter n",
             "unit": "\u2014",
             "placeholder": "2.2999999999999998",
             "input_type": "number",
-            "field_name": "rosin_rammler_spread_parameter_n"
+            "field_name": "rosin_rammler_spread_parameter_n",
+            "location": "constant/reactingCloud1Properties > sizeDistribution > n"
           }
         ]
       },
@@ -347,35 +406,40 @@
             "unit": "\u2014",
             "placeholder": "0.52",
             "input_type": "number",
-            "field_name": "liquid_mass_fraction_y_liquid_water"
+            "field_name": "liquid_mass_fraction_y_liquid_water",
+            "location": "constant/reactingCloud1Properties > YLiquidTot0"
           },
           {
             "name": "Solid mass fraction Y_solid (milk solids proxy)",
             "unit": "\u2014",
             "placeholder": "0.48",
             "input_type": "number",
-            "field_name": "solid_mass_fraction_y_solid_milk_solids_proxy"
+            "field_name": "solid_mass_fraction_y_solid_milk_solids_proxy",
+            "location": "constant/reactingCloud1Properties > YSolidTot0"
           },
           {
             "name": "Gas mass fraction Y_gas (initial)",
             "unit": "\u2014",
             "placeholder": "0",
             "input_type": "number",
-            "field_name": "gas_mass_fraction_y_gas_initial"
+            "field_name": "gas_mass_fraction_y_gas_initial",
+            "location": "constant/reactingCloud1Properties > YGasTot0"
           },
           {
             "name": "Evaporation model",
             "unit": "\u2014",
             "placeholder": "liquidEvaporation  (active liquid: H2O)",
             "input_type": "text",
-            "field_name": "evaporation_model"
+            "field_name": "evaporation_model",
+            "location": "constant/reactingCloud1Properties > phaseChangeModel"
           },
           {
             "name": "Water activity correction (a_w)",
             "unit": "\u2014",
             "placeholder": "Not applied  (a_w implicitly = 1.0)",
             "input_type": "text",
-            "field_name": "water_activity_correction_a_w"
+            "field_name": "water_activity_correction_a_w",
+            "location": "constant/reactingCloud1Properties \u2014 not yet implemented"
           }
         ]
       },
@@ -389,14 +453,20 @@
             "unit": "\u2014",
             "placeholder": "stick",
             "input_type": "text",
-            "field_name": "wall_interaction_obstacles_type"
+            "field_name": "wall_interaction_obstacles_type",
+            "location": [
+              "constant/reactingCloud1Properties > walls > obstacle0 > type",
+              "constant/reactingCloud1Properties > walls > obstacle1 > type",
+              "constant/reactingCloud1Properties > walls > obstacle2 > type"
+            ]
           },
           {
             "name": "Wall interaction \u2014 chamber walls (type)",
             "unit": "\u2014",
             "placeholder": "stick",
             "input_type": "text",
-            "field_name": "wall_interaction_chamber_walls_type"
+            "field_name": "wall_interaction_chamber_walls_type",
+            "location": "constant/reactingCloud1Properties > walls > type"
           }
         ]
       }
@@ -416,49 +486,56 @@
             "unit": "J/kg/K",
             "placeholder": "1006",
             "input_type": "number",
-            "field_name": "air_specific_heat_capacity_cp_air"
+            "field_name": "air_specific_heat_capacity_cp_air",
+            "location": "constant/thermophysicalProperties > air > thermodynamics > Cp"
           },
           {
             "name": "Air dynamic viscosity \u03bc_air",
             "unit": "Pa\u00b7s",
             "placeholder": "1.8 \u00d7 10\u207b\u2075",
             "input_type": "number",
-            "field_name": "air_dynamic_viscosity_air"
+            "field_name": "air_dynamic_viscosity_air",
+            "location": "constant/thermophysicalProperties > air > transport > mu"
           },
           {
             "name": "Air Prandtl number Pr_air",
             "unit": "\u2014",
             "placeholder": "0.7",
             "input_type": "number",
-            "field_name": "air_prandtl_number_pr_air"
+            "field_name": "air_prandtl_number_pr_air",
+            "location": "constant/thermophysicalProperties > air > transport > Pr"
           },
           {
             "name": "Water vapour specific heat Cp_H2O",
             "unit": "J/kg/K",
             "placeholder": "1860",
             "input_type": "number",
-            "field_name": "water_vapour_specific_heat_cp_h2o"
+            "field_name": "water_vapour_specific_heat_cp_h2o",
+            "location": "constant/thermophysicalProperties > H2O > thermodynamics > Cp"
           },
           {
             "name": "Solid proxy density \u03c1_ash (WMP dry particle)",
             "unit": "kg/m\u00b3",
             "placeholder": "1290",
             "input_type": "number",
-            "field_name": "solid_proxy_density_ash_wmp_dry_particle"
+            "field_name": "solid_proxy_density_ash_wmp_dry_particle",
+            "location": "constant/thermophysicalProperties > ash > rho"
           },
           {
             "name": "Solid proxy Cp_ash (dry milk solid)",
             "unit": "J/kg/K",
             "placeholder": "1570",
             "input_type": "number",
-            "field_name": "solid_proxy_cp_ash_dry_milk_solid"
+            "field_name": "solid_proxy_cp_ash_dry_milk_solid",
+            "location": "constant/thermophysicalProperties > ash > Cp"
           },
           {
             "name": "Solid proxy \u03ba_ash (single-particle conductivity)",
             "unit": "W/m/K",
             "placeholder": "0.125",
             "input_type": "number",
-            "field_name": "solid_proxy_ash_single_particle_conductivity"
+            "field_name": "solid_proxy_ash_single_particle_conductivity",
+            "location": "constant/thermophysicalProperties > ash > kappa"
           }
         ]
       }
@@ -478,28 +555,32 @@
             "unit": "\u2014",
             "placeholder": "RanzMarshall  (BirdCorrection = true)",
             "input_type": "text",
-            "field_name": "droplet_gas_heat_transfer_model"
+            "field_name": "droplet_gas_heat_transfer_model",
+            "location": "constant/reactingCloud1Properties > heatTransferModel"
           },
           {
             "name": "Turbulent dispersion model",
             "unit": "\u2014",
             "placeholder": "none  (disabled for numerical stability)",
             "input_type": "text",
-            "field_name": "turbulent_dispersion_model"
+            "field_name": "turbulent_dispersion_model",
+            "location": "constant/reactingCloud1Properties > dispersionModel"
           },
           {
             "name": "Drag model",
             "unit": "\u2014",
             "placeholder": "sphereDrag + gravity",
             "input_type": "text",
-            "field_name": "drag_model"
+            "field_name": "drag_model",
+            "location": "constant/reactingCloud1Properties > particleForces"
           },
           {
             "name": "Gas-phase turbulence model",
             "unit": "\u2014",
             "placeholder": "k-\u03c9 SST",
             "input_type": "text",
-            "field_name": "gas_phase_turbulence_model"
+            "field_name": "gas_phase_turbulence_model",
+            "location": "constant/turbulenceProperties + fvSolution"
           }
         ]
       }
@@ -519,70 +600,80 @@
             "unit": "\u2014",
             "placeholder": "1",
             "input_type": "number",
-            "field_name": "maximum_courant_number_maxco"
+            "field_name": "maximum_courant_number_maxco",
+            "location": "system/controlDict > maxCo"
           },
           {
             "name": "Phase-fraction Courant number maxAlphaCo",
             "unit": "\u2014",
             "placeholder": "0.5",
             "input_type": "number",
-            "field_name": "phase_fraction_courant_number_maxalphaco"
+            "field_name": "phase_fraction_courant_number_maxalphaco",
+            "location": "system/controlDict > maxAlphaCo"
           },
           {
             "name": "Acoustic Courant number maxAcousticCo",
             "unit": "\u2014",
             "placeholder": "0.5",
             "input_type": "number",
-            "field_name": "acoustic_courant_number_maxacousticco"
+            "field_name": "acoustic_courant_number_maxacousticco",
+            "location": "system/controlDict > maxAcousticCo"
           },
           {
             "name": "Maximum time step maxDeltaT",
             "unit": "s",
             "placeholder": "1 \u00d7 10\u207b\u00b3",
             "input_type": "number",
-            "field_name": "maximum_time_step_maxdeltat"
+            "field_name": "maximum_time_step_maxdeltat",
+            "location": "system/controlDict > maxDeltaT"
           },
           {
             "name": "Velocity limiter \u2014 maximum gas velocity",
             "unit": "m/s",
             "placeholder": "80",
             "input_type": "number",
-            "field_name": "velocity_limiter_maximum_gas_velocity"
+            "field_name": "velocity_limiter_maximum_gas_velocity",
+            "location": "system/controlDict > limitVelocity > max"
           },
           {
             "name": "PIMPLE outer correctors nOuterCorrectors",
             "unit": "\u2014",
             "placeholder": "3",
             "input_type": "number",
-            "field_name": "pimple_outer_correctors_noutercorrectors"
+            "field_name": "pimple_outer_correctors_noutercorrectors",
+            "location": "system/fvSolution > PIMPLE > nOuterCorrectors"
           },
           {
             "name": "Residual control \u2014 enabled",
             "unit": "\u2014",
             "placeholder": "p_rgh \u2264 1\u00d710\u207b\u2074, U \u2264 1\u00d710\u207b\u2075, k|\u03c9|h \u2264 1\u00d710\u207b\u2075",
             "input_type": "text",
-            "field_name": "residual_control_enabled"
+            "field_name": "residual_control_enabled",
+            "location": "system/fvSolution > PIMPLE > residualControl > tolerance"
           },
           {
             "name": "Minimum temperature limiter TMin",
             "unit": "K",
             "placeholder": "250",
             "input_type": "number",
-            "field_name": "minimum_temperature_limiter_tmin"
+            "field_name": "minimum_temperature_limiter_tmin",
+            "location": "system/fvSolution > PIMPLE > TMin"
           },
           {
             "name": "Particle sub-cycle count nCoSubCycles",
             "unit": "\u2014",
             "placeholder": "15",
             "input_type": "number",
-            "field_name": "particle_sub_cycle_count_ncosubcycles"
+            "field_name": "particle_sub_cycle_count_ncosubcycles",
+            "location": "constant/reactingCloud1Properties > solution > nCoSubCycles"
           },
           {
             "name": "Parallel decomposition \u2014 number of subdomains",
             "unit": "\u2014",
             "placeholder": "16  (scotch method)",
             "input_type": "text",
-            "field_name": "parallel_decomposition_number_of_subdomains"
+            "field_name": "parallel_decomposition_number_of_subdomains",
+            "location": "system/decomposeParDict > numberOfSubdomains"
           }
         ]
       }
@@ -602,35 +693,40 @@
             "unit": "\u00b0C",
             "placeholder": "Target: 95 \u00b0C  (368 K)",
             "input_type": "text",
-            "field_name": "outlet_air_temperature_toc_validation_target"
+            "field_name": "outlet_air_temperature_toc_validation_target",
+            "location": "postProcessing/outlet_* > areaAverage(T)"
           },
           {
             "name": "Chamber pressure \u2014 validation",
             "unit": "mbar",
             "placeholder": "\u22120.3  (gauge)",
             "input_type": "text",
-            "field_name": "chamber_pressure_validation"
+            "field_name": "chamber_pressure_validation",
+            "location": "postProcessing/outlet_* > p"
           },
           {
             "name": "EFB inlet temperature \u2014 indirect validation",
             "unit": "\u00b0C",
             "placeholder": "55\u201365 \u00b0C  (sensor range)",
             "input_type": "number",
-            "field_name": "efb_inlet_temperature_indirect_validation"
+            "field_name": "efb_inlet_temperature_indirect_validation",
+            "location": "Lagrangian T at outletMilk4"
           },
           {
             "name": "EFB outlet temperature \u2014 indirect validation",
             "unit": "\u00b0C",
             "placeholder": "35\u201355 \u00b0C  (sensor range)",
             "input_type": "number",
-            "field_name": "efb_outlet_temperature_indirect_validation"
+            "field_name": "efb_outlet_temperature_indirect_validation",
+            "location": "(not modelled in chamber simulation)"
           },
           {
             "name": "Powder moisture content at chamber outlet \u2014 MC validation",
             "unit": "% w.b.",
             "placeholder": "~15\u201330 %  (estimated at chamber outlet)",
             "input_type": "text",
-            "field_name": "powder_moisture_content_at_chamber_outlet_mc_validation"
+            "field_name": "powder_moisture_content_at_chamber_outlet_mc_validation",
+            "location": "Lagrangian Y_liquid / (Y_liquid + Y_solid)"
           }
         ]
       }
