@@ -34,6 +34,11 @@
                     <span>{{ label }}</span>
                 </a>
             {% endfor %}
+
+            <a class="module-icon logout-btn" href="{{ url_for('logout') }}" title="Logout">
+                <i class="bi bi-box-arrow-left"></i>
+                <span>Logout</span>
+            </a>
         </aside>
 
         <div id="workspace">
@@ -54,10 +59,10 @@
                     </button>
                     <div class="user-chip">
                         <div class="user-info">
-                            <span class="user-name">Process Engineer</span>
+                            <span class="user-name">{{ session.get('username', 'Process Engineer') }}</span>
                             <span class="user-status"><i class="bi bi-circle-fill"></i> Online</span>
                         </div>
-                        <div class="user-avatar">PE</div>
+                        <div class="user-avatar">CFD</div>
                     </div>
                 </div>
             </header>
