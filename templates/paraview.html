@@ -1,44 +1,171 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="dashboard-wrapper">
+{% set default_surface = case.default_surface %}
+<div class="dashboard-wrapper paraview-page">
     <div class="hero-strip">
         <div class="section-head mb-0">
             <div>
                 <h2 class="hero-title">Paraview Visualization</h2>
-                <p class="hero-copy">3D visualization slot for solver results, field rendering, and inspection of the spray domain.</p>
+                <p class="hero-copy">{{ case.foam_name }}</p>
             </div>
-            <span class="pill-note"><i class="bi bi-display"></i> Viewer</span>
+            <span class="pill-note">
+                <i class="bi bi-box"></i>
+                {% if case.foam_exists %}OpenFOAM case{% else %}Missing case{% endif %}
+            </span>
         </div>
     </div>
 
-    <div class="card-custom">
-        <div class="row g-4">
-            <div class="col-lg-8">
-                <div class="empty-state chart-area">
-                    <div>
-                        <i class="bi bi-box-seam fs-1 mb-3 d-block"></i>
-                        <div class="fw-bold mb-1">Paraview viewer placeholder</div>
-                        <div class="small">Sediakan integrasi render di tahap berikutnya.</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="field-card h-100">
-                    <div class="section-head">
-                        <div>
-                            <h3 class="section-title">Render Notes</h3>
-                            <p class="section-subtitle">Quick context for result inspection.</p>
-                        </div>
-                    </div>
-                    <ul class="list-unstyled mb-0 text-muted small d-grid gap-2">
-                        <li><i class="bi bi-check2 me-2 text-success"></i>Slice and contour overlays</li>
-                        <li><i class="bi bi-check2 me-2 text-success"></i>Particle tracks and spray dispersion</li>
-                        <li><i class="bi bi-check2 me-2 text-success"></i>Boundary and wall temperature fields</li>
-                    </ul>
-                </div>
-            </div>
+    <div class="paraview-metrics">
+        <div class="metric-tile">
+            <span>Source</span>
+            <strong>{{ case.foam_name }}</strong>
+            <em>{{ case.foam_size }}</em>
+        </div>
+        <div class="metric-tile">
+            <span>Latest Time</span>
+            <strong>{{ case.latest_time }}</strong>
+            <em>{{ case.time_directories|length }} time folders</em>
+        </div>
+        <div class="metric-tile">
+            <span>Fields</span>
+            <strong>{{ case.latest_fields|length }}</strong>
+            <em>from latest time</em>
+        </div>
+        <div class="metric-tile">
+            <span>Processors</span>
+            <strong>{{ case.processors|length }}</strong>
+            <em>decomposed case</em>
         </div>
     </div>
+
+    <section class="paraview-workspace" data-paraview-viewer>
+        <div class="paraview-toolbar">
+            <div>
+                <h3 class="section-title">3D Surface Preview</h3>
+                <p class="section-subtitle">
+                    {% if default_surface %}
+                        {{ default_surface.label }} from {{ default_surface.time }}
+                    {% else %}
+                        No VTP surface found
+                    {% endif %}
+                </p>
+            </div>
+            <div class="paraview-actions">
+                <button class="btn btn-outline-primary icon-btn" type="button" data-copy-value="{{ case.foam_path }}" title="Copy .foam path">
+                    <i class="bi bi-copy"></i>
+                </button>
+                <form method="post" action="{{ url_for('dashboard.open_paraview_case') }}">
+                    <button class="btn btn-primary" type="submit" {% if not case.foam_exists %}disabled{% endif %}>
+                        <i class="bi bi-play-fill me-1"></i>Open .foam
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if case.surfaces %}
+            <div class="surface-switcher" aria-label="Surface selector">
+                {% for surface in case.surfaces %}
+                    <button
+                        class="btn btn-outline-primary surface-button {% if default_surface and surface.id == default_surface.id %}active{% endif %}"
+                        type="button"
+                        data-surface-url="{{ url_for('dashboard.paraview_surface', surface_id=surface.id) }}"
+                        data-surface-name="{{ surface.label }}"
+                        title="{{ surface.name }}"
+                    >
+                        <i class="bi bi-layers"></i>
+                        <span>{{ surface.label }}</span>
+                        <small>{{ surface.size }}</small>
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="paraview-scene-frame">
+            {% if default_surface %}
+                <div class="paraview-scene" data-paraview-scene aria-label="3D OpenFOAM surface preview"></div>
+                <div class="paraview-status" data-paraview-status>Preparing viewer...</div>
+            {% else %}
+                <div class="empty-state chart-area">
+                    <div>
+                        <i class="bi bi-exclamation-circle fs-1 mb-3 d-block"></i>
+                        <div class="fw-bold mb-1">Surface data belum ada</div>
+                        <div class="small">Generate output VTP dari case OpenFOAM untuk preview 3D.</div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <div class="paraview-details">
+        <section class="paraview-detail-panel">
+            <div class="section-head">
+                <div>
+                    <h3 class="section-title">Case Path</h3>
+                    <p class="section-subtitle">{{ case.case_root_name }}</p>
+                </div>
+                {% if case.paraview_command %}
+                    <span class="pill-note"><i class="bi bi-check2-circle"></i> ParaView</span>
+                {% else %}
+                    <span class="pill-note"><i class="bi bi-display"></i> Windows app</span>
+                {% endif %}
+            </div>
+            <div class="path-readout">
+                <code>{{ case.foam_path }}</code>
+            </div>
+        </section>
+
+        <section class="paraview-detail-panel">
+            <div class="section-head">
+                <div>
+                    <h3 class="section-title">Surface Data</h3>
+                    <p class="section-subtitle">{{ case.surfaces|length }} VTP assets</p>
+                </div>
+            </div>
+            <div class="surface-list">
+                {% for surface in case.surfaces %}
+                    <div class="surface-row">
+                        <span>{{ surface.label }}</span>
+                        <strong>{{ surface.points_label }} pts</strong>
+                        <em>{{ surface.polys_label }} polys</em>
+                    </div>
+                {% else %}
+                    <div class="surface-row">
+                        <span>No surface files</span>
+                        <strong>-</strong>
+                        <em>-</em>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="paraview-detail-panel">
+            <div class="section-head">
+                <div>
+                    <h3 class="section-title">Fields</h3>
+                    <p class="section-subtitle">Latest available timestep</p>
+                </div>
+            </div>
+            <div class="field-chip-grid">
+                {% for field in case.latest_fields %}
+                    <span>{{ field }}</span>
+                {% else %}
+                    <span>No fields</span>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+}
+</script>
+<script type="module" src="{{ url_for('static', filename='js/paraview_viewer.js') }}"></script>
 {% endblock %}

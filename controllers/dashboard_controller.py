@@ -1,6 +1,7 @@
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask import abort, Blueprint, flash, jsonify, redirect, render_template, request, send_file, url_for
 
 from models.parameter_model import load_parameter_groups
+from models.paraview_model import get_paraview_case, get_surface_path, launch_case_file
 from models.terminal_runner import get_command_state, start_command
 
 
@@ -98,7 +99,24 @@ def paraview():
     return render_template(
         "paraview.html",
         title="Paraview",
+        case=get_paraview_case(),
     )
+
+
+@dashboard_bp.post("/paraview/open")
+def open_paraview_case():
+    success, message = launch_case_file()
+    flash(message, "success" if success else "warning")
+    return redirect(url_for("dashboard.paraview"))
+
+
+@dashboard_bp.get("/paraview/surface/<surface_id>")
+def paraview_surface(surface_id):
+    surface_path = get_surface_path(surface_id)
+    if surface_path is None:
+        abort(404)
+
+    return send_file(surface_path, mimetype="application/xml", conditional=True, max_age=0)
 
 
 @dashboard_bp.route("/graph")
