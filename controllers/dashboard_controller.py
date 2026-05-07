@@ -14,6 +14,55 @@ APP_ROOT = Path(__file__).resolve().parents[1]
 GRAFIK_OUTPUT_PATH = APP_ROOT / "grafik" / "output"
 GRAFIK_SCRIPT = APP_ROOT / "grafik" / "2plot_residuals.py"
 GRAFIK_LOG_RUN = APP_ROOT.parent / "sprayDryer-6.0.0-onProduct-Trial02" / "log.run"
+DECOMPOSE_PAR_DICT = APP_ROOT.parent / "sprayDryer-6.0.0-onProduct-Trial02" / "system" / "decomposeParDict"
+
+
+def _load_number_of_subdomains(default=16):
+    if not DECOMPOSE_PAR_DICT.exists():
+        return default
+
+    try:
+        for line in DECOMPOSE_PAR_DICT.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if stripped.startswith("numberOfSubdomains"):
+                parts = stripped.rstrip(";").split()
+                if len(parts) >= 2:
+                    return int(parts[1])
+    except (OSError, ValueError):
+        pass
+
+    return default
+
+
+def _save_number_of_subdomains(value):
+    if not DECOMPOSE_PAR_DICT.exists():
+        return False
+
+    try:
+        text = DECOMPOSE_PAR_DICT.read_text(encoding="utf-8").splitlines()
+        updated = False
+        new_lines = []
+
+        for line in text:
+            stripped = line.strip()
+            if stripped.startswith("numberOfSubdomains"):
+                indent = line[: len(line) - len(line.lstrip())]
+                new_lines.append(f"{indent}numberOfSubdomains {value};")
+                updated = True
+            else:
+                new_lines.append(line)
+
+        if not updated:
+            insert_idx = next(
+                (idx for idx, line in enumerate(new_lines) if line.strip().startswith("method")),
+                len(new_lines),
+            )
+            new_lines.insert(insert_idx, f"numberOfSubdomains {value};")
+
+        DECOMPOSE_PAR_DICT.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+        return True
+    except OSError:
+        return False
 
 
 @dashboard_bp.route("/")
@@ -53,7 +102,7 @@ def input_parameter():
 
 @dashboard_bp.route("/set-processor", methods=["GET", "POST"])
 def set_processor():
-    processor_count = 16
+    processor_count = _load_number_of_subdomains()
     if request.method == "POST":
         try:
             processor_count = int(request.form.get("processor_count", processor_count))
@@ -61,7 +110,13 @@ def set_processor():
             processor_count = 16
 
         processor_count = max(1, min(processor_count, 16))
-        flash(f"Jumlah processor diset ke {processor_count}.", "success")
+        if _save_number_of_subdomains(processor_count):
+            flash(f"Jumlah processor diset ke {processor_count}. file decomposeParDict diperbarui.", "success")
+        else:
+            flash(
+                "Gagal menyimpan jumlah processor ke decomposeParDict. Pastikan file tersedia dan dapat ditulis.",
+                "danger",
+            )
 
     return render_template(
         "set_processor.html",
