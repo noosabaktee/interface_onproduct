@@ -7,12 +7,14 @@
             <div class="d-flex justify-content-between align-items-end mb-3">
                 <div>
                     <h5 class="fw-bold text-main m-0">{{ progress_title }}</h5>
-                    <p class="small text-muted m-0 mt-1">{{ status_label }}</p>
+                    <p class="small text-muted m-0 mt-1" id="status-label">{{ status_label }}</p>
                 </div>
-                <h3 class="fw-bold text-primary m-0">{{ progress_value }}%</h3>
+                <h3 class="fw-bold text-primary m-0" id="progress-value">{{ progress_value }}%</h3>
             </div>
-            <div class="progress" role="progressbar" aria-valuenow="{{ progress_value }}" aria-valuemin="0" aria-valuemax="100" style="height: 12px; border-radius: 6px; background-color: var(--border-color);">
-                <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" style="width: {{ progress_value }}%"></div>
+            <div class="progress" role="progressbar" aria-valuenow="{{ progress_value }}" aria-valuemin="0"
+                aria-valuemax="100" style="height: 12px; border-radius: 6px; background-color: var(--border-color);">
+                <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="progress-bar"
+                    style="width: {{ progress_value }}%"></div>
             </div>
         </div>
     </div>
@@ -23,12 +25,123 @@
                 <h6 class="fw-bold text-main m-0">
                     <i class="bi bi-terminal-fill text-primary me-2 fs-5"></i> {{ title }} Terminal Log
                 </h6>
-                <button class="btn btn-outline-primary shadow-sm" type="button" data-terminal-start>
-                    <i class="bi bi-play-fill me-1"></i> {{ action_label }}
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary shadow-sm" type="button" id="start-btn" data-terminal-start>
+                        <i class="bi bi-play-fill me-1"></i> {{ action_label }}
+                    </button>
+                    <button class="btn btn-outline-danger shadow-sm" type="button" id="cancel-btn" data-terminal-cancel
+                        style="display: none;">
+                        <i class="bi bi-stop-fill me-1"></i> Cancel {{ title }}
+                    </button>
+                    <button class="btn btn-outline-secondary shadow-sm" type="button" id="download-btn"
+                        style="display: none;">
+                        <i class="bi bi-download me-1"></i> Download Logs
+                    </button>
+                </div>
             </div>
-            <pre class="terminal flex-grow-1 mb-0" data-terminal-output>Menunggu command dijalankan...</pre>
+            <pre class="terminal flex-grow-1 mb-0" id="terminal-output"
+                data-terminal-output>Menunggu command dijalankan...</pre>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const taskKey = '{{ task_key }}';
+        const startBtn = document.getElementById('start-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const terminalOutput = document.getElementById('terminal-output');
+        const progressBar = document.getElementById('progress-bar');
+        const progressValue = document.getElementById('progress-value');
+        const statusLabel = document.getElementById('status-label');
+
+        let pollingInterval;
+
+        function updateUI(state) {
+            if (state.running) {
+                startBtn.disabled = true;
+                cancelBtn.style.display = 'inline-block';
+                statusLabel.textContent = 'Process is running...';
+            } else {
+                startBtn.disabled = false;
+                cancelBtn.style.display = 'none';
+                if (state.returncode === 0) {
+                    statusLabel.textContent = 'Process completed successfully.';
+                } else if (state.returncode !== null) {
+                    statusLabel.textContent = 'Process failed or cancelled.';
+                } else {
+                    statusLabel.textContent = '{{ status_label }}';
+                }
+            }
+
+            if (state.progress !== undefined) {
+                progressBar.style.width = state.progress + '%';
+                progressValue.textContent = state.progress + '%';
+            }
+
+            if (state.lines && state.lines.length > 0) {
+                terminalOutput.textContent = state.lines.join('\n');
+                terminalOutput.scrollTop = terminalOutput.scrollHeight;
+                downloadBtn.style.display = 'inline-block';
+            } else {
+                downloadBtn.style.display = 'none';
+            }
+
+            if (state.error) {
+                alert(state.error);
+            }
+        }
+
+        function pollState() {
+            const otherTask = taskKey === 'meshing' ? 'solver' : 'meshing';
+            Promise.all([
+                fetch(`/terminal/${taskKey}/logs`).then(r => r.json()),
+                fetch(`/terminal/${otherTask}/logs`).then(r => r.json())
+            ])
+                .then(([state, otherState]) => {
+                    updateUI(state);
+                    if (otherState.running) {
+                        startBtn.disabled = true;
+                        startBtn.textContent = `Cannot start while ${otherTask} is running`;
+                    } else {
+                        startBtn.disabled = state.running;
+                        startBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i> {{ action_label }}';
+                    }
+                })
+                .catch(console.error);
+        }
+
+        startBtn.addEventListener('click', function () {
+            fetch(`/terminal/${taskKey}/start`, { method: 'POST' })
+                .then(response => response.json())
+                .then(updateUI)
+                .then(() => {
+                    pollingInterval = setInterval(pollState, 1000);
+                })
+                .catch(console.error);
+        });
+
+        cancelBtn.addEventListener('click', function () {
+            fetch(`/terminal/${taskKey}/cancel`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                    } else if (data.error) {
+                        alert(data.error);
+                    }
+                    pollState();
+                })
+                .catch(console.error);
+        });
+
+        downloadBtn.addEventListener('click', function () {
+            window.location.href = `/terminal/${taskKey}/download-logs`;
+        });
+
+        // Initial poll
+        pollState();
+    });
+</script>
 {% endblock %}

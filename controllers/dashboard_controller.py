@@ -1,12 +1,13 @@
 from pathlib import Path
 import subprocess
 import sys
+import io
 
 from flask import abort, Blueprint, flash, jsonify, redirect, render_template, request, send_file, url_for
 
 from models.parameter_model import load_parameter_groups, save_parameter_values, IGNORED_FIELD_NAMES
 from models.paraview_model import get_internal_mesh_path, get_paraview_case, get_surface_path, launch_case_file
-from models.terminal_runner import get_command_state, start_command
+from models.terminal_runner import cancel_command, get_command_state, start_command
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -160,12 +161,45 @@ def start_terminal(task_key):
     return jsonify(state)
 
 
+@dashboard_bp.post("/terminal/<task_key>/cancel")
+def cancel_terminal(task_key):
+    if task_key not in {"meshing", "solver"}:
+        return jsonify({"error": "Task tidak dikenal."}), 404
+
+    if cancel_command(task_key):
+        return jsonify({"message": f"{task_key.capitalize()} cancelled."})
+    else:
+        return jsonify({"error": f"{task_key.capitalize()} is not running."}), 400
+
+
 @dashboard_bp.get("/terminal/<task_key>/logs")
 def terminal_logs(task_key):
     if task_key not in {"meshing", "solver"}:
         return jsonify({"error": "Task tidak dikenal."}), 404
 
     return jsonify(get_command_state(task_key))
+
+
+@dashboard_bp.get("/terminal/<task_key>/download-logs")
+def download_terminal_logs(task_key):
+    if task_key not in {"meshing", "solver"}:
+        abort(404)
+
+    state = get_command_state(task_key)
+    if not state["lines"]:
+        abort(404)
+
+    log_content = "\n".join(state["lines"])
+    buffer = io.BytesIO(log_content.encode("utf-8"))
+    buffer.seek(0)
+
+    filename = f"{task_key}_log.txt"
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="text/plain",
+    )
 
 
 @dashboard_bp.route("/paraview")
