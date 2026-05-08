@@ -353,7 +353,7 @@
             "placeholder": "table: 0 s \u2192 0, 0.05 s \u2192 0.25, 0.5 s \u2192 1.0",
             "input_type": "text",
             "field_name": "flow_rate_ramp_up_profile",
-            "location": "constant/reactingCloud1Properties > flowRateProfile"
+            "location": "constant/reactingCloud1Properties > flowRateProfile > values"
           }
         ]
       },
