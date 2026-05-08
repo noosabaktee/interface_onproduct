@@ -89,6 +89,72 @@
                     <small>{{ internal_mesh.faces_label }} faces</small>
                 </button>
             </div>
+
+            <div class="paraview-control-strip" aria-label="Viewer controls">
+                <div class="view-controls" aria-label="Camera views">
+                    <button type="button" class="viewer-tool-button" data-view-direction="left" title="Left view">
+                        <i class="bi bi-arrow-left"></i>
+                        <span>Left</span>
+                    </button>
+                    <button type="button" class="viewer-tool-button" data-view-direction="top" title="Top view">
+                        <i class="bi bi-arrow-up"></i>
+                        <span>Top</span>
+                    </button>
+                    <button type="button" class="viewer-tool-button" data-view-direction="right" title="Right view">
+                        <i class="bi bi-arrow-right"></i>
+                        <span>Right</span>
+                    </button>
+                    <button type="button" class="viewer-tool-button" data-view-direction="bottom" title="Bottom view">
+                        <i class="bi bi-arrow-down"></i>
+                        <span>Bottom</span>
+                    </button>
+                    <button type="button" class="viewer-tool-button" data-view-direction="front" title="Front view">
+                        <i class="bi bi-box-arrow-in-up"></i>
+                        <span>Front</span>
+                    </button>
+                    <button type="button" class="viewer-tool-button" data-view-direction="back" title="Back view">
+                        <i class="bi bi-box-arrow-in-down"></i>
+                        <span>Back</span>
+                    </button>
+                </div>
+
+                <label class="opacity-control">
+                    <span>Opacity</span>
+                    <input type="range" min="15" max="100" value="100" step="1" data-opacity-slider>
+                    <strong data-opacity-value>100%</strong>
+                </label>
+
+                <div class="coloring-control" data-coloring-control>
+                    <span>Coloring</span>
+                    <button type="button" class="coloring-trigger" data-coloring-trigger aria-haspopup="listbox" aria-expanded="false">
+                        <span class="coloring-icon solid"></span>
+                        <strong data-coloring-label>Solid Color</strong>
+                        <i class="bi bi-caret-down-fill"></i>
+                    </button>
+                    <div class="coloring-menu" data-coloring-menu role="listbox">
+                        <button type="button" class="coloring-option active" data-color-mode="solid" data-color-label="Solid Color" role="option" aria-selected="true">
+                            <span class="coloring-icon solid"></span>
+                            <span>Solid Color</span>
+                        </button>
+                        {% for field in case.latest_fields %}
+                            <button type="button" class="coloring-option" data-color-mode="field" data-color-field="{{ field }}" data-color-label="{{ field }}" role="option" aria-selected="false">
+                                <span class="coloring-icon point"></span>
+                                <span>{{ field }}</span>
+                            </button>
+                        {% endfor %}
+                        {% for field in case.latest_fields %}
+                            <button type="button" class="coloring-option" data-color-mode="surface-field" data-color-field="{{ field }}" data-color-label="{{ field }}" role="option" aria-selected="false">
+                                <span class="coloring-icon mesh"></span>
+                                <span>{{ field }}</span>
+                            </button>
+                        {% endfor %}
+                        <button type="button" class="coloring-option" data-color-mode="block" data-color-label="vtkBlockColors" role="option" aria-selected="false">
+                            <span class="coloring-icon block"></span>
+                            <span>vtkBlockColors</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         {% endif %}
 
         <div class="paraview-scene-frame">

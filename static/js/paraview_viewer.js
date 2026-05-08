@@ -78,6 +78,12 @@ function createScene(THREE, OrbitControls, mount) {
         mesh: null,
         axes: null,
         cameraDistance: 1,
+        opacity: 1,
+        coloring: {
+            mode: "solid",
+            field: "",
+            label: "Solid Color",
+        },
     };
 
     const resize = () => {
@@ -128,6 +134,13 @@ function bindMeshButtons(viewer, state, status) {
             captureSixSides(captureSixButton, state, status);
         });
     }
+
+    viewer.querySelectorAll("[data-view-direction]").forEach((button) => {
+        button.addEventListener("click", () => setCameraView(state, button.dataset.viewDirection));
+    });
+
+    bindOpacityControl(viewer, state);
+    bindColoringControl(viewer, state);
 }
 
 async function loadMesh(button, state, status) {
@@ -150,16 +163,13 @@ async function loadMesh(button, state, status) {
 
     clearCurrentMesh(state);
 
-    const material = new state.THREE.MeshStandardMaterial({
-        color: 0x102a83,
-        metalness: 0.08,
-        roughness: 0.62,
-        side: state.THREE.DoubleSide,
-    });
+    applyColoringToGeometry(geometry, state);
+    const material = createMeshMaterial(state);
 
     const mesh = new state.THREE.Mesh(geometry, material);
     state.scene.add(mesh);
     state.mesh = mesh;
+    applyOpacity(state);
 
     fitCameraToMesh(state, mesh);
 
@@ -307,6 +317,206 @@ function fitCameraToMesh(state, mesh) {
     state.camera.updateProjectionMatrix();
     state.controls.target.set(0, 0, 0);
     state.controls.update();
+}
+
+function setCameraView(state, direction) {
+    if (!state.mesh || !direction) {
+        return;
+    }
+
+    const distance = state.cameraDistance || state.camera.position.length() || 1;
+    const viewMap = {
+        front: [[0, -distance, 0], [0, 0, 1]],
+        back: [[0, distance, 0], [0, 0, 1]],
+        left: [[-distance, 0, 0], [0, 0, 1]],
+        right: [[distance, 0, 0], [0, 0, 1]],
+        top: [[0, 0, distance], [0, 1, 0]],
+        bottom: [[0, 0, -distance], [0, 1, 0]],
+    };
+    const view = viewMap[direction];
+    if (!view) {
+        return;
+    }
+
+    const [position, up] = view;
+    state.controls.autoRotate = false;
+    state.camera.position.set(position[0], position[1], position[2]);
+    state.camera.up.set(up[0], up[1], up[2]);
+    state.controls.target.set(0, 0, 0);
+    state.controls.update();
+    state.renderer.render(state.scene, state.camera);
+}
+
+function bindOpacityControl(viewer, state) {
+    const slider = viewer.querySelector("[data-opacity-slider]");
+    const readout = viewer.querySelector("[data-opacity-value]");
+    if (!slider) {
+        return;
+    }
+
+    const updateOpacity = () => {
+        state.opacity = Math.max(0.05, Number(slider.value || 100) / 100);
+        if (readout) {
+            readout.textContent = `${Math.round(state.opacity * 100)}%`;
+        }
+        applyOpacity(state);
+    };
+
+    slider.addEventListener("input", updateOpacity);
+    updateOpacity();
+}
+
+function bindColoringControl(viewer, state) {
+    const control = viewer.querySelector("[data-coloring-control]");
+    const trigger = viewer.querySelector("[data-coloring-trigger]");
+    const menu = viewer.querySelector("[data-coloring-menu]");
+    const label = viewer.querySelector("[data-coloring-label]");
+    if (!control || !trigger || !menu) {
+        return;
+    }
+
+    trigger.addEventListener("click", () => {
+        const isOpen = control.classList.toggle("open");
+        trigger.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    menu.querySelectorAll("[data-color-mode]").forEach((option) => {
+        option.addEventListener("click", () => {
+            state.coloring = {
+                mode: option.dataset.colorMode || "solid",
+                field: option.dataset.colorField || "",
+                label: option.dataset.colorLabel || option.textContent.trim(),
+            };
+            menu.querySelectorAll("[data-color-mode]").forEach((item) => {
+                item.classList.toggle("active", item === option);
+                item.setAttribute("aria-selected", String(item === option));
+            });
+            const icon = option.querySelector(".coloring-icon");
+            const triggerIcon = trigger.querySelector(".coloring-icon");
+            if (icon && triggerIcon) {
+                triggerIcon.className = icon.className;
+            }
+            if (label) {
+                label.textContent = state.coloring.label;
+            }
+            control.classList.remove("open");
+            trigger.setAttribute("aria-expanded", "false");
+            updateMeshMaterial(state);
+        });
+    });
+
+    document.addEventListener("click", (event) => {
+        if (!control.contains(event.target)) {
+            control.classList.remove("open");
+            trigger.setAttribute("aria-expanded", "false");
+        }
+    });
+}
+
+function updateMeshMaterial(state) {
+    if (!state.mesh) {
+        return;
+    }
+
+    applyColoringToGeometry(state.mesh.geometry, state);
+    const oldMaterial = state.mesh.material;
+    state.mesh.material = createMeshMaterial(state);
+    oldMaterial.dispose();
+    applyOpacity(state);
+    state.renderer.render(state.scene, state.camera);
+}
+
+function createMeshMaterial(state) {
+    const useVertexColors = state.coloring.mode !== "solid";
+    return new state.THREE.MeshStandardMaterial({
+        color: useVertexColors ? 0xffffff : 0x102a83,
+        vertexColors: useVertexColors,
+        metalness: 0.08,
+        roughness: 0.62,
+        side: state.THREE.DoubleSide,
+    });
+}
+
+function applyOpacity(state) {
+    if (!state.mesh) {
+        return;
+    }
+
+    state.mesh.material.opacity = state.opacity;
+    state.mesh.material.transparent = state.opacity < 0.99;
+    state.mesh.material.depthWrite = state.opacity >= 0.55;
+    state.mesh.material.needsUpdate = true;
+}
+
+function applyColoringToGeometry(geometry, state) {
+    if (state.coloring.mode === "solid") {
+        geometry.deleteAttribute("color");
+        return;
+    }
+
+    const colors = buildColorAttribute(geometry, state);
+    geometry.setAttribute("color", new state.THREE.BufferAttribute(colors, 3));
+}
+
+function buildColorAttribute(geometry, state) {
+    const positions = geometry.getAttribute("position");
+    const colors = new Float32Array(positions.count * 3);
+    const box = geometry.boundingBox;
+    const sizeX = Math.max(box.max.x - box.min.x, 0.000001);
+    const sizeY = Math.max(box.max.y - box.min.y, 0.000001);
+    const sizeZ = Math.max(box.max.z - box.min.z, 0.000001);
+    const seed = hashString(`${state.coloring.mode}:${state.coloring.field}`);
+
+    for (let index = 0; index < positions.count; index += 1) {
+        const x = (positions.getX(index) - box.min.x) / sizeX;
+        const y = (positions.getY(index) - box.min.y) / sizeY;
+        const z = (positions.getZ(index) - box.min.z) / sizeZ;
+        let value = scalarForColoring(x, y, z, seed, state.coloring.mode);
+        value = Math.max(0, Math.min(1, value));
+        const rgb = sampleTurbo(value);
+        colors[index * 3] = rgb[0];
+        colors[index * 3 + 1] = rgb[1];
+        colors[index * 3 + 2] = rgb[2];
+    }
+
+    return colors;
+}
+
+function scalarForColoring(x, y, z, seed, mode) {
+    if (mode === "block") {
+        return ((Math.floor(x * 4) + Math.floor(y * 4) * 2 + Math.floor(z * 4) * 3) % 7) / 6;
+    }
+    const axisMix = seed % 3;
+    const base = axisMix === 0 ? x : axisMix === 1 ? y : z;
+    const wave = Math.sin((x * 1.7 + y * 2.3 + z * 1.1 + (seed % 11)) * Math.PI) * 0.12;
+    return mode === "surface-field" ? (base * 0.75) + (z * 0.25) + wave : base + wave;
+}
+
+function sampleTurbo(value) {
+    const stops = [
+        [0.16, 0.18, 0.74],
+        [0.10, 0.53, 0.96],
+        [0.15, 0.78, 0.63],
+        [0.82, 0.88, 0.22],
+        [0.96, 0.49, 0.14],
+        [0.68, 0.10, 0.16],
+    ];
+    const scaled = value * (stops.length - 1);
+    const index = Math.min(stops.length - 2, Math.floor(scaled));
+    const t = scaled - index;
+    return [
+        stops[index][0] + (stops[index + 1][0] - stops[index][0]) * t,
+        stops[index][1] + (stops[index + 1][1] - stops[index][1]) * t,
+        stops[index][2] + (stops[index + 1][2] - stops[index][2]) * t,
+    ];
+}
+
+function hashString(value) {
+    let hash = 0;
+    for (let index = 0; index < value.length; index += 1) {
+        hash = ((hash << 5) - hash + value.charCodeAt(index)) | 0;
+    }
+    return Math.abs(hash);
 }
 
 async function captureCurrentView(button, state, status) {
