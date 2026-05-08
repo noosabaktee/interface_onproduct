@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-wrapper report-page">
+    <div class="hero-strip">
+        <div class="section-head mb-0">
+            <div>
+                <h2 class="hero-title">Simulation Report</h2>
+                <p class="hero-copy">Screenshots, graphs, and PDF archive.</p>
+            </div>
+            <form method="post" action="{{ url_for('dashboard.get_simulation_report') }}">
+                <button type="submit" class="btn btn-primary px-4 py-2">
+                    <i class="bi bi-file-earmark-plus me-2"></i>Get Report
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="report-layout">
+        <aside class="report-list-panel">
+            <div class="section-head">
+                <div>
+                    <h3 class="section-title">Report Folder</h3>
+                    <p class="section-subtitle">{{ reports|length }} folder tersedia</p>
+                </div>
+            </div>
+            <div class="report-folder-list">
+                {% for report in reports %}
+                    <a class="report-folder-link {% if selected_report and selected_report.name == report.name %}active{% endif %}"
+                        href="{{ url_for('dashboard.report_detail', report_name=report.name) }}">
+                        <i class="bi bi-folder2-open"></i>
+                        <span>
+                            <strong>{{ report.name }}</strong>
+                            <em>{{ report.image_count }} files</em>
+                        </span>
+                    </a>
+                {% else %}
+                    <div class="empty-folder-note">
+                        <i class="bi bi-folder2"></i>
+                        <span>Belum ada report.</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </aside>
+
+        <section class="report-detail-panel">
+            {% if selected_report %}
+                <div class="section-head report-detail-head">
+                    <div>
+                        <h3 class="section-title">{{ selected_report.name }}</h3>
+                        <p class="section-subtitle">{{ selected_report.created_label }}</p>
+                    </div>
+                    <div class="report-actions">
+                        <a class="btn btn-outline-primary" href="{{ url_for('dashboard.export_report_pdf', report_name=selected_report.name) }}">
+                            <i class="bi bi-file-earmark-pdf me-2"></i>Export PDF
+                        </a>
+                        <form method="post" action="{{ url_for('dashboard.delete_simulation_report', report_name=selected_report.name) }}"
+                            onsubmit="return confirm('Hapus folder report {{ selected_report.name }}?')">
+                            <button class="btn btn-outline-danger" type="submit">
+                                <i class="bi bi-trash3 me-2"></i>Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="report-section-block">
+                    <div class="section-head">
+                        <div>
+                            <h4 class="section-title">3D Screenshots</h4>
+                            <p class="section-subtitle">Model views</p>
+                        </div>
+                    </div>
+                    {% if selected_report.screenshots %}
+                        <div class="report-image-grid">
+                            {% for item in selected_report.screenshots %}
+                                <article class="report-image-card">
+                                    <img src="{{ url_for('dashboard.report_file', report_name=selected_report.name, folder='screenshots', filename=item.name) }}"
+                                        alt="{{ item.title }}">
+                                    <div>
+                                        <strong>{{ item.title }}</strong>
+                                        <span>{{ item.name }}</span>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="report-empty-state">
+                            <i class="bi bi-camera"></i>
+                            <span>Belum ada screenshot.</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="report-section-block">
+                    <div class="section-head">
+                        <div>
+                            <h4 class="section-title">Graphs</h4>
+                            <p class="section-subtitle">Simulation history</p>
+                        </div>
+                    </div>
+                    {% if selected_report.graphs %}
+                        <div class="report-image-grid">
+                            {% for item in selected_report.graphs %}
+                                <article class="report-image-card">
+                                    <img src="{{ url_for('dashboard.report_file', report_name=selected_report.name, folder='graphs', filename=item.name) }}"
+                                        alt="{{ item.title }}">
+                                    <div>
+                                        <strong>{{ item.title }}</strong>
+                                        <span>{{ item.name }}</span>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="report-empty-state">
+                            <i class="bi bi-graph-up"></i>
+                            <span>Belum ada grafik di folder report ini.</span>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="report-empty-main">
+                    <i class="bi bi-clipboard-data"></i>
+                    <h3>Belum ada report</h3>
+                    <p>Report folder kosong.</p>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}

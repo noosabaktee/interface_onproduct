@@ -43,7 +43,8 @@ COMMANDS = {
         "-c",
         (
             "import subprocess, sys, os\n"
-            "case_root = r'" + str(CASE_ROOT) + "'\n"
+            "from pathlib import Path\n"
+            "case_root = Path(r'" + str(CASE_ROOT) + "')\n"
             "decompose_dict = case_root / 'system' / 'decomposeParDict'\n"
             "np = 4\n"
             "try:\n"

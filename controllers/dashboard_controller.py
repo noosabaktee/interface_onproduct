@@ -7,6 +7,15 @@ from flask import abort, Blueprint, flash, jsonify, redirect, render_template, r
 
 from models.parameter_model import load_parameter_groups, save_parameter_values, IGNORED_FIELD_NAMES
 from models.paraview_model import get_internal_mesh_path, get_paraview_case, get_surface_path, launch_case_file
+from models.report_model import (
+    build_report_pdf,
+    create_report,
+    delete_report,
+    get_report,
+    list_reports,
+    latest_report,
+    save_capture,
+)
 from models.terminal_runner import cancel_command, get_command_state, start_command
 
 dashboard_bp = Blueprint("dashboard", __name__)
@@ -208,6 +217,7 @@ def paraview():
         "paraview.html",
         title="Paraview",
         case=get_paraview_case(),
+        latest_report=latest_report(),
     )
 
 
@@ -242,6 +252,37 @@ def _list_graph_images():
     return sorted([path.name for path in GRAFIK_OUTPUT_PATH.glob("*.png")])
 
 
+def _run_graph_update():
+    if not GRAFIK_SCRIPT.exists() or not GRAFIK_LOG_RUN.exists():
+        return False, "File script atau log tidak ditemukan untuk pembaruan grafik."
+
+    try:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "grafik/2plot_residuals.py",
+                "../sprayDryer-6.0.0-onProduct-Trial02/log.run",
+                "--output",
+                "grafik/output",
+                "--linear",
+                "--dpi",
+                "150",
+            ],
+            cwd=APP_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    except Exception as exc:
+        return False, f"Gagal memperbarui grafik: {exc}"
+
+    if result.returncode != 0:
+        error_text = (result.stderr or result.stdout or "Unknown error").strip().splitlines()[-1]
+        return False, f"Update grafik gagal: {error_text}"
+
+    return True, "Grafik berhasil diperbarui."
+
+
 @dashboard_bp.route("/graph")
 def graph():
     return render_template(
@@ -267,45 +308,111 @@ def graph_image(filename):
 
 @dashboard_bp.route("/graph/update", methods=["POST"])
 def update_graph():
-    if not GRAFIK_SCRIPT.exists() or not GRAFIK_LOG_RUN.exists():
-        flash("File script atau log tidak ditemukan untuk pembaruan grafik.", "danger")
-        return redirect(url_for("dashboard.graph"))
-
-    try:
-        result = subprocess.run(
-            [
-                sys.executable,
-                "grafik/2plot_residuals.py",
-                "../sprayDryer-6.0.0-onProduct-Trial02/log.run",
-                "--output",
-                "grafik/output",
-                "--linear",
-                "--dpi",
-                "150",
-            ],
-            cwd=APP_ROOT,
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
-    except Exception as exc:
-        flash(f"Gagal memperbarui grafik: {exc}", "danger")
-        return redirect(url_for("dashboard.graph"))
-
-    if result.returncode != 0:
-        error_text = (result.stderr or result.stdout or "Unknown error").strip().splitlines()[-1]
-        flash(f"Update grafik gagal: {error_text}", "danger")
-    else:
-        flash("Grafik berhasil diperbarui.", "success")
+    success, message = _run_graph_update()
+    flash(message, "success" if success else "danger")
 
     return redirect(url_for("dashboard.graph"))
 
 
 @dashboard_bp.route("/report")
 def report():
+    reports = list_reports()
     return render_template(
-        "simple_page.html",
+        "report.html",
         title="Report",
-        page_title="Report",
-        page_text="Area ini disiapkan untuk rangkuman parameter, status simulasi, dan hasil validasi.",
+        reports=reports,
+        selected_report=reports[0] if reports else None,
+        latest_report=reports[0] if reports else None,
+    )
+
+
+@dashboard_bp.route("/report/<report_name>")
+def report_detail(report_name):
+    selected_report = get_report(report_name)
+    if selected_report is None:
+        abort(404)
+
+    return render_template(
+        "report.html",
+        title="Report",
+        reports=list_reports(),
+        selected_report=selected_report,
+        latest_report=latest_report(),
+    )
+
+
+@dashboard_bp.post("/report/get")
+def get_simulation_report():
+    graph_success, graph_message = _run_graph_update()
+    selected_report, copied_graphs = create_report(GRAFIK_OUTPUT_PATH)
+
+    if graph_success:
+        flash(f"Report {selected_report['name']} dibuat. {copied_graphs} grafik disimpan.", "success")
+    else:
+        flash(graph_message, "warning")
+        flash(f"Report {selected_report['name']} dibuat dengan grafik yang tersedia.", "success")
+
+    return redirect(url_for("dashboard.report_detail", report_name=selected_report["name"]))
+
+
+@dashboard_bp.post("/report/<report_name>/delete")
+def delete_simulation_report(report_name):
+    if delete_report(report_name):
+        flash(f"Report {report_name} berhasil dihapus.", "success")
+    else:
+        flash("Report tidak ditemukan atau tidak bisa dihapus.", "danger")
+    return redirect(url_for("dashboard.report"))
+
+
+@dashboard_bp.post("/report/capture")
+def capture_report_screenshot():
+    payload = request.get_json(silent=True) or {}
+    try:
+        report_item, filename = save_capture(
+            payload.get("report_name"),
+            payload.get("image"),
+            payload.get("side"),
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    return jsonify(
+        {
+            "message": f"Capture {filename} tersimpan ke report {report_item['name']}.",
+            "report_name": report_item["name"],
+            "filename": filename,
+        }
+    )
+
+
+@dashboard_bp.get("/report/file/<report_name>/<folder>/<path:filename>")
+def report_file(report_name, folder, filename):
+    selected_report = get_report(report_name)
+    if selected_report is None or folder not in {"screenshots", "graphs"}:
+        abort(404)
+
+    file_path = selected_report["path"] / folder / filename
+    try:
+        resolved = file_path.resolve()
+    except OSError:
+        abort(404)
+
+    allowed_parent = (selected_report["path"] / folder).resolve()
+    if not resolved.is_file() or resolved.parent != allowed_parent:
+        abort(404)
+
+    return send_file(resolved, mimetype="image/png", conditional=True, max_age=0)
+
+
+@dashboard_bp.get("/report/<report_name>/export-pdf")
+def export_report_pdf(report_name):
+    pdf_buffer = build_report_pdf(report_name)
+    if pdf_buffer is None:
+        abort(404)
+
+    return send_file(
+        pdf_buffer,
+        as_attachment=True,
+        download_name=f"report_{report_name}.pdf",
+        mimetype="application/pdf",
     )

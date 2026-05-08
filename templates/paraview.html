@@ -55,6 +55,18 @@
                 <button class="btn btn-outline-primary icon-btn" type="button" data-copy-value="{{ case.foam_path }}" title="Copy .foam path">
                     <i class="bi bi-copy"></i>
                 </button>
+                <button class="btn btn-outline-primary" type="button" data-capture-current
+                    data-capture-url="{{ url_for('dashboard.capture_report_screenshot') }}"
+                    data-report-name="{{ latest_report.name if latest_report else '' }}"
+                    title="Capture current model view">
+                    <i class="bi bi-camera me-1"></i>Capture
+                </button>
+                <button class="btn btn-outline-primary" type="button" data-capture-six
+                    data-capture-url="{{ url_for('dashboard.capture_report_screenshot') }}"
+                    data-report-name="{{ latest_report.name if latest_report else '' }}"
+                    title="Capture left, right, front, back, top, bottom">
+                    <i class="bi bi-badge-3d me-1"></i>6 Sides
+                </button>
                 <form method="post" action="{{ url_for('dashboard.open_paraview_case') }}">
                     <button class="btn btn-primary" type="submit" {% if not case.foam_exists %}disabled{% endif %}>
                         <i class="bi bi-play-fill me-1"></i>Open .foam

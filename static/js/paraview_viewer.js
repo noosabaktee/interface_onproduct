@@ -46,7 +46,7 @@ function createScene(THREE, OrbitControls, mount) {
     const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 10000);
     camera.up.set(0, 0, 1);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(mount.clientWidth, mount.clientHeight);
     mount.appendChild(renderer.domElement);
@@ -77,6 +77,7 @@ function createScene(THREE, OrbitControls, mount) {
         mount,
         mesh: null,
         axes: null,
+        cameraDistance: 1,
     };
 
     const resize = () => {
@@ -113,6 +114,20 @@ function bindMeshButtons(viewer, state, status) {
             });
         });
     });
+
+    const captureCurrentButton = viewer.querySelector("[data-capture-current]");
+    if (captureCurrentButton) {
+        captureCurrentButton.addEventListener("click", () => {
+            captureCurrentView(captureCurrentButton, state, status);
+        });
+    }
+
+    const captureSixButton = viewer.querySelector("[data-capture-six]");
+    if (captureSixButton) {
+        captureSixButton.addEventListener("click", () => {
+            captureSixSides(captureSixButton, state, status);
+        });
+    }
 }
 
 async function loadMesh(button, state, status) {
@@ -285,12 +300,112 @@ function fitCameraToMesh(state, mesh) {
     state.scene.add(state.axes);
 
     const distance = (maxDim / (2 * Math.tan((Math.PI * state.camera.fov) / 360))) * 1.45;
+    state.cameraDistance = distance;
     state.camera.near = Math.max(distance / 200, 0.001);
     state.camera.far = distance * 200;
     state.camera.position.set(distance * 0.8, -distance * 1.1, distance * 0.62);
     state.camera.updateProjectionMatrix();
     state.controls.target.set(0, 0, 0);
     state.controls.update();
+}
+
+async function captureCurrentView(button, state, status) {
+    if (!state.mesh) {
+        setStatus(status, "Mesh belum siap untuk capture.", "error");
+        return;
+    }
+
+    setCaptureBusy(button, true);
+    try {
+        await uploadCapture(button, state, status, "current_view");
+    } catch (error) {
+        setStatus(status, `Capture gagal: ${error.message}`, "error");
+    } finally {
+        setCaptureBusy(button, false);
+    }
+}
+
+async function captureSixSides(button, state, status) {
+    if (!state.mesh) {
+        setStatus(status, "Mesh belum siap untuk capture.", "error");
+        return;
+    }
+
+    const originalPosition = state.camera.position.clone();
+    const originalTarget = state.controls.target.clone();
+    const originalUp = state.camera.up.clone();
+    const originalAutoRotate = state.controls.autoRotate;
+    const distance = state.cameraDistance || state.camera.position.length() || 1;
+    const views = [
+        ["front", [0, -distance, 0], [0, 0, 1]],
+        ["back", [0, distance, 0], [0, 0, 1]],
+        ["left", [-distance, 0, 0], [0, 0, 1]],
+        ["right", [distance, 0, 0], [0, 0, 1]],
+        ["top", [0, 0, distance], [0, 1, 0]],
+        ["bottom", [0, 0, -distance], [0, 1, 0]],
+    ];
+
+    setCaptureBusy(button, true);
+    state.controls.autoRotate = false;
+    try {
+        for (const [side, position, up] of views) {
+            state.camera.position.set(position[0], position[1], position[2]);
+            state.camera.up.set(up[0], up[1], up[2]);
+            state.controls.target.set(0, 0, 0);
+            state.controls.update();
+            state.renderer.render(state.scene, state.camera);
+            await uploadCapture(button, state, status, side);
+        }
+        setStatus(status, "6 sisi berhasil disimpan ke report terbaru.", "ready");
+    } catch (error) {
+        setStatus(status, `Capture 6 sisi gagal: ${error.message}`, "error");
+    } finally {
+        state.camera.position.copy(originalPosition);
+        state.camera.up.copy(originalUp);
+        state.controls.target.copy(originalTarget);
+        state.controls.autoRotate = originalAutoRotate;
+        state.controls.update();
+        setCaptureBusy(button, false);
+    }
+}
+
+async function uploadCapture(button, state, status, side) {
+    const captureUrl = button.dataset.captureUrl;
+    if (!captureUrl) {
+        throw new Error("endpoint capture tidak tersedia");
+    }
+
+    state.renderer.render(state.scene, state.camera);
+    const image = state.renderer.domElement.toDataURL("image/png");
+    const response = await fetch(captureUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            report_name: button.dataset.reportName || "",
+            side,
+            image,
+        }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+
+    document.querySelectorAll("[data-capture-url]").forEach((captureButton) => {
+        captureButton.dataset.reportName = payload.report_name || "";
+    });
+    setStatus(status, payload.message || "Capture tersimpan.", "ready");
+}
+
+function setCaptureBusy(button, isBusy) {
+    button.disabled = isBusy;
+    if (isBusy) {
+        button.dataset.originalHtml = button.innerHTML;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Saving';
+    } else if (button.dataset.originalHtml) {
+        button.innerHTML = button.dataset.originalHtml;
+        delete button.dataset.originalHtml;
+    }
 }
 
 function clearCurrentMesh(state) {
