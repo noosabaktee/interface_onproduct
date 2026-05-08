@@ -967,7 +967,7 @@ body {
     border-radius: 16px;
     background: #101418;
     box-shadow: var(--shadow-md);
-    overflow: hidden;
+    overflow: visible;
 }
 
 .paraview-toolbar {
@@ -1027,7 +1027,7 @@ body {
 .paraview-control-strip {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 14px;
     padding: 12px 20px;
     background: #eef2f7;
@@ -1061,15 +1061,19 @@ body {
 }
 
 .opacity-control {
-    min-width: 220px;
+    width: 100%;
     display: grid;
-    grid-template-columns: auto minmax(96px, 1fr) 44px;
+    grid-template-columns: minmax(0, 1fr) 54px;
     align-items: center;
     gap: 9px;
     margin: 0;
     color: var(--text-main);
     font-size: 0.78rem;
     font-weight: 800;
+}
+
+.opacity-control span {
+    grid-column: 1 / -1;
 }
 
 .opacity-control input {
@@ -1083,7 +1087,7 @@ body {
 
 .coloring-control {
     position: relative;
-    min-width: 240px;
+    width: 100%;
     display: grid;
     gap: 5px;
 }
@@ -1120,11 +1124,12 @@ body {
 .coloring-menu {
     position: absolute;
     top: calc(100% + 5px);
-    right: 0;
-    z-index: 8;
-    width: min(300px, 78vw);
-    max-height: 420px;
+    left: 0;
+    z-index: 9999;
+    width: min(316px, calc(100vw - 40px));
+    max-height: min(420px, calc(100vh - 170px));
     display: none;
+    overflow-x: hidden;
     overflow-y: auto;
     padding: 5px 0;
     border: 1px solid #8f949b;
@@ -1134,6 +1139,10 @@ body {
 
 .coloring-control.open .coloring-menu {
     display: block;
+}
+
+.coloring-control.open {
+    z-index: 9998;
 }
 
 .coloring-option {
@@ -1215,9 +1224,138 @@ body {
     bottom: -4px;
 }
 
+.paraview-viewer-layout {
+    flex: 1;
+    min-height: 520px;
+    display: grid;
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+    background: #101418;
+}
+
+.paraview-side-panel {
+    position: relative;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+    background: #f3f6fa;
+    overflow: visible;
+}
+
+.viewer-setting-group {
+    position: relative;
+    display: grid;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-surface);
+}
+
+.stream-setting-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.stream-setting-head > div {
+    min-width: 0;
+}
+
+.stream-visible-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    cursor: pointer;
+}
+
+.stream-visible-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.stream-visible-toggle span {
+    width: 36px;
+    height: 20px;
+    position: relative;
+    display: inline-block;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: #d1d5db;
+    transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.stream-visible-toggle span::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: transform 0.16s ease;
+}
+
+.stream-visible-toggle input:checked + span {
+    border-color: var(--primary-brand);
+    background: var(--primary-brand);
+}
+
+.stream-visible-toggle input:checked + span::after {
+    transform: translateX(16px);
+}
+
+.viewer-setting-group h4,
+.viewer-setting-group p {
+    margin: 0;
+}
+
+.viewer-setting-group h4 {
+    color: var(--text-main);
+    font-size: 0.95rem;
+    font-weight: 900;
+}
+
+.viewer-setting-group p {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.stream-radius-control {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    color: var(--text-main);
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.stream-radius-control input {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-main);
+    font-weight: 800;
+}
+
+.stream-apply-button {
+    width: 100%;
+}
+
 .paraview-scene-frame {
     position: relative;
-    flex: 1;
+    min-width: 0;
     min-height: 520px;
     overflow: hidden;
     background: #101418;
@@ -1643,10 +1781,22 @@ body {
         justify-content: center;
     }
 
-    .paraview-control-strip,
     .view-controls {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .paraview-control-strip {
+        align-items: stretch;
+    }
+
+    .paraview-viewer-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .paraview-side-panel {
+        border-right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     }
 
     .viewer-tool-button,
