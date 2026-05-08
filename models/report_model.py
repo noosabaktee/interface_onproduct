@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw, ImageOps
 APP_ROOT = Path(__file__).resolve().parents[1]
 REPORT_ROOT = APP_ROOT / "report"
 GRAPH_OUTPUT_PATH = APP_ROOT / "grafik" / "output"
-REPORT_NAME_PATTERN = re.compile(r"^\d{2}_\d{2}_\d{4}$")
+REPORT_NAME_PATTERN = re.compile(r"^\d{2}_\d{2}_\d{4}(?:_\d{3})?$")
 
 
 def ensure_report_root():
@@ -23,8 +23,18 @@ def today_report_name():
     return datetime.now().strftime("%d_%m_%Y")
 
 
+def next_report_name():
+    root = ensure_report_root()
+    base_name = today_report_name()
+    for index in range(1, 1000):
+        report_name = f"{base_name}_{index:03d}"
+        if not (root / report_name).exists():
+            return report_name
+    raise RuntimeError("Jumlah report hari ini sudah mencapai batas 999 folder.")
+
+
 def create_report(graph_source=GRAPH_OUTPUT_PATH):
-    report_dir = ensure_report_root() / today_report_name()
+    report_dir = ensure_report_root() / next_report_name()
     report_dir.mkdir(parents=True, exist_ok=True)
     graphs_dir = report_dir / "graphs"
     screenshots_dir = report_dir / "screenshots"
@@ -165,6 +175,6 @@ def _image_items(folder, report_name, group):
 
 def _parse_report_date(report_name):
     try:
-        return datetime.strptime(report_name, "%d_%m_%Y")
+        return datetime.strptime("_".join(report_name.split("_")[:3]), "%d_%m_%Y")
     except ValueError:
         return None
