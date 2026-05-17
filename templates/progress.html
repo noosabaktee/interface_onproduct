@@ -98,7 +98,9 @@
                 if (state.returncode === 0) {
                     statusLabel.textContent = 'Process completed successfully.';
                 } else if (state.resume_available || state.status === 'stopped') {
-                    statusLabel.textContent = 'Solver stopped. Ready to resume from latest checkpoint.';
+                    statusLabel.textContent = taskKey === 'meshing'
+                        ? 'Meshing stopped. Ready to resume from the interrupted step.'
+                        : 'Solver stopped. Ready to resume from latest checkpoint.';
                 } else if (state.status === 'cancelled') {
                     statusLabel.textContent = 'Process cancelled.';
                 } else if (state.returncode !== null) {

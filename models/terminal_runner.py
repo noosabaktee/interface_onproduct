@@ -10,6 +10,16 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CASE_ROOT = PROJECT_ROOT.parent / "sprayDryer-6.0.0-onProduct-Trial02"
 
 
+MESHING_STEPS = [
+    ("Cleaning old mesh/run", "rm -rf processor* constant/polyMesh log.*", 10),
+    ("BlockMesh", "blockMesh", 25),
+    ("Surface Feature Extract", "surfaceFeatureExtract", 40),
+    ("SnappyHexMesh", "snappyHexMesh -overwrite", 60),
+    ("CheckMesh", "checkMesh", 80),
+    ("DecomposePar", "decomposePar -force", 100),
+]
+
+
 COMMANDS = {
     "meshing": [
         sys.executable,
@@ -82,6 +92,7 @@ _states = {
         "lines": [],
         "progress": 0,
         "process": None,
+        "current_step": 0,
         "stop_requested": False,
         "cancel_requested": False,
         "status": "idle",
@@ -109,10 +120,15 @@ def start_command(task_key):
         state["cancel_requested"] = False
         state["status"] = "running"
         if state["resume_available"]:
-            state["lines"].append("Resuming from latest checkpoint/time directory...")
+            if task_key == "meshing":
+                next_step = state["current_step"] + 1
+                state["lines"].append(f"Resuming meshing from step {next_step}/{len(MESHING_STEPS)}...")
+            else:
+                state["lines"].append("Resuming from latest checkpoint/time directory...")
         else:
             state["lines"] = [f"$ {' '.join(COMMANDS[task_key])}"]
             state["progress"] = 0
+            state["current_step"] = 0
 
     thread = threading.Thread(target=_run_command, args=(task_key,), daemon=True)
     thread.start()
@@ -136,12 +152,12 @@ def stop_command(task_key):
         state["running"] = False
         state["returncode"] = -15
         state["status"] = "stopped"
-        state["resume_available"] = task_key == "solver"
+        state["resume_available"] = task_key in {"meshing", "solver"}
         state["process"] = None
         state["lines"].append(
             "Solver stopped. Click Resume to continue from the latest checkpoint."
             if task_key == "solver"
-            else "Process stopped."
+            else "Meshing stopped. Click Resume to continue from the interrupted step."
         )
         return True
 
@@ -175,6 +191,10 @@ def get_command_state(task_key):
 
 
 def _run_command(task_key):
+    if task_key == "meshing":
+        _run_meshing_command()
+        return
+
     try:
         process = subprocess.Popen(
             COMMANDS[task_key],
@@ -229,7 +249,7 @@ def _run_command(task_key):
                 _states[task_key]["resume_available"] = False
             elif stopped_by_user:
                 _states[task_key]["status"] = "stopped"
-                _states[task_key]["resume_available"] = task_key == "solver"
+                _states[task_key]["resume_available"] = task_key in {"meshing", "solver"}
             elif returncode == 0:
                 _states[task_key]["status"] = "completed"
                 _states[task_key]["resume_available"] = False
@@ -244,6 +264,100 @@ def _run_command(task_key):
             _states[task_key]["process"] = None
             _states[task_key]["status"] = "failed"
             _states[task_key]["lines"].append(f"Error: {exc}")
+
+
+def _run_meshing_command():
+    task_key = "meshing"
+    try:
+        with _lock:
+            start_index = _states[task_key]["current_step"]
+
+        for index in range(start_index, len(MESHING_STEPS)):
+            name, cmd, progress = MESHING_STEPS[index]
+
+            with _lock:
+                if _states[task_key]["stop_requested"] or _states[task_key]["cancel_requested"]:
+                    break
+                _states[task_key]["current_step"] = index
+                _states[task_key]["lines"].append(f"[{index + 1}/{len(MESHING_STEPS)}] {name}...")
+
+            process = subprocess.Popen(
+                cmd,
+                shell=True,
+                cwd=CASE_ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                start_new_session=True,
+            )
+            with _lock:
+                _states[task_key]["process"] = process
+                should_stop = _states[task_key]["stop_requested"] or _states[task_key]["cancel_requested"]
+
+            if should_stop and process.poll() is None:
+                _terminate_process_group(process)
+
+            if process.stdout:
+                for line in process.stdout:
+                    _append_line(task_key, line.rstrip())
+
+            returncode = process.wait()
+            with _lock:
+                _states[task_key]["process"] = None
+                stopped_by_user = _states[task_key]["stop_requested"]
+                cancelled_by_user = _states[task_key]["cancel_requested"]
+
+            if stopped_by_user or cancelled_by_user:
+                with _lock:
+                    _finish_interrupted_meshing(cancelled_by_user)
+                return
+
+            if returncode != 0:
+                with _lock:
+                    _states[task_key]["running"] = False
+                    _states[task_key]["returncode"] = returncode
+                    _states[task_key]["status"] = "failed"
+                    _states[task_key]["resume_available"] = False
+                    _states[task_key]["lines"].append(f"Error in {name}: {returncode}")
+                return
+
+            with _lock:
+                _states[task_key]["current_step"] = index + 1
+                _states[task_key]["progress"] = progress
+                _states[task_key]["lines"].append(f"{name} completed.")
+
+        with _lock:
+            if _states[task_key]["cancel_requested"]:
+                _finish_interrupted_meshing(True)
+                return
+
+            if _states[task_key]["stop_requested"]:
+                _finish_interrupted_meshing(False)
+                return
+
+            _states[task_key]["running"] = False
+            _states[task_key]["returncode"] = 0
+            _states[task_key]["status"] = "completed"
+            _states[task_key]["resume_available"] = False
+            _states[task_key]["current_step"] = 0
+            _states[task_key]["lines"].append("Meshing finished successfully.")
+            _states[task_key]["lines"].append("Process completed successfully.")
+    except Exception as exc:
+        with _lock:
+            _states[task_key]["running"] = False
+            _states[task_key]["returncode"] = -1
+            _states[task_key]["process"] = None
+            _states[task_key]["status"] = "failed"
+            _states[task_key]["resume_available"] = False
+            _states[task_key]["lines"].append(f"Error: {exc}")
+
+
+def _finish_interrupted_meshing(cancelled):
+    _states["meshing"]["running"] = False
+    _states["meshing"]["returncode"] = -15
+    _states["meshing"]["status"] = "cancelled" if cancelled else "stopped"
+    _states["meshing"]["resume_available"] = not cancelled
 
 
 def _append_line(task_key, line):
