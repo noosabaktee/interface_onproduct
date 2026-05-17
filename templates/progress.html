@@ -57,17 +57,50 @@
         const statusLabel = document.getElementById('status-label');
 
         let pollingInterval;
+        let currentState = { running: false, status: 'idle', resume_available: false };
+
+        function setMainButton(html, disabled, variant) {
+            startBtn.innerHTML = html;
+            startBtn.disabled = disabled;
+            startBtn.className = `btn btn-outline-${variant} shadow-sm`;
+        }
+
+        function renderMainButton(state, otherState) {
+            if (otherState && otherState.running) {
+                setMainButton(`Cannot start while ${taskKey === 'meshing' ? 'solver' : 'meshing'} is running`, true, 'secondary');
+                return;
+            }
+
+            if (state.running) {
+                setMainButton(
+                    '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Stop',
+                    false,
+                    'danger'
+                );
+                return;
+            }
+
+            if (state.resume_available || state.status === 'stopped') {
+                setMainButton('<i class="bi bi-play-fill me-1"></i>Resume', false, 'primary');
+                return;
+            }
+
+            setMainButton('<i class="bi bi-play-fill me-1"></i> {{ action_label }}', false, 'primary');
+        }
 
         function updateUI(state) {
+            currentState = state;
             if (state.running) {
-                startBtn.disabled = true;
                 cancelBtn.style.display = 'inline-block';
                 statusLabel.textContent = 'Process is running...';
             } else {
-                startBtn.disabled = false;
                 cancelBtn.style.display = 'none';
                 if (state.returncode === 0) {
                     statusLabel.textContent = 'Process completed successfully.';
+                } else if (state.resume_available || state.status === 'stopped') {
+                    statusLabel.textContent = 'Solver stopped. Ready to resume from latest checkpoint.';
+                } else if (state.status === 'cancelled') {
+                    statusLabel.textContent = 'Process cancelled.';
                 } else if (state.returncode !== null) {
                     statusLabel.textContent = 'Process failed or cancelled.';
                 } else {
@@ -101,22 +134,24 @@
             ])
                 .then(([state, otherState]) => {
                     updateUI(state);
-                    if (otherState.running) {
-                        startBtn.disabled = true;
-                        startBtn.textContent = `Cannot start while ${otherTask} is running`;
-                    } else {
-                        startBtn.disabled = state.running;
-                        startBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i> {{ action_label }}';
+                    renderMainButton(state, otherState);
+                    if (!state.running && pollingInterval) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
                     }
                 })
                 .catch(console.error);
         }
 
         startBtn.addEventListener('click', function () {
-            fetch(`/terminal/${taskKey}/start`, { method: 'POST' })
+            const endpoint = currentState.running ? 'stop' : 'start';
+            fetch(`/terminal/${taskKey}/${endpoint}`, { method: 'POST' })
                 .then(response => response.json())
-                .then(updateUI)
                 .then(() => {
+                    pollState();
+                    if (pollingInterval) {
+                        clearInterval(pollingInterval);
+                    }
                     pollingInterval = setInterval(pollState, 1000);
                 })
                 .catch(console.error);

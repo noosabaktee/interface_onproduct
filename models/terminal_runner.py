@@ -1,5 +1,7 @@
 import subprocess
 import sys
+import os
+import signal
 import threading
 from pathlib import Path
 
@@ -74,7 +76,17 @@ COMMANDS = {
 
 
 _states = {
-    key: {"running": False, "returncode": None, "lines": [], "progress": 0}
+    key: {
+        "running": False,
+        "returncode": None,
+        "lines": [],
+        "progress": 0,
+        "process": None,
+        "stop_requested": False,
+        "cancel_requested": False,
+        "status": "idle",
+        "resume_available": False,
+    }
     for key in COMMANDS
 }
 _lock = threading.Lock()
@@ -93,12 +105,45 @@ def start_command(task_key):
 
         state["running"] = True
         state["returncode"] = None
-        state["lines"] = [f"$ {' '.join(COMMANDS[task_key])}"]
-        state["progress"] = 0
+        state["stop_requested"] = False
+        state["cancel_requested"] = False
+        state["status"] = "running"
+        if state["resume_available"]:
+            state["lines"].append("Resuming from latest checkpoint/time directory...")
+        else:
+            state["lines"] = [f"$ {' '.join(COMMANDS[task_key])}"]
+            state["progress"] = 0
 
     thread = threading.Thread(target=_run_command, args=(task_key,), daemon=True)
     thread.start()
     return get_command_state(task_key)
+
+
+def stop_command(task_key):
+    with _lock:
+        state = _states[task_key]
+        if not state["running"]:
+            return False
+        process = state.get("process")
+        state["stop_requested"] = True
+        state["lines"].append("Stop requested. Writing latest checkpoint if supported...")
+
+    if process and process.poll() is None:
+        _terminate_process_group(process)
+
+    with _lock:
+        state = _states[task_key]
+        state["running"] = False
+        state["returncode"] = -15
+        state["status"] = "stopped"
+        state["resume_available"] = task_key == "solver"
+        state["process"] = None
+        state["lines"].append(
+            "Solver stopped. Click Resume to continue from the latest checkpoint."
+            if task_key == "solver"
+            else "Process stopped."
+        )
+        return True
 
 
 def cancel_command(task_key):
@@ -106,10 +151,20 @@ def cancel_command(task_key):
         state = _states[task_key]
         if not state["running"]:
             return False
-        # Note: In a real implementation, we'd need to track the process and kill it
-        # For now, just mark as not running
+        process = state.get("process")
+        state["cancel_requested"] = True
+        state["lines"].append("Cancel requested. Terminating process without resume.")
+
+    if process and process.poll() is None:
+        _terminate_process_group(process)
+
+    with _lock:
+        state = _states[task_key]
         state["running"] = False
-        state["returncode"] = -1
+        state["returncode"] = -15
+        state["status"] = "cancelled"
+        state["resume_available"] = False
+        state["process"] = None
         state["lines"].append("Process cancelled.")
         return True
 
@@ -128,7 +183,15 @@ def _run_command(task_key):
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
+            start_new_session=True,
         )
+        with _lock:
+            _states[task_key]["process"] = process
+            stop_requested = _states[task_key]["stop_requested"]
+            cancel_requested = _states[task_key]["cancel_requested"]
+
+        if (stop_requested or cancel_requested) and process.poll() is None:
+            _terminate_process_group(process)
 
         if process.stdout:
             for line in process.stdout:
@@ -156,16 +219,30 @@ def _run_command(task_key):
 
         returncode = process.wait()
         with _lock:
+            stopped_by_user = _states[task_key]["stop_requested"]
+            cancelled_by_user = _states[task_key]["cancel_requested"]
             _states[task_key]["running"] = False
             _states[task_key]["returncode"] = returncode
-            if returncode == 0:
+            _states[task_key]["process"] = None
+            if cancelled_by_user:
+                _states[task_key]["status"] = "cancelled"
+                _states[task_key]["resume_available"] = False
+            elif stopped_by_user:
+                _states[task_key]["status"] = "stopped"
+                _states[task_key]["resume_available"] = task_key == "solver"
+            elif returncode == 0:
+                _states[task_key]["status"] = "completed"
+                _states[task_key]["resume_available"] = False
                 _states[task_key]["lines"].append("Process completed successfully.")
             else:
+                _states[task_key]["status"] = "failed"
                 _states[task_key]["lines"].append(f"Process failed with code {returncode}.")
     except Exception as exc:
         with _lock:
             _states[task_key]["running"] = False
             _states[task_key]["returncode"] = -1
+            _states[task_key]["process"] = None
+            _states[task_key]["status"] = "failed"
             _states[task_key]["lines"].append(f"Error: {exc}")
 
 
@@ -186,4 +263,31 @@ def _copy_state(task_key):
         "returncode": state["returncode"],
         "lines": list(state["lines"][-300:]),
         "progress": state["progress"],
+        "status": state["status"],
+        "resume_available": state["resume_available"],
     }
+
+
+def _terminate_process_group(process):
+    try:
+        os.killpg(process.pid, signal.SIGINT)
+        process.wait(timeout=8)
+        return
+    except ProcessLookupError:
+        return
+    except subprocess.TimeoutExpired:
+        pass
+
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+        process.wait(timeout=5)
+        return
+    except ProcessLookupError:
+        return
+    except subprocess.TimeoutExpired:
+        pass
+
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass

@@ -76,6 +76,7 @@ function initTerminalBlocks() {
         }
 
         let timer = null;
+        let currentState = { running: false, status: "idle", resume_available: false };
 
         const defaultLogs = {
             meshing: [
@@ -96,12 +97,19 @@ function initTerminalBlocks() {
         };
 
         const renderState = (state) => {
+            currentState = state;
             output.textContent = state.lines.length ? state.lines.join("\n") : (defaultLogs[taskKey] || ["Menunggu command dijalankan..."]).join("\n");
             output.scrollTop = output.scrollHeight;
-            startButton.disabled = state.running;
-            startButton.innerHTML = state.running
-                ? '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Running'
-                : `<i class="bi bi-play-fill me-1"></i>${startButton.dataset.label}`;
+            startButton.disabled = false;
+            if (state.running) {
+                startButton.className = "btn btn-outline-danger shadow-sm";
+                startButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Stop';
+            } else {
+                startButton.className = "btn btn-outline-primary shadow-sm";
+                startButton.innerHTML = state.resume_available || state.status === "stopped"
+                    ? '<i class="bi bi-play-fill me-1"></i>Resume'
+                    : `<i class="bi bi-play-fill me-1"></i>${startButton.dataset.label}`;
+            }
 
             if (state.running && !timer) {
                 timer = setInterval(fetchLogs, 700);
@@ -122,7 +130,8 @@ function initTerminalBlocks() {
 
         startButton.dataset.label = startButton.textContent.trim();
         startButton.addEventListener("click", () => {
-            fetch(`/terminal/${taskKey}/start`, { method: "POST" })
+            const endpoint = currentState.running ? "stop" : "start";
+            fetch(`/terminal/${taskKey}/${endpoint}`, { method: "POST" })
                 .then((response) => response.json())
                 .then((state) => renderState(state))
                 .catch(() => {

@@ -16,7 +16,7 @@ from models.report_model import (
     latest_report,
     save_capture,
 )
-from models.terminal_runner import cancel_command, get_command_state, start_command
+from models.terminal_runner import cancel_command, get_command_state, start_command, stop_command
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -176,7 +176,22 @@ def cancel_terminal(task_key):
         return jsonify({"error": "Task tidak dikenal."}), 404
 
     if cancel_command(task_key):
-        return jsonify({"message": f"{task_key.capitalize()} cancelled."})
+        state = get_command_state(task_key)
+        state["message"] = f"{task_key.capitalize()} cancelled."
+        return jsonify(state)
+    else:
+        return jsonify({"error": f"{task_key.capitalize()} is not running."}), 400
+
+
+@dashboard_bp.post("/terminal/<task_key>/stop")
+def stop_terminal(task_key):
+    if task_key not in {"meshing", "solver"}:
+        return jsonify({"error": "Task tidak dikenal."}), 404
+
+    if stop_command(task_key):
+        state = get_command_state(task_key)
+        state["message"] = f"{task_key.capitalize()} stopped."
+        return jsonify(state)
     else:
         return jsonify({"error": f"{task_key.capitalize()} is not running."}), 400
 
