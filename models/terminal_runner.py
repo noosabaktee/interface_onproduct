@@ -114,6 +114,11 @@ def start_command(task_key):
         if state["running"]:
             return _copy_state(task_key)
 
+        if task_key == "solver" and not _meshing_ready_unlocked():
+            response = _copy_state(task_key)
+            response["error"] = "Meshing harus selesai sebelum menjalankan solver."
+            return response
+
         state["running"] = True
         state["returncode"] = None
         state["stop_requested"] = False
@@ -188,6 +193,11 @@ def cancel_command(task_key):
 def get_command_state(task_key):
     with _lock:
         return _copy_state(task_key)
+
+
+def is_meshing_ready():
+    with _lock:
+        return _meshing_ready_unlocked()
 
 
 def _run_command(task_key):
@@ -379,7 +389,12 @@ def _copy_state(task_key):
         "progress": state["progress"],
         "status": state["status"],
         "resume_available": state["resume_available"],
+        "meshing_ready": _meshing_ready_unlocked(),
     }
+
+
+def _meshing_ready_unlocked():
+    return _states["meshing"]["status"] == "completed"
 
 
 def _terminate_process_group(process):

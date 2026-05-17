@@ -16,7 +16,7 @@ from models.report_model import (
     latest_report,
     save_capture,
 )
-from models.terminal_runner import cancel_command, get_command_state, start_command, stop_command
+from models.terminal_runner import cancel_command, get_command_state, is_meshing_ready, start_command, stop_command
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -158,6 +158,7 @@ def solver():
         status_label="Waiting for processor setup and initial fields...",
         task_key="solver",
         action_label="Execute Solver",
+        meshing_ready=is_meshing_ready(),
     )
 
 

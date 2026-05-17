@@ -19,6 +19,16 @@
         </div>
     </div>
 
+    {% if task_key == "solver" %}
+    <div class="col-12 flex-shrink-0">
+        <div class="alert alert-warning shadow-sm mb-0 {% if meshing_ready %}d-none{% endif %}" id="meshing-warning"
+            role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Solver belum bisa dijalankan. Selesaikan proses meshing terlebih dahulu sebelum menjalankan solver.
+        </div>
+    </div>
+    {% endif %}
+
     <div class="col-12 flex-grow-1 d-flex flex-column">
         <div class="card-custom flex-grow-1 d-flex flex-column m-0" data-terminal data-task-key="{{ task_key }}">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
@@ -26,7 +36,8 @@
                     <i class="bi bi-terminal-fill text-primary me-2 fs-5"></i> {{ title }} Terminal Log
                 </h6>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary shadow-sm" type="button" id="start-btn" data-terminal-start>
+                    <button class="btn btn-outline-primary shadow-sm" type="button" id="start-btn" data-terminal-start
+                        {% if task_key == "solver" and not meshing_ready %}disabled{% endif %}>
                         <i class="bi bi-play-fill me-1"></i> {{ action_label }}
                     </button>
                     <button class="btn btn-outline-danger shadow-sm" type="button" id="cancel-btn" data-terminal-cancel
@@ -55,9 +66,10 @@
         const progressBar = document.getElementById('progress-bar');
         const progressValue = document.getElementById('progress-value');
         const statusLabel = document.getElementById('status-label');
+        const meshingWarning = document.getElementById('meshing-warning');
 
         let pollingInterval;
-        let currentState = { running: false, status: 'idle', resume_available: false };
+        let currentState = { running: false, status: 'idle', resume_available: false, meshing_ready: true };
 
         function setMainButton(html, disabled, variant) {
             startBtn.innerHTML = html;
@@ -68,6 +80,11 @@
         function renderMainButton(state, otherState) {
             if (otherState && otherState.running) {
                 setMainButton(`Cannot start while ${taskKey === 'meshing' ? 'solver' : 'meshing'} is running`, true, 'secondary');
+                return;
+            }
+
+            if (taskKey === 'solver' && !state.meshing_ready && !state.resume_available) {
+                setMainButton('<i class="bi bi-play-fill me-1"></i> {{ action_label }}', true, 'secondary');
                 return;
             }
 
@@ -90,6 +107,10 @@
 
         function updateUI(state) {
             currentState = state;
+            if (meshingWarning) {
+                meshingWarning.classList.toggle('d-none', state.meshing_ready);
+            }
+
             if (state.running) {
                 cancelBtn.style.display = 'inline-block';
                 statusLabel.textContent = 'Process is running...';
@@ -105,6 +126,8 @@
                     statusLabel.textContent = 'Process cancelled.';
                 } else if (state.returncode !== null) {
                     statusLabel.textContent = 'Process failed or cancelled.';
+                } else if (taskKey === 'solver' && !state.meshing_ready) {
+                    statusLabel.textContent = 'Meshing must be completed before running solver.';
                 } else {
                     statusLabel.textContent = '{{ status_label }}';
                 }
@@ -146,6 +169,10 @@
         }
 
         startBtn.addEventListener('click', function () {
+            if (taskKey === 'solver' && !currentState.meshing_ready && !currentState.resume_available) {
+                return;
+            }
+
             const endpoint = currentState.running ? 'stop' : 'start';
             fetch(`/terminal/${taskKey}/${endpoint}`, { method: 'POST' })
                 .then(response => response.json())
