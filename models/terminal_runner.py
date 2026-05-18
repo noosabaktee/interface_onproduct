@@ -394,7 +394,36 @@ def _copy_state(task_key):
 
 
 def _meshing_ready_unlocked():
-    return _states["meshing"]["status"] == "completed"
+    processor_count = _load_processor_count()
+    required_mesh_files = {"boundary", "faces", "neighbour", "owner", "points"}
+
+    for index in range(processor_count):
+        mesh_dir = CASE_ROOT / f"processor{index}" / "constant" / "polyMesh"
+        if not mesh_dir.is_dir():
+            return False
+
+        if not all((mesh_dir / filename).is_file() for filename in required_mesh_files):
+            return False
+
+    return True
+
+
+def _load_processor_count(default=1):
+    decompose_dict = CASE_ROOT / "system" / "decomposeParDict"
+    if not decompose_dict.exists():
+        return default
+
+    try:
+        for line in decompose_dict.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if stripped.startswith("numberOfSubdomains"):
+                parts = stripped.rstrip(";").split()
+                if len(parts) >= 2:
+                    return max(1, int(parts[1]))
+    except (OSError, ValueError):
+        pass
+
+    return default
 
 
 def _terminate_process_group(process):

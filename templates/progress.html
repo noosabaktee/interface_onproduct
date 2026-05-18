@@ -29,6 +29,17 @@
     </div>
     {% endif %}
 
+    {% if task_key == "meshing" %}
+    <div class="col-12 flex-shrink-0">
+        <div class="alert alert-info shadow-sm mb-0" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            Catatan penting: Meshing tidak punya checkpoint bawaan seperti solver, jadi resume dibuat berbasis step.
+            Jika stop terjadi ketika proses SnappyHexMesh, maka saat resume step SnappyHexMesh akan dijalankan ulang, lalu
+            lanjut ke CheckMesh dan DecomposePar.
+        </div>
+    </div>
+    {% endif %}
+
     <div class="col-12 flex-grow-1 d-flex flex-column">
         <div class="card-custom flex-grow-1 d-flex flex-column m-0" data-terminal data-task-key="{{ task_key }}">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
