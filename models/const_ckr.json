@@ -1,0 +1,47 @@
+[
+    {
+        "name": "Nozzle_A",
+        "nilai": 0.001045,
+        "unit": "-"
+    },
+    {
+        "name": "Nozzle_B",
+        "nilai": -0.5,
+        "unit": "-"
+    },
+    {
+        "name": "MinFactor",
+        "nilai": 0.221314,
+        "unit": "-"
+    },
+    {
+        "name": "MaxFactor",
+        "nilai": 4.436,
+        "unit": "-"
+    },
+    {
+        "name": "RosinRammler_n",
+        "nilai": 2.3,
+        "unit": "-"
+    },
+    {
+        "name": "FanVelocityCoeff",
+        "nilai": 0.2,
+        "unit": "m/s per Hz"
+    },
+    {
+        "name": "HumidityCoeff",
+        "nilai": 0.019835,
+        "unit": "-"
+    },
+    {
+        "name": "Default_thetaInner",
+        "nilai": 8,
+        "unit": "deg"
+    },
+    {
+        "name": "Default_thetaOuter",
+        "nilai": 22,
+        "unit": "deg"
+    }
+]

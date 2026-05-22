@@ -1,0 +1,123 @@
+[
+    {
+        "name": "Flow Feed",
+        "unit": "kg/h",
+        "placeholder": "3831",
+        "input_type": "number",
+        "field_name": "flow_feed",
+        "rumus_logika": "input / 60",
+        "location": "constant/reactingCloud1Properties > subModels > injectionModels > milkSpray > MassTotal",
+        "snippet_openfoam": "massTotal kg/h;",
+        "hidden": false
+    },
+    {
+        "name": "Feed density",
+        "unit": "kg/L",
+        "placeholder": "1.13",
+        "input_type": "number",
+        "field_name": "feed_density",
+        "rumus_logika": "input * 1000",
+        "location": "constant/reactingCloud1Properties > constantProperties > rho0",
+        "snippet_openfoam": "rho0 kg/L;",
+        "hidden": false
+    },
+    {
+        "name": "Temp. of heater",
+        "unit": "°C",
+        "placeholder": "74",
+        "input_type": "number",
+        "field_name": "temp_of_heater",
+        "rumus_logika": "input + 273.15",
+        "location": "constant/reactingCloud1Properties > constantProperties > T0",
+        "snippet_openfoam": "T0 °C;",
+        "hidden": false
+    },
+    {
+        "name": "Temp. inlet chamber",
+        "unit": "°C",
+        "placeholder": "185",
+        "input_type": "number",
+        "field_name": "temp_inlet_chamber",
+        "rumus_logika": "input + 273.15",
+        "location": "0/T > boundaryField > inletGas > value",
+        "snippet_openfoam": "value uniform °C;",
+        "hidden": false
+    },
+    {
+        "name": "chamber pressure",
+        "unit": "mbar",
+        "placeholder": "-0.2",
+        "input_type": "number",
+        "field_name": "chamber_pressure",
+        "rumus_logika": "100000 + input * 100",
+        "location": "0/p_rgh > boundaryField > outletMilk > value",
+        "snippet_openfoam": "value uniform mbar;",
+        "hidden": false
+    },
+    {
+        "name": "Nozzle pressure",
+        "unit": "Bar",
+        "placeholder": "135",
+        "input_type": "number",
+        "field_name": "nozzle_pressure",
+        "rumus_logika": "Nozzle_A * input^Nozzle_B",
+        "location": "constant/reactingCloud1Properties > subModels > injectionModels > milkSpray > sizeDistribution > massRosinRammlerDistribution > lambda",
+        "snippet_openfoam": "lambda Bar;",
+        "hidden": false
+    },
+    {
+        "name": "Nozzle pressure min Value",
+        "unit": "Bar",
+        "placeholder": "135",
+        "input_type": "number",
+        "field_name": "nozzle_pressure_min_value",
+        "rumus_logika": "Nozzle pressure * MinFactor",
+        "location": "constant/reactingCloud1Properties > subModels > injectionModels > milkSpray > sizeDistribution > massRosinRammlerDistribution > minValue",
+        "snippet_openfoam": "minValue Bar;",
+        "hidden": true
+    },
+    {
+        "name": "Nozzle pressure max Value",
+        "unit": "Bar",
+        "placeholder": "135",
+        "input_type": "number",
+        "field_name": "nozzle_pressure_max_value",
+        "rumus_logika": "Nozzle pressure * MaxFactor",
+        "location": "constant/reactingCloud1Properties > subModels > injectionModels > milkSpray > sizeDistribution > massRosinRammlerDistribution > maxValue",
+        "snippet_openfoam": "maxValue Bar;",
+        "hidden": true
+    },
+    {
+        "name": "Nozzle pressure n",
+        "unit": "Bar",
+        "placeholder": "135",
+        "input_type": "number",
+        "field_name": "nozzle_pressure_n",
+        "rumus_logika": "RosinRammler_n",
+        "location": "constant/reactingCloud1Properties > subModels > injectionModels > milkSpray > sizeDistribution > massRosinRammlerDistribution > n",
+        "snippet_openfoam": "n Bar;",
+        "hidden": true
+    },
+    {
+        "name": "Supply Air Fan Frequency",
+        "unit": "Hz",
+        "placeholder": "50",
+        "input_type": "number",
+        "field_name": "supply_air_fan_frequency",
+        "rumus_logika": "input * FanVelocityCoeff",
+        "location": "0/U > boundaryField inletGas > value",
+        "snippet_openfoam": "value uniform (0 0 -Hz);",
+        "hidden": false
+    },
+    {
+        "name": "Supply air humidity",
+        "unit": "%",
+        "placeholder": "54",
+        "input_type": "number",
+        "field_name": "supply_air_humidity",
+        "rumus_logika": "input%/100 * HumidityCoeff",
+        "location": "0/H2O > boundaryField > inletGas > value",
+        "snippet_openfoam": "value uniform %;",
+        "hidden": false
+    }
+]
