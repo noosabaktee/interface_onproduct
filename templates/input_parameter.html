@@ -11,6 +11,26 @@
     '6': '6. Validation'
 } %}
 
+<form class="parameter-toolbar" method="get" action="{{ url_for('dashboard.input_parameter') }}">
+    <div class="parameter-toolbar__group">
+        <label class="form-label" for="parameterMode">Mode</label>
+        <select class="form-select shadow-none" id="parameterMode" name="parameter_mode" onchange="this.form.submit()">
+            <option value="developer" {% if parameter_mode == 'developer' %}selected{% endif %}>Developer</option>
+            <option value="production" {% if parameter_mode == 'production' %}selected{% endif %}>Production</option>
+        </select>
+    </div>
+    {% if parameter_mode == 'production' %}
+        <div class="parameter-toolbar__group">
+            <label class="form-label" for="parameterProduct">Produk</label>
+            <select class="form-select shadow-none" id="parameterProduct" name="product" onchange="this.form.submit()">
+                {% for product_key, product_label in product_labels.items() %}
+                    <option value="{{ product_key }}" {% if selected_product == product_key %}selected{% endif %}>{{ product_label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    {% endif %}
+</form>
+
 {% if not groups %}
     <div class="card-custom text-center p-5 my-auto">
         <i class="bi bi-exclamation-triangle text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
@@ -18,28 +38,30 @@
         <p class="text-muted mt-2">Pastikan file JSON template tersedia di folder models.</p>
     </div>
 {% else %}
-    <ul class="nav cms-tabs flex-shrink-0" id="parameterTabs" role="tablist">
-        {% for group in groups %}
-            <li class="nav-item" role="presentation">
-                <button
-                    class="nav-link {% if group.key == active_group_key %}active{% elif loop.first and not active_group_key %}active{% endif %}"
-                    id="tab-{{ group.key }}"
-                    data-bs-toggle="tab"
-                    data-bs-target="#pane-{{ group.key }}"
-                    type="button"
-                    role="tab"
-                    aria-controls="pane-{{ group.key }}"
-                    aria-selected="{% if group.key == active_group_key or (loop.first and not active_group_key) %}true{% else %}false{% endif %}"
-                >
-                    {{ tab_titles.get(group.key, group.key ~ '. ' ~ group.title) }}
-                </button>
-            </li>
-        {% endfor %}
-    </ul>
+    {% if parameter_mode == 'developer' %}
+        <ul class="nav cms-tabs flex-shrink-0" id="parameterTabs" role="tablist">
+            {% for group in groups %}
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link {% if group.key == active_group_key %}active{% elif loop.first and not active_group_key %}active{% endif %}"
+                        id="tab-{{ group.key }}"
+                        data-bs-toggle="tab"
+                        data-bs-target="#pane-{{ group.key }}"
+                        type="button"
+                        role="tab"
+                        aria-controls="pane-{{ group.key }}"
+                        aria-selected="{% if group.key == active_group_key or (loop.first and not active_group_key) %}true{% else %}false{% endif %}"
+                    >
+                        {{ tab_titles.get(group.key, group.key ~ '. ' ~ group.title) }}
+                    </button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 
     <div class="tab-content flex-shrink-0">
         {% for group in groups %}
-            {% set group_active = group.key == active_group_key or (loop.first and not active_group_key) %}
+            {% set group_active = parameter_mode == 'production' or group.key == active_group_key or (loop.first and not active_group_key) %}
             <div class="tab-pane fade {% if group_active %}show active{% endif %}" id="pane-{{ group.key }}" role="tabpanel" aria-labelledby="tab-{{ group.key }}" tabindex="0">
                 <div class="accordion accordion-custom" id="accordion-{{ group.key }}">
                     {% for section in group.sections %}
@@ -66,6 +88,8 @@
                                 <div class="accordion-body">
                                     <form method="post" action="{{ url_for('dashboard.input_parameter') }}">
                                         <input type="hidden" name="active_group_key" value="{{ group.key }}">
+                                        <input type="hidden" name="parameter_mode" value="{{ parameter_mode }}">
+                                        <input type="hidden" name="product" value="{{ selected_product }}">
                                         <div class="row g-4">
                                         {% for field in section.fields %}
                                             <div class="col-md-4 col-sm-6">
@@ -82,7 +106,7 @@
                                                             value="{{ field.default_value }}"
                                                             step="any"
                                                             placeholder="{{ field.placeholder }}"
-                                                            {{ 'disabled' if field.field_name in IGNORED_FIELD_NAMES else '' }}
+                                                            {{ 'disabled' if parameter_mode == 'developer' and field.field_name in IGNORED_FIELD_NAMES else '' }}
                                                         >
                                                         <span class="input-group-text">{{ field.unit }}</span>
                                                     </div>
@@ -95,7 +119,7 @@
                                                         value="{{ field.default_value }}"
                                                         step="any"
                                                         placeholder="{{ field.placeholder }}"
-                                                        {{ 'disabled' if field.field_name in IGNORED_FIELD_NAMES else '' }}
+                                                        {{ 'disabled' if parameter_mode == 'developer' and field.field_name in IGNORED_FIELD_NAMES else '' }}
                                                     >
                                                 {% endif %}
                                             </div>

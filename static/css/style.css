@@ -549,6 +549,18 @@ body {
     margin-bottom: 8px;
 }
 
+.parameter-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+}
+
+.parameter-toolbar__group {
+    min-width: 180px;
+}
+
 .btn {
     border-radius: 8px;
     font-weight: 700;

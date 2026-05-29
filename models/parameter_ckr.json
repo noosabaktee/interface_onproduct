@@ -60,7 +60,7 @@
         "placeholder": "135",
         "input_type": "number",
         "field_name": "nozzle_pressure",
-        "rumus_logika": "Nozzle_A * input^Nozzle_B",
+        "rumus_logika": "Nozzle_A * (input^Nozzle_B)",
         "location": "constant/reactingCloud1Properties > subModels > injectionModels > milkSpray > sizeDistribution > massRosinRammlerDistribution > lambda",
         "snippet_openfoam": "lambda Bar;",
         "hidden": false

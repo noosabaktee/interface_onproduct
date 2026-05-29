@@ -5,7 +5,12 @@ import io
 
 from flask import abort, Blueprint, flash, jsonify, redirect, render_template, request, send_file, url_for
 
-from models.parameter_model import load_parameter_groups, save_parameter_values, IGNORED_FIELD_NAMES
+from models.parameter_model import (
+    IGNORED_FIELD_NAMES,
+    PRODUCT_LABELS,
+    load_parameter_groups,
+    save_parameter_values,
+)
 from models.paraview_model import get_internal_mesh_path, get_paraview_case, get_surface_path, launch_case_file
 from models.report_model import (
     build_report_pdf,
@@ -90,9 +95,20 @@ def dashboard():
 
 @dashboard_bp.route("/input-parameter", methods=["GET", "POST"])
 def input_parameter():
+    parameter_mode = request.values.get("parameter_mode", "developer")
+    if parameter_mode not in {"developer", "production"}:
+        parameter_mode = "developer"
+    selected_product = request.values.get("product", "ckr")
+    if selected_product not in PRODUCT_LABELS:
+        selected_product = "ckr"
     active_group_key = request.form.get("active_group_key", "0")
     if request.method == "POST":
-        updated, skipped = save_parameter_values(request.form, active_group_key)
+        updated, skipped = save_parameter_values(
+            request.form,
+            active_group_key,
+            parameter_mode,
+            selected_product,
+        )
         if updated:
             flash(f"{updated} parameter berhasil disimpan ke file case.", "success")
         else:
@@ -100,13 +116,16 @@ def input_parameter():
         if skipped:
             flash("Location belum diproses untuk: " + ", ".join(skipped), "warning")
 
-    groups = load_parameter_groups()
+    groups = load_parameter_groups(parameter_mode, selected_product)
     return render_template(
         "input_parameter.html",
         groups=groups,
         title="Input Parameter",
         IGNORED_FIELD_NAMES=IGNORED_FIELD_NAMES,
         active_group_key=active_group_key,
+        parameter_mode=parameter_mode,
+        selected_product=selected_product,
+        product_labels=PRODUCT_LABELS,
     )
 
 
