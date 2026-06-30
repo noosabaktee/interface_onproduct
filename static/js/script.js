@@ -143,6 +143,70 @@ function initTerminalBlocks() {
     });
 }
 
+function initZipUploadForm() {
+    const form = document.querySelector("[data-zip-upload-form]");
+    if (!form) {
+        return;
+    }
+
+    const inputs = Array.from(form.querySelectorAll("[data-zip-input]"));
+    const submitButton = form.querySelector("[data-zip-submit]");
+    if (!inputs.length || !submitButton) {
+        return;
+    }
+
+    const validateForm = () => {
+        let allValid = true;
+
+        inputs.forEach((input) => {
+            const panel = input.closest(".upload-panel");
+            const picker = panel ? panel.querySelector(".zip-picker") : null;
+            const selectedFile = panel ? panel.querySelector("[data-selected-file]") : null;
+            const error = panel ? panel.querySelector("[data-zip-error]") : null;
+            const file = input.files && input.files[0];
+            const hasFile = Boolean(file);
+            const isZip = hasFile && file.name.toLowerCase().endsWith(".zip");
+
+            if (selectedFile) {
+                selectedFile.textContent = hasFile ? file.name : "Belum ada file dipilih";
+            }
+
+            if (picker) {
+                picker.classList.toggle("is-ready", isZip);
+                picker.classList.toggle("has-error", hasFile && !isZip);
+            }
+
+            if (error) {
+                error.hidden = !hasFile || isZip;
+            }
+
+            input.setCustomValidity(hasFile && !isZip ? "File harus bertipe .zip." : "");
+            if (!isZip) {
+                allValid = false;
+            }
+        });
+
+        submitButton.disabled = !allValid;
+        return allValid;
+    };
+
+    inputs.forEach((input) => {
+        input.addEventListener("change", validateForm);
+    });
+
+    form.addEventListener("submit", (event) => {
+        if (!validateForm()) {
+            event.preventDefault();
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Processing Upload';
+    });
+
+    validateForm();
+}
+
 let activityChart = null;
 let statusChart = null;
 
@@ -227,6 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initThemeToggle();
     initSynchronizedInputs();
     initTerminalBlocks();
+    initZipUploadForm();
     renderDashboardCharts();
     window.addEventListener("resize", renderDashboardCharts);
 });

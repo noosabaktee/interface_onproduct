@@ -10,9 +10,9 @@
     </div>
 
     <div class="workflow-stepper">
-        <a class="wf-node wf-node-link" href="#" aria-label="Geometry">
-            <div class="wf-icon"><i class="bi bi-box"></i></div>
-            <div class="wf-label">1. Geometry</div>
+        <a class="wf-node wf-node-link" href="{{ url_for('dashboard.upload_files') }}" aria-label="Upload files">
+            <div class="wf-icon"><i class="bi bi-cloud-arrow-up"></i></div>
+            <div class="wf-label">1. Upload</div>
         </a>
         <div class="wf-line"></div>
         <a class="wf-node wf-node-link" href="{{ url_for('dashboard.meshing') }}">

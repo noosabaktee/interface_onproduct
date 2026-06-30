@@ -1,7 +1,9 @@
-from pathlib import Path
+import io
+from pathlib import Path, PurePosixPath
+import shutil
 import subprocess
 import sys
-import io
+import zipfile
 
 from flask import abort, Blueprint, flash, jsonify, redirect, render_template, request, send_file, url_for
 
@@ -26,10 +28,119 @@ from models.terminal_runner import cancel_command, get_command_state, is_meshing
 dashboard_bp = Blueprint("dashboard", __name__)
 
 APP_ROOT = Path(__file__).resolve().parents[1]
+CASE_ROOT = APP_ROOT.parent / "sprayDryer-6.0.0-onProduct-Trial02"
 GRAFIK_OUTPUT_PATH = APP_ROOT / "grafik" / "output"
 GRAFIK_SCRIPT = APP_ROOT / "grafik" / "2plot_residuals.py"
-GRAFIK_LOG_RUN = APP_ROOT.parent / "sprayDryer-6.0.0-onProduct-Trial02" / "log.run"
-DECOMPOSE_PAR_DICT = APP_ROOT.parent / "sprayDryer-6.0.0-onProduct-Trial02" / "system" / "decomposeParDict"
+GRAFIK_LOG_RUN = CASE_ROOT / "log.run"
+TRISURFACE_DIR = CASE_ROOT / "constant" / "triSurface"
+SYSTEM_DIR = CASE_ROOT / "system"
+DECOMPOSE_PAR_DICT = SYSTEM_DIR / "decomposeParDict"
+
+
+class ZipUploadError(ValueError):
+    pass
+
+
+def _validate_uploaded_zip(file_storage, label):
+    filename = (getattr(file_storage, "filename", "") or "").strip()
+    if file_storage is None or not filename:
+        raise ZipUploadError(f"{label} wajib diisi dengan file .zip.")
+
+    if not filename.lower().endswith(".zip"):
+        raise ZipUploadError(f"{label} harus berupa file .zip.")
+
+    try:
+        file_storage.stream.seek(0)
+        if not zipfile.is_zipfile(file_storage.stream):
+            raise ZipUploadError(f"{label} bukan file zip yang valid.")
+        file_storage.stream.seek(0)
+    except OSError as exc:
+        raise ZipUploadError(f"{label} tidak dapat dibaca: {exc}") from exc
+
+
+def _is_zip_symlink(info):
+    file_type = (info.external_attr >> 16) & 0o170000
+    return file_type == 0o120000
+
+
+def _member_relative_parts(member_name, folder_marker):
+    normalized_name = member_name.replace("\\", "/").strip()
+    member_path = PurePosixPath(normalized_name)
+
+    if member_path.is_absolute():
+        raise ZipUploadError(f"Zip berisi path tidak aman: {member_name}")
+
+    parts = [part for part in member_path.parts if part not in {"", "."}]
+    if not parts:
+        return None
+
+    if any(part == ".." or ":" in part for part in parts):
+        raise ZipUploadError(f"Zip berisi path tidak aman: {member_name}")
+
+    if folder_marker in parts:
+        parts = parts[parts.index(folder_marker) + 1 :]
+
+    if not parts:
+        return None
+
+    return parts
+
+
+def _collect_zip_targets(archive, target_dir, folder_marker):
+    target_root = target_dir.resolve()
+    collected = []
+    seen_paths = set()
+
+    for info in archive.infolist():
+        if info.is_dir():
+            continue
+
+        if _is_zip_symlink(info):
+            raise ZipUploadError(f"Zip berisi symlink yang tidak didukung: {info.filename}")
+
+        parts = _member_relative_parts(info.filename, folder_marker)
+        if not parts:
+            continue
+
+        relative_name = Path(*parts).as_posix()
+        if relative_name in seen_paths:
+            raise ZipUploadError(f"Zip berisi file duplikat: {relative_name}")
+        seen_paths.add(relative_name)
+
+        destination = target_dir.joinpath(*parts)
+        try:
+            destination.resolve(strict=False).relative_to(target_root)
+        except (OSError, ValueError) as exc:
+            raise ZipUploadError(f"Zip berisi path tidak aman: {info.filename}") from exc
+
+        collected.append((info, destination, relative_name))
+
+    if not collected:
+        raise ZipUploadError("Zip tidak berisi file yang dapat diupload.")
+
+    return collected
+
+
+def _extract_zip_members(archive, members):
+    result = {"added": 0, "updated": 0, "files": []}
+
+    for info, destination, relative_name in members:
+        existed = destination.exists()
+        destination.parent.mkdir(parents=True, exist_ok=True)
+
+        with archive.open(info) as source, destination.open("wb") as output:
+            shutil.copyfileobj(source, output)
+
+        result["updated" if existed else "added"] += 1
+        result["files"].append(relative_name)
+
+    return result
+
+
+def _count_case_files(path):
+    if not path.exists():
+        return 0
+    return sum(1 for item in path.rglob("*") if item.is_file())
 
 
 def _load_number_of_subdomains(default=16):
@@ -151,6 +262,48 @@ def set_processor():
         "set_processor.html",
         processor_count=processor_count,
         title="Set Processor",
+    )
+
+
+@dashboard_bp.route("/upload", methods=["GET", "POST"])
+def upload_files():
+    if request.method == "POST":
+        stl_zip = request.files.get("stl_zip")
+        system_zip = request.files.get("system_zip")
+
+        try:
+            _validate_uploaded_zip(stl_zip, "Update STL")
+            _validate_uploaded_zip(system_zip, "Update System")
+
+            with zipfile.ZipFile(stl_zip.stream) as stl_archive, zipfile.ZipFile(system_zip.stream) as system_archive:
+                stl_members = _collect_zip_targets(stl_archive, TRISURFACE_DIR, "triSurface")
+                system_members = _collect_zip_targets(system_archive, SYSTEM_DIR, "system")
+
+                stl_result = _extract_zip_members(stl_archive, stl_members)
+                system_result = _extract_zip_members(system_archive, system_members)
+
+            flash(
+                "Upload berhasil. "
+                f"STL: {stl_result['updated']} file diganti, {stl_result['added']} file ditambah. "
+                f"System: {system_result['updated']} file diganti, {system_result['added']} file ditambah.",
+                "success",
+            )
+        except ZipUploadError as exc:
+            flash(str(exc), "danger")
+        except zipfile.BadZipFile:
+            flash("File yang diupload harus berupa zip yang valid.", "danger")
+        except OSError as exc:
+            flash(f"Gagal menyimpan file upload: {exc}", "danger")
+
+        return redirect(url_for("dashboard.upload_files"))
+
+    return render_template(
+        "upload_files.html",
+        title="Upload Files",
+        trisurface_path=TRISURFACE_DIR,
+        system_path=SYSTEM_DIR,
+        trisurface_count=_count_case_files(TRISURFACE_DIR),
+        system_count=_count_case_files(SYSTEM_DIR),
     )
 
 
