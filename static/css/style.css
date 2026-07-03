@@ -1131,6 +1131,126 @@ body {
     white-space: pre-wrap;
 }
 
+.solver-safety-panel {
+    padding: 14px 16px;
+    border-left: 4px solid var(--primary-brand);
+    background: var(--table-header-bg);
+}
+
+.solver-safety-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.solver-safety-kicker {
+    margin: 0 0 3px;
+    color: var(--text-main);
+    font-size: 0.86rem;
+    font-weight: 900;
+}
+
+.solver-safety-copy {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.solver-safety-summary,
+.solver-safety-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    width: max-content;
+    max-width: 100%;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.solver-safety-summary {
+    flex-shrink: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-surface);
+}
+
+.solver-safety-dot,
+.solver-safety-state::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    border-radius: 50%;
+    background: #9ca3af;
+}
+
+.solver-safety-summary.is-safe,
+.solver-safety-state.is-safe {
+    color: #047857;
+}
+
+.solver-safety-summary.is-safe .solver-safety-dot,
+.solver-safety-state.is-safe::before {
+    background: #10b981;
+}
+
+.solver-safety-summary.is-warn,
+.solver-safety-state.is-warn {
+    color: #b45309;
+}
+
+.solver-safety-summary.is-warn .solver-safety-dot,
+.solver-safety-state.is-warn::before {
+    background: #f59e0b;
+}
+
+.solver-safety-summary.is-danger,
+.solver-safety-state.is-danger {
+    color: #b91c1c;
+}
+
+.solver-safety-summary.is-danger .solver-safety-dot,
+.solver-safety-state.is-danger::before {
+    background: #ef4444;
+}
+
+.solver-safety-table-wrap {
+    overflow-x: auto;
+}
+
+.solver-safety-table {
+    width: 100%;
+    min-width: 680px;
+    border-collapse: collapse;
+    color: var(--text-main);
+    font-size: 0.8rem;
+}
+
+.solver-safety-table th,
+.solver-safety-table td {
+    padding: 8px 10px;
+    border-top: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.solver-safety-table th {
+    color: var(--primary-brand);
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.solver-safety-table td:nth-child(2),
+.solver-safety-table td:nth-child(3) {
+    font-family: "Fira Code", "Consolas", monospace;
+    font-size: 0.76rem;
+}
+
 .terminal-window {
     min-height: 320px;
     max-height: 560px;
@@ -2007,6 +2127,15 @@ body {
 
     .wf-line {
         margin: 30px -8px 0;
+    }
+
+    .solver-safety-head {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .solver-safety-summary {
+        width: 100%;
     }
 
     .hero-title {
