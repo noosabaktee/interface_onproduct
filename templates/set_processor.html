@@ -13,7 +13,7 @@
                     type="range"
                     class="form-range mt-2 mb-3"
                     min="1"
-                    max="16"
+                    max="{{ max_processor_count }}"
                     step="1"
                     value="{{ processor_count }}"
                     id="processorRange"
@@ -25,7 +25,7 @@
                         type="number"
                         class="form-control shadow-none text-center fw-bold fs-5 text-primary"
                         min="1"
-                        max="16"
+                        max="{{ max_processor_count }}"
                         value="{{ processor_count }}"
                         name="processor_count"
                         id="processorInput"
@@ -41,8 +41,8 @@
             </div>
 
             <div class="col-lg-7 col-md-12">
-                <div class="processor-visuals" id="core-grid" aria-hidden="true">
-                    {% for item in range(16) %}
+                <div class="processor-visuals" id="core-grid" data-max-cores="{{ max_processor_count }}" aria-hidden="true">
+                    {% for item in range(max_processor_count) %}
                         <div class="core-box {% if item >= processor_count %}inactive{% endif %}">
                             <i class="bi bi-cpu-fill"></i>
                         </div>

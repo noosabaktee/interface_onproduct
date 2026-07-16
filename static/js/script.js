@@ -32,8 +32,9 @@ function initSynchronizedInputs() {
         }
 
         const syncValue = () => {
+            const processorGrid = document.getElementById("core-grid");
             const min = Number(control.min || syncTarget.min || 1);
-            const max = Number(control.max || syncTarget.max || 16);
+            const max = Number(control.max || syncTarget.max || (processorGrid && processorGrid.dataset.maxCores) || 32);
             let value = Number(control.value || syncTarget.value || min);
             if (Number.isNaN(value)) {
                 value = min;
@@ -56,11 +57,13 @@ function updateCoreVisuals(activeCount) {
         return;
     }
 
-    const maxCores = 16;
+    const configuredMax = Number(grid.dataset.maxCores || grid.children.length || 32);
+    const maxCores = Number.isFinite(configuredMax) && configuredMax > 0 ? configuredMax : 32;
+    const activeCores = Math.max(0, Math.min(maxCores, Number(activeCount) || 0));
     grid.innerHTML = "";
     for (let i = 0; i < maxCores; i += 1) {
         const box = document.createElement("div");
-        box.className = `core-box${i < activeCount ? "" : " inactive"}`;
+        box.className = `core-box${i < activeCores ? "" : " inactive"}`;
         box.innerHTML = '<i class="bi bi-cpu-fill"></i>';
         grid.appendChild(box);
     }
@@ -91,7 +94,7 @@ function initTerminalBlocks() {
                 "[SYSTEM] Initializing OpenFOAM Solver...",
                 "[INFO] Preparing parallel decomposition...",
                 "> decomposePar",
-                "> mpirun -np 16 sprayFoam -parallel",
+                "> mpirun -np [configured] sprayFoam -parallel",
                 "_"
             ]
         };

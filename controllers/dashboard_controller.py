@@ -35,6 +35,8 @@ GRAFIK_LOG_RUN = CASE_ROOT / "log.run"
 TRISURFACE_DIR = CASE_ROOT / "constant" / "triSurface"
 SYSTEM_DIR = CASE_ROOT / "system"
 DECOMPOSE_PAR_DICT = SYSTEM_DIR / "decomposeParDict"
+DEFAULT_PROCESSOR_COUNT = 16
+MAX_PROCESSOR_COUNT = 32
 
 
 class ZipUploadError(ValueError):
@@ -143,7 +145,7 @@ def _count_case_files(path):
     return sum(1 for item in path.rglob("*") if item.is_file())
 
 
-def _load_number_of_subdomains(default=16):
+def _load_number_of_subdomains(default=DEFAULT_PROCESSOR_COUNT):
     if not DECOMPOSE_PAR_DICT.exists():
         return default
 
@@ -160,6 +162,11 @@ def _load_number_of_subdomains(default=16):
     return default
 
 
+def _build_processor_weight_line(value, indent=""):
+    weights = " ".join("1" for _ in range(value))
+    return f"{indent}processorWeight ({weights}); //{value}"
+
+
 def _save_number_of_subdomains(value):
     if not DECOMPOSE_PAR_DICT.exists():
         return False
@@ -167,6 +174,7 @@ def _save_number_of_subdomains(value):
     try:
         text = DECOMPOSE_PAR_DICT.read_text(encoding="utf-8").splitlines()
         updated = False
+        weight_updated = False
         new_lines = []
 
         for line in text:
@@ -175,6 +183,10 @@ def _save_number_of_subdomains(value):
                 indent = line[: len(line) - len(line.lstrip())]
                 new_lines.append(f"{indent}numberOfSubdomains {value};")
                 updated = True
+            elif stripped.startswith("processorWeight"):
+                indent = line[: len(line) - len(line.lstrip())]
+                new_lines.append(_build_processor_weight_line(value, indent))
+                weight_updated = True
             else:
                 new_lines.append(line)
 
@@ -184,6 +196,21 @@ def _save_number_of_subdomains(value):
                 len(new_lines),
             )
             new_lines.insert(insert_idx, f"numberOfSubdomains {value};")
+
+        if not weight_updated:
+            insert_idx = None
+            for idx, line in enumerate(new_lines):
+                stripped = line.strip()
+                if not stripped.startswith("scotchCoeffs"):
+                    continue
+
+                insert_idx = idx + 1
+                if "{" not in stripped and insert_idx < len(new_lines) and new_lines[insert_idx].strip() == "{":
+                    insert_idx += 1
+                break
+
+            if insert_idx is not None:
+                new_lines.insert(insert_idx, _build_processor_weight_line(value, "    "))
 
         DECOMPOSE_PAR_DICT.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
         return True
@@ -242,14 +269,14 @@ def input_parameter():
 
 @dashboard_bp.route("/set-processor", methods=["GET", "POST"])
 def set_processor():
-    processor_count = _load_number_of_subdomains()
+    processor_count = max(1, min(_load_number_of_subdomains(), MAX_PROCESSOR_COUNT))
     if request.method == "POST":
         try:
-            processor_count = int(request.form.get("processor_count", processor_count))
-        except ValueError:
-            processor_count = 16
+            submitted_processor_count = int(request.form.get("processor_count", processor_count))
+        except (TypeError, ValueError):
+            submitted_processor_count = processor_count
 
-        processor_count = max(1, min(processor_count, 16))
+        processor_count = max(1, min(submitted_processor_count, MAX_PROCESSOR_COUNT))
         if _save_number_of_subdomains(processor_count):
             flash(f"Jumlah processor diset ke {processor_count}. file decomposeParDict diperbarui.", "success")
         else:
@@ -261,6 +288,7 @@ def set_processor():
     return render_template(
         "set_processor.html",
         processor_count=processor_count,
+        max_processor_count=MAX_PROCESSOR_COUNT,
         title="Set Processor",
     )
 
