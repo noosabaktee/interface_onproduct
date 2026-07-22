@@ -38,12 +38,13 @@
                 'dashboard.meshing': 'bi-bounding-box',
                 'dashboard.solver': 'bi-play-circle-fill',
                 'dashboard.paraview': 'bi-display',
+                'dashboard.remote_paraview': 'bi-broadcast-pin',
                 'dashboard.graph': 'bi-graph-up-arrow',
                 'dashboard.report': 'bi-clipboard-data'
             } %}
 
             {% for endpoint, label, icon in nav_items %}
-                <a class="module-icon {% if request.endpoint == endpoint %}active{% endif %}" href="{{ url_for(endpoint) }}" title="{{ label }}">
+                <a class="module-icon {% if request.endpoint == endpoint or (endpoint == 'dashboard.paraview' and request.endpoint == 'dashboard.remote_paraview') %}active{% endif %}" href="{{ url_for(endpoint) }}" title="{{ label }}">
                     <i class="bi {{ icon }}"></i>
                     <span>{{ label }}</span>
                 </a>

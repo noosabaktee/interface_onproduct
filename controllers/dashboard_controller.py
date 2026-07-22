@@ -1,11 +1,13 @@
+import hmac
 import io
+import os
 from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
 import sys
 import zipfile
 
-from flask import abort, Blueprint, flash, jsonify, redirect, render_template, request, send_file, url_for
+from flask import abort, Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 
 from models.parameter_model import (
     IGNORED_FIELD_NAMES,
@@ -14,6 +16,12 @@ from models.parameter_model import (
     save_parameter_values,
 )
 from models.paraview_model import get_internal_mesh_path, get_paraview_case, get_surface_path, launch_case_file
+from models.paraview_server import (
+    get_connection_config,
+    get_server_state,
+    start_server,
+    stop_server,
+)
 from models.report_model import (
     build_report_pdf,
     create_report,
@@ -437,11 +445,64 @@ def paraview():
     )
 
 
+@dashboard_bp.route("/paraview/remote")
+def remote_paraview():
+    return render_template(
+        "remote_paraview.html",
+        title="Remote ParaView",
+        case=get_paraview_case(),
+        remote_connection=get_connection_config(_request_connection_host()),
+    )
+
+
 @dashboard_bp.post("/paraview/open")
 def open_paraview_case():
     success, message = launch_case_file()
     flash(message, "success" if success else "warning")
     return redirect(url_for("dashboard.paraview"))
+
+
+def _request_connection_host():
+    forwarded_host = ""
+    if os.environ.get("TRUST_PROXY_HEADERS", "0") == "1":
+        forwarded_host = request.headers.get("X-Forwarded-Host", "")
+    return (forwarded_host.split(",", 1)[0] or request.host).strip()
+
+
+def _remote_state_response(state):
+    response = dict(state)
+    response.update(get_connection_config(_request_connection_host()))
+    return response
+
+
+def _remote_csrf_error():
+    supplied_token = request.headers.get("X-CSRF-Token", "")
+    session_token = session.get("csrf_token", "")
+    if session_token and hmac.compare_digest(supplied_token, session_token):
+        return None
+    return jsonify({"error": "Token keamanan tidak valid. Muat ulang halaman."}), 403
+
+
+@dashboard_bp.post("/paraview/remote/start")
+def start_remote_paraview():
+    csrf_error = _remote_csrf_error()
+    if csrf_error:
+        return csrf_error
+    state = _remote_state_response(start_server())
+    return jsonify(state), (503 if state.get("error") else 200)
+
+
+@dashboard_bp.post("/paraview/remote/stop")
+def stop_remote_paraview():
+    csrf_error = _remote_csrf_error()
+    if csrf_error:
+        return csrf_error
+    return jsonify(_remote_state_response(stop_server()))
+
+
+@dashboard_bp.get("/paraview/remote/status")
+def remote_paraview_status():
+    return jsonify(_remote_state_response(get_server_state()))
 
 
 @dashboard_bp.get("/paraview/surface/<surface_id>")

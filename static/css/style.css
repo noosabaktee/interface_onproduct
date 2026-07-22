@@ -1330,6 +1330,607 @@ body {
     font-style: normal;
 }
 
+.remote-paraview-card {
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.remote-paraview-card.is-highlighted {
+    border-color: var(--primary-brand);
+    box-shadow: 0 0 0 4px rgba(0, 143, 76, 0.14), var(--shadow-lg);
+}
+
+.remote-paraview-card:focus-visible {
+    outline: 3px solid rgba(0, 143, 76, 0.42);
+    outline-offset: 3px;
+}
+
+.remote-paraview-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    background:
+        radial-gradient(circle at 9% 10%, rgba(0, 143, 76, 0.1), transparent 30%),
+        var(--bg-surface);
+}
+
+.remote-paraview-title {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.remote-paraview-icon {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    background: linear-gradient(135deg, var(--primary-brand), #10b981);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(0, 143, 76, 0.22);
+    font-size: 1.35rem;
+}
+
+.remote-title-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.remote-title-line h3 {
+    margin: 0;
+    color: var(--text-main);
+    font-size: 1.05rem;
+    font-weight: 900;
+}
+
+.remote-paraview-title p {
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: 0.83rem;
+    line-height: 1.45;
+}
+
+.remote-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 9px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: var(--input-bg);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.remote-status-dot {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    border-radius: 50%;
+    background: #9ca3af;
+}
+
+.remote-status-badge.is-starting,
+.remote-status-badge.is-stopping,
+.remote-status-badge.is-finalizing,
+.remote-status-badge.is-checking {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.1);
+    color: #b45309;
+}
+
+.remote-status-badge.is-starting .remote-status-dot,
+.remote-status-badge.is-stopping .remote-status-dot,
+.remote-status-badge.is-finalizing .remote-status-dot,
+.remote-status-badge.is-checking .remote-status-dot {
+    background: #f59e0b;
+    animation: remoteStatusPulse 1.25s ease-in-out infinite;
+}
+
+.remote-status-badge.is-waiting {
+    border-color: rgba(14, 165, 233, 0.3);
+    background: rgba(14, 165, 233, 0.1);
+    color: #0369a1;
+}
+
+.remote-status-badge.is-waiting .remote-status-dot {
+    background: #38bdf8;
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.14);
+    animation: remoteStatusPulse 1.6s ease-in-out infinite;
+}
+
+.remote-status-badge.is-connected {
+    border-color: rgba(16, 185, 129, 0.32);
+    background: rgba(16, 185, 129, 0.12);
+    color: #047857;
+}
+
+.remote-status-badge.is-connected .remote-status-dot {
+    background: #10b981;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.16);
+}
+
+.remote-status-badge.is-failed {
+    border-color: rgba(239, 68, 68, 0.32);
+    background: rgba(239, 68, 68, 0.1);
+    color: #b91c1c;
+}
+
+.remote-status-badge.is-failed .remote-status-dot {
+    background: #ef4444;
+}
+
+.remote-status-badge.is-unreachable {
+    border-color: rgba(100, 116, 139, 0.34);
+    background: rgba(100, 116, 139, 0.1);
+    color: #475569;
+}
+
+.remote-status-badge.is-unreachable .remote-status-dot {
+    background: #64748b;
+}
+
+.remote-status-badge.is-stopped .remote-status-dot {
+    background: #64748b;
+}
+
+@keyframes remoteStatusPulse {
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.45;
+        transform: scale(0.78);
+    }
+}
+
+.remote-paraview-actions {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex: 0 0 auto;
+}
+
+.remote-paraview-actions .btn {
+    min-height: 42px;
+    font-weight: 800;
+}
+
+.remote-connection-flow {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 18px 20px;
+}
+
+.remote-step-card {
+    min-width: 0;
+    position: relative;
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--input-bg);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.remote-step-card:hover {
+    border-color: rgba(0, 143, 76, 0.5);
+    transform: translateY(-1px);
+}
+
+.remote-step-card:not(:last-child)::after {
+    content: "\F285";
+    position: absolute;
+    top: 50%;
+    right: -19px;
+    z-index: 2;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    transform: translateY(-50%);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    background: var(--bg-surface);
+    color: var(--primary-brand);
+    font-family: "bootstrap-icons";
+    font-size: 0.72rem;
+}
+
+.remote-step-number {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(0, 143, 76, 0.11);
+    color: var(--primary-brand);
+    font-size: 0.75rem;
+    font-weight: 900;
+}
+
+.remote-step-content {
+    min-width: 0;
+    flex: 1;
+}
+
+.remote-step-kicker {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--primary-brand);
+    font-size: 0.65rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.remote-step-content > strong {
+    display: block;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    font-weight: 900;
+}
+
+.remote-step-content > p {
+    min-height: 38px;
+    margin: 5px 0 11px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    line-height: 1.45;
+}
+
+.remote-process-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.remote-process-meta span {
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    font-size: 0.69rem;
+    font-weight: 700;
+}
+
+.remote-process-meta b {
+    color: var(--text-main);
+    font-family: "Fira Code", "Consolas", monospace;
+}
+
+.remote-connection-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(86px, 0.42fr);
+    gap: 7px;
+}
+
+.remote-connection-pair label {
+    min-width: 0;
+    margin: 0;
+}
+
+.remote-connection-pair label > span {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-muted);
+    font-size: 0.64rem;
+    font-weight: 800;
+}
+
+.remote-code-readout {
+    min-width: 0;
+    min-height: 38px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 38px;
+    align-items: stretch;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-surface);
+    overflow: hidden;
+}
+
+.remote-code-readout code {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    color: var(--text-main);
+    font-family: "Fira Code", "Consolas", monospace;
+    font-size: 0.72rem;
+    overflow-wrap: anywhere;
+}
+
+.remote-code-readout button {
+    width: 38px;
+    border: 0;
+    border-left: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.remote-code-readout button:hover {
+    background: var(--hover-bg);
+    color: var(--primary-brand);
+}
+
+.remote-code-readout button.is-copied {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+}
+
+.remote-direct-connection {
+    margin-top: 8px;
+}
+
+.remote-direct-connection summary {
+    color: #b45309;
+    cursor: pointer;
+    font-size: 0.65rem;
+    font-weight: 800;
+}
+
+.remote-direct-connection[open] summary {
+    margin-bottom: 5px;
+}
+
+.remote-direct-connection .remote-code-readout {
+    border-color: rgba(245, 158, 11, 0.28);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.remote-network-notes {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.7fr);
+    gap: 12px;
+    padding: 0 20px 18px;
+}
+
+.remote-tunnel-note,
+.remote-config-warning {
+    min-width: 0;
+    border-radius: 10px;
+}
+
+.remote-tunnel-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid rgba(14, 116, 144, 0.24);
+    background: rgba(14, 165, 233, 0.07);
+}
+
+.remote-note-icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: rgba(14, 165, 233, 0.13);
+    color: #0284c7;
+    font-size: 1rem;
+}
+
+.remote-tunnel-note > div {
+    min-width: 0;
+    flex: 1;
+}
+
+.remote-tunnel-note strong {
+    display: block;
+    color: var(--text-main);
+    font-size: 0.81rem;
+    font-weight: 900;
+}
+
+.remote-tunnel-note p {
+    margin: 3px 0 9px;
+    color: var(--text-muted);
+    font-size: 0.73rem;
+    line-height: 1.45;
+}
+
+.remote-tunnel-note p code {
+    color: #0369a1;
+    font-weight: 800;
+}
+
+.remote-command-readout {
+    background: rgba(15, 23, 42, 0.94);
+    border-color: rgba(148, 163, 184, 0.24);
+}
+
+.remote-command-readout code {
+    color: #d1fae5;
+}
+
+.remote-command-readout button {
+    border-left-color: rgba(148, 163, 184, 0.24);
+    color: #94a3b8;
+}
+
+.remote-config-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 14px;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    background: rgba(245, 158, 11, 0.08);
+    color: #92400e;
+    font-size: 0.73rem;
+    line-height: 1.5;
+}
+
+.remote-warning-stack {
+    min-width: 0;
+    display: grid;
+    align-content: start;
+    gap: 12px;
+}
+
+.remote-config-warning[hidden] {
+    display: none;
+}
+
+.remote-config-warning i {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    color: #f59e0b;
+}
+
+.remote-config-warning code {
+    color: inherit;
+    font-weight: 900;
+}
+
+.remote-terminal {
+    margin: 0 20px 20px;
+    border: 1px solid #253142;
+    border-radius: 12px;
+    background: #0b1018;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+}
+
+.remote-terminal-bar {
+    min-height: 42px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #253142;
+    background: #111827;
+}
+
+.terminal-window-controls {
+    display: inline-flex;
+    gap: 6px;
+}
+
+.terminal-window-controls span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ef4444;
+}
+
+.terminal-window-controls span:nth-child(2) {
+    background: #f59e0b;
+}
+
+.terminal-window-controls span:nth-child(3) {
+    background: #10b981;
+}
+
+.remote-terminal-title {
+    min-width: 0;
+    color: #94a3b8;
+    font-family: "Fira Code", "Consolas", monospace;
+    font-size: 0.72rem;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.remote-terminal-copy {
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 0.69rem;
+    font-weight: 800;
+}
+
+.remote-terminal-copy:hover,
+.remote-terminal-copy.is-copied {
+    border-color: #10b981;
+    color: #6ee7b7;
+}
+
+.remote-terminal-output {
+    min-height: 190px;
+    max-height: 330px;
+    margin: 0;
+    overflow: auto;
+    padding: 16px;
+    background:
+        linear-gradient(rgba(16, 185, 129, 0.025) 1px, transparent 1px),
+        #0b1018;
+    background-size: 100% 24px;
+    color: #86efac;
+    font-family: "Fira Code", "Consolas", monospace;
+    font-size: 0.76rem;
+    line-height: 1.58;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+[data-theme="dark"] .remote-status-badge.is-starting,
+[data-theme="dark"] .remote-status-badge.is-stopping,
+[data-theme="dark"] .remote-status-badge.is-finalizing,
+[data-theme="dark"] .remote-status-badge.is-checking,
+[data-theme="dark"] .remote-config-warning {
+    color: #fcd34d;
+}
+
+[data-theme="dark"] .remote-status-badge.is-connected {
+    color: #6ee7b7;
+}
+
+[data-theme="dark"] .remote-status-badge.is-waiting {
+    color: #7dd3fc;
+}
+
+[data-theme="dark"] .remote-status-badge.is-failed {
+    color: #fca5a5;
+}
+
+[data-theme="dark"] .remote-status-badge.is-unreachable {
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .remote-tunnel-note p code {
+    color: #7dd3fc;
+}
+
+[data-theme="dark"] .remote-direct-connection summary {
+    color: #fbbf24;
+}
+
 .paraview-workspace {
     display: flex;
     flex-direction: column;
@@ -2028,6 +2629,10 @@ body {
         grid-template-columns: 1fr;
     }
 
+    .remote-network-notes {
+        grid-template-columns: 1fr;
+    }
+
     .report-layout {
         grid-template-columns: 1fr;
     }
@@ -2044,6 +2649,18 @@ body {
 
     .futuristic-header {
         padding: 14px 18px;
+    }
+
+    .remote-connection-flow {
+        grid-template-columns: 1fr;
+    }
+
+    .remote-step-card:not(:last-child)::after {
+        content: "\F282";
+        top: auto;
+        right: 50%;
+        bottom: -20px;
+        transform: translateX(50%);
     }
 }
 
@@ -2163,6 +2780,49 @@ body {
         grid-template-columns: 1fr;
     }
 
+    .remote-paraview-head,
+    .remote-paraview-title {
+        align-items: flex-start;
+    }
+
+    .remote-paraview-head {
+        flex-direction: column;
+    }
+
+    .remote-paraview-actions {
+        width: 100%;
+    }
+
+    .remote-paraview-actions .btn {
+        flex: 1 1 0;
+    }
+
+    .remote-paraview-icon {
+        width: 42px;
+        height: 42px;
+        flex-basis: 42px;
+    }
+
+    .remote-connection-flow {
+        padding: 14px;
+    }
+
+    .remote-network-notes {
+        padding: 0 14px 14px;
+    }
+
+    .remote-terminal {
+        margin: 0 14px 14px;
+    }
+
+    .remote-terminal-title {
+        text-align: left;
+    }
+
+    .remote-terminal-copy span {
+        display: none;
+    }
+
     .paraview-workspace {
         min-height: 560px;
     }
@@ -2232,5 +2892,46 @@ body {
 
     .report-image-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .remote-paraview-title {
+        width: 100%;
+    }
+
+    .remote-title-line {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .remote-paraview-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .remote-paraview-actions .btn {
+        width: 100%;
+    }
+
+    .remote-step-card {
+        padding: 14px;
+    }
+
+    .remote-connection-pair {
+        grid-template-columns: 1fr;
+    }
+
+    .remote-tunnel-note {
+        flex-direction: column;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .remote-status-dot,
+    .remote-paraview-card,
+    .remote-step-card {
+        animation: none !important;
+        transition: none !important;
     }
 }

@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-wrapper paraview-page">
+    <div class="hero-strip">
+        <div class="section-head mb-0">
+            <div>
+                <h2 class="hero-title">Remote ParaView Desktop</h2>
+                <p class="hero-copy">{{ case.foam_name }}</p>
+            </div>
+            <a class="btn btn-outline-primary" href="{{ url_for('dashboard.paraview') }}">
+                <i class="bi bi-arrow-left me-1"></i>Kembali ke ParaView
+            </a>
+        </div>
+    </div>
+
+    <section
+        id="remote-paraview-control"
+        class="remote-paraview-card mt-3"
+        data-paraview-remote
+        data-status-url="{{ url_for('dashboard.remote_paraview_status') }}"
+        data-start-url="{{ url_for('dashboard.start_remote_paraview') }}"
+        data-stop-url="{{ url_for('dashboard.stop_remote_paraview') }}"
+        data-csrf-token="{{ session.get('csrf_token', '') }}"
+        tabindex="-1"
+    >
+        <div class="remote-paraview-head">
+            <div class="remote-paraview-title">
+                <span class="remote-paraview-icon"><i class="bi bi-broadcast-pin"></i></span>
+                <div>
+                    <div class="remote-title-line">
+                        <h3>Remote ParaView Desktop</h3>
+                        <span
+                            class="remote-status-badge is-checking"
+                            data-remote-status-badge
+                            role="status"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        >
+                            <span class="remote-status-dot" aria-hidden="true"></span>
+                            <span data-remote-status-label>Memeriksa server</span>
+                        </span>
+                    </div>
+                    <p data-remote-message>
+                        Jalankan pvserver di VPS, lalu hubungkan ParaView Desktop ke case ini.
+                    </p>
+                </div>
+            </div>
+            <div class="remote-paraview-actions">
+                <button class="btn btn-primary" type="button" data-remote-start disabled>
+                    <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                    Memeriksa...
+                </button>
+                <button class="btn btn-outline-danger" type="button" data-remote-stop hidden>
+                    <i class="bi bi-stop-circle me-1"></i>Stop Server
+                </button>
+            </div>
+        </div>
+
+        <div class="remote-connection-flow">
+            <article class="remote-step-card">
+                <span class="remote-step-number">1</span>
+                <div class="remote-step-content">
+                    <span class="remote-step-kicker">Server VPS</span>
+                    <strong>Jalankan pvserver</strong>
+                    <p>Proses berjalan di folder case, tanpa membuka GUI di VPS.</p>
+                    <div class="remote-process-meta">
+                        <span>PID <b data-remote-pid>-</b></span>
+                        <span>ParaView <b data-remote-version>-</b></span>
+                        <span>Render <b data-remote-backend>-</b></span>
+                    </div>
+                </div>
+            </article>
+
+            <article class="remote-step-card">
+                <span class="remote-step-number">2</span>
+                <div class="remote-step-content">
+                    <span class="remote-step-kicker">ParaView Desktop</span>
+                    <strong>Connect ke server</strong>
+                    <p>
+                        <b>File -> Connect -> Add Server</b>. Pilih <b>Client / Server</b>,
+                        Startup <b>Manual</b>, lalu isi:
+                    </p>
+                    <div class="remote-connection-pair">
+                        <label>
+                            <span>Host (SSH tunnel)</span>
+                            <div class="remote-code-readout">
+                                <code data-remote-tunnel-host>{{ remote_connection.tunnel_host }}</code>
+                                <button
+                                    type="button"
+                                    data-remote-copy="host"
+                                    title="Salin host"
+                                    aria-label="Salin host SSH tunnel"
+                                ><i class="bi bi-copy"></i></button>
+                            </div>
+                        </label>
+                        <label>
+                            <span>Port</span>
+                            <div class="remote-code-readout">
+                                <code data-remote-tunnel-port>{{ remote_connection.public_port }}</code>
+                                <button
+                                    type="button"
+                                    data-remote-copy="port"
+                                    title="Salin port"
+                                    aria-label="Salin port ParaView"
+                                ><i class="bi bi-copy"></i></button>
+                            </div>
+                        </label>
+                    </div>
+                    <details class="remote-direct-connection">
+                        <summary>Direct/private network (tanpa enkripsi)</summary>
+                        <div class="remote-code-readout">
+                            <code data-remote-connection-url>{{ remote_connection.connection_url }}</code>
+                            <button
+                                type="button"
+                                data-remote-copy="connection"
+                                title="Salin alamat direct"
+                                aria-label="Salin alamat direct connection"
+                            ><i class="bi bi-copy"></i></button>
+                        </div>
+                    </details>
+                </div>
+            </article>
+
+            <article class="remote-step-card">
+                <span class="remote-step-number">3</span>
+                <div class="remote-step-content">
+                    <span class="remote-step-kicker">OpenFOAM Case</span>
+                    <strong>Buka file case</strong>
+                    <p>Setelah terkoneksi, pilih <b>File -> Open</b> dan buka path server ini.</p>
+                    <div class="remote-code-readout">
+                        <code data-remote-case-path>{{ case.foam_path }}</code>
+                        <button
+                            type="button"
+                            data-remote-copy="case"
+                            title="Salin path case"
+                            aria-label="Salin path case"
+                        ><i class="bi bi-copy"></i></button>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <div class="remote-network-notes">
+            <div class="remote-tunnel-note">
+                <span class="remote-note-icon"><i class="bi bi-shield-lock-fill"></i></span>
+                <div>
+                    <strong>Untuk VPS, SSH tunnel lebih aman</strong>
+                    <p>
+                        Pastikan Docker publish
+                        <b>127.0.0.1:{{ remote_connection.public_port }}:{{ remote_connection.server_port }}</b>.
+                        Jalankan command ini di komputer Anda, lalu connect ParaView Desktop ke
+                        <code data-remote-tunnel-url>{{ remote_connection.tunnel_connection_url }}</code>.
+                    </p>
+                    <div class="remote-code-readout remote-command-readout">
+                        <code data-remote-ssh-command>{{ remote_connection.ssh_command }}</code>
+                        <button
+                            type="button"
+                            data-remote-copy="ssh"
+                            title="Salin SSH tunnel command"
+                            aria-label="Salin SSH tunnel command"
+                        ><i class="bi bi-copy"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="remote-warning-stack">
+                <div
+                    class="remote-config-warning"
+                    data-remote-host-warning
+                    {% if remote_connection.public_host_configured and remote_connection.ssh_user_configured %}hidden{% endif %}
+                >
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>
+                        Host atau user SSH masih berupa nilai otomatis/contoh. Agar command tunnel
+                        siap dipakai, set <code>PVSERVER_PUBLIC_HOST</code> dan
+                        <code>PVSERVER_SSH_USER</code> pada service.
+                    </span>
+                </div>
+                <div class="remote-config-warning" data-remote-render-warning hidden>
+                    <i class="bi bi-gpu-card"></i>
+                    <span data-remote-render-warning-text></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="remote-terminal">
+            <div class="remote-terminal-bar">
+                <div class="terminal-window-controls" aria-hidden="true">
+                    <span></span><span></span><span></span>
+                </div>
+                <span class="remote-terminal-title">
+                    <i class="bi bi-terminal-fill"></i>
+                    pvserver / {{ case.foam_name }}
+                </span>
+                <button
+                    type="button"
+                    class="remote-terminal-copy"
+                    data-remote-copy="log"
+                    aria-label="Salin log terminal"
+                >
+                    <i class="bi bi-copy"></i><span>Copy log</span>
+                </button>
+            </div>
+            <pre
+                class="remote-terminal-output"
+                data-remote-terminal-output
+                role="log"
+                aria-live="off"
+                aria-label="Log proses pvserver"
+                tabindex="0"
+            >[SYSTEM] Menunggu status pvserver...</pre>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/paraview_remote.js') }}"></script>
+{% endblock %}

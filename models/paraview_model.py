@@ -12,7 +12,7 @@ from pathlib import Path
 APP_ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE_ROOT = APP_ROOT.parent
 CASE_DIR_NAME = "sprayDryer-6.0.0-onProduct-Trial02"
-CASE_FILE_NAME = f"{CASE_DIR_NAME}.foam"
+CASE_FILE_NAME = "case.foam"
 CASE_ROOT = WORKSPACE_ROOT / CASE_DIR_NAME
 CASE_FILE = CASE_ROOT / CASE_FILE_NAME
 CACHE_ROOT = CASE_ROOT / "postProcessing" / "webInternalMesh"

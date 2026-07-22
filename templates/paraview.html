@@ -68,11 +68,12 @@
                     title="Capture left, right, front, back, top, bottom">
                     <i class="bi bi-badge-3d me-1"></i>6 Sides
                 </button>
-                <form method="post" action="{{ url_for('dashboard.open_paraview_case') }}">
-                    <button class="btn btn-primary" type="submit" {% if not case.foam_exists %}disabled{% endif %}>
-                        <i class="bi bi-play-fill me-1"></i>Open .foam
-                    </button>
-                </form>
+                <a
+                    class="btn btn-primary"
+                    href="{{ url_for('dashboard.remote_paraview') }}"
+                >
+                    <i class="bi bi-broadcast-pin me-1"></i>Remote ParaView
+                </a>
             </div>
         </div>
 
@@ -237,11 +238,7 @@
                     <h3 class="section-title">Case Path</h3>
                     <p class="section-subtitle">{{ case.case_root_name }}</p>
                 </div>
-                {% if case.paraview_command %}
-                    <span class="pill-note"><i class="bi bi-check2-circle"></i> ParaView</span>
-                {% else %}
-                    <span class="pill-note"><i class="bi bi-display"></i> Windows app</span>
-                {% endif %}
+                <span class="pill-note"><i class="bi bi-hdd-network"></i> Remote case</span>
             </div>
             <div class="path-readout">
                 <code>{{ case.foam_path }}</code>
