@@ -24,6 +24,7 @@
                 ('dashboard.input_parameter', 'Input Parameters', 'bi-sliders2'),
                 ('dashboard.set_processor', 'Processor Setup', 'bi-cpu'),
                 ('dashboard.upload_files', 'Upload Files', 'bi-cloud-arrow-up'),
+                ('dashboard.case_file_manager', 'Case File Manager', 'bi-folder2-open'),
                 ('dashboard.meshing', 'Meshing', 'bi-bounding-box'),
                 ('dashboard.solver', 'Solver', 'bi-play-circle-fill'),
                 ('dashboard.paraview', 'Paraview', 'bi-display'),
@@ -35,6 +36,7 @@
                 'dashboard.input_parameter': 'bi-sliders2',
                 'dashboard.set_processor': 'bi-cpu',
                 'dashboard.upload_files': 'bi-cloud-arrow-up',
+                'dashboard.case_file_manager': 'bi-folder2-open',
                 'dashboard.meshing': 'bi-bounding-box',
                 'dashboard.solver': 'bi-play-circle-fill',
                 'dashboard.paraview': 'bi-display',
@@ -104,6 +106,8 @@
             </main>
         </div>
     </div>
+
+    {% block body_end %}{% endblock %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>

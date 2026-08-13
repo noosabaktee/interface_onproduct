@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="case-manager-workspace">
+    <section class="case-manager-hero">
+        <div class="case-manager-hero-copy">
+            <span class="pill-note"><i class="bi bi-folder2-open"></i> OpenFOAM case</span>
+            <h2>Case File Manager</h2>
+            <p>Kelola seluruh file case, termasuk file custom yang tidak dikenali modul lain.</p>
+            <div class="active-case-path" title="{{ case_root }}">
+                <i class="bi bi-folder-check"></i>
+                <span><small>Active case</small><strong>{{ case_root }}</strong></span>
+            </div>
+        </div>
+        <div class="case-manager-actions">
+            <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#uploadCaseFileModal">
+                <i class="bi bi-file-earmark-plus me-1"></i> Add Files
+            </button>
+            <a class="btn btn-outline-primary" href="{{ url_for('dashboard.download_all_case_files') }}">
+                <i class="bi bi-file-earmark-zip me-1"></i> Download Case ZIP
+            </a>
+            <a class="btn btn-outline-primary" href="{{ url_for('dashboard.download_all_case_logs') }}">
+                <i class="bi bi-download me-1"></i> Download Logs
+            </a>
+            <button class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#clearCaseModal">
+                <i class="bi bi-eraser me-1"></i> Clear / Reset
+            </button>
+        </div>
+    </section>
+
+    <section class="case-file-stats" aria-label="Case file summary">
+        <div class="case-stat-card">
+            <span><i class="bi bi-files"></i> All files</span>
+            <strong>{{ listing.stats.all }}</strong>
+            <em>{{ listing.stats.total_size_label }}</em>
+        </div>
+        <div class="case-stat-card">
+            <span><i class="bi bi-file-earmark-code"></i> Editable text</span>
+            <strong>{{ listing.stats.editable }}</strong>
+            <em>UTF-8, max 2 MB</em>
+        </div>
+        <div class="case-stat-card">
+            <span><i class="bi bi-badge-3d"></i> STL files</span>
+            <strong>{{ listing.stats.stl }}</strong>
+            <em>Binary / geometry</em>
+        </div>
+        <div class="case-stat-card">
+            <span><i class="bi bi-terminal"></i> Logs</span>
+            <strong>{{ listing.stats.log }}</strong>
+            <em>Solver & process logs</em>
+        </div>
+        <div class="case-stat-card">
+            <span><i class="bi bi-hourglass-split"></i> Result files</span>
+            <strong>{{ listing.stats.result }}</strong>
+            <em>Time, processor, postProcessing</em>
+        </div>
+    </section>
+
+    <section class="case-file-panel">
+        <div class="case-file-panel-head">
+            <div>
+                <span class="section-kicker"><i class="bi bi-diagram-3"></i> Recursive file index</span>
+                <h3>All Case Files</h3>
+                <p>Menampilkan file dari seluruh subfolder case. Symlink diabaikan demi keamanan.</p>
+            </div>
+            <form class="case-file-filter" method="get" action="{{ url_for('dashboard.case_file_manager') }}">
+                <label class="case-search-field">
+                    <i class="bi bi-search"></i>
+                    <input type="search" name="q" value="{{ listing.search }}" placeholder="Cari nama atau path file...">
+                </label>
+                <select class="form-select" name="type" aria-label="Filter file type">
+                    {% for value, label in [('all', 'All files'), ('text', 'Editable text'), ('stl', 'STL'), ('log', 'Logs'), ('binary', 'Binary'), ('result', 'Results')] %}
+                    <option value="{{ value }}" {% if listing.category == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-primary" type="submit">Filter</button>
+                {% if listing.search or listing.category != 'all' %}
+                <a class="btn btn-light" href="{{ url_for('dashboard.case_file_manager') }}">Reset</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <div class="case-result-summary">
+            <span><strong>{{ listing.total_filtered }}</strong> file cocok</span>
+            <span>Halaman {{ listing.page }} dari {{ listing.pages }}</span>
+        </div>
+
+        <div class="case-table-wrap">
+            <table class="case-file-table">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Type</th>
+                        <th>Size</th>
+                        <th>Modified</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for file in listing.files %}
+                    <tr>
+                        <td>
+                            <div class="case-file-name">
+                                <i class="bi {{ file.icon }}"></i>
+                                <span title="{{ file.path }}">
+                                    <strong>{{ file.name }}</strong>
+                                    <small>{{ file.folder }}</small>
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="case-file-badges">
+                                <span class="file-kind kind-{{ file.kind }}">{{ file.kind_label }}</span>
+                                {% if file.is_result %}<span class="file-kind kind-result">Result</span>{% endif %}
+                            </div>
+                        </td>
+                        <td>{{ file.size_label }}</td>
+                        <td>{{ file.modified }}</td>
+                        <td>
+                            <div class="case-row-actions">
+                                {% if file.editable %}
+                                <button
+                                    type="button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editCaseFileModal"
+                                    data-edit-file
+                                    data-file-path="{{ file.path }}"
+                                    data-read-url="{{ url_for('dashboard.get_case_text_file', relative_path=file.path) }}"
+                                    data-save-url="{{ url_for('dashboard.save_case_text_file', relative_path=file.path) }}"
+                                    data-download-url="{{ url_for('dashboard.download_case_file', relative_path=file.path) }}"
+                                    title="Edit {{ file.name }}"
+                                    aria-label="Edit {{ file.name }}"
+                                >
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                {% endif %}
+                                <a href="{{ url_for('dashboard.download_case_file', relative_path=file.path) }}" title="Download {{ file.name }}" aria-label="Download {{ file.name }}">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <form method="post" action="{{ url_for('dashboard.delete_case_file', relative_path=file.path) }}" data-confirm-file-delete data-file-name="{{ file.path }}">
+                                    <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token', '') }}">
+                                    <button type="submit" title="Delete {{ file.name }}" aria-label="Delete {{ file.name }}">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="case-empty-state">
+                                <i class="bi bi-folder2-open"></i>
+                                <strong>Tidak ada file yang cocok</strong>
+                                <span>Ubah filter pencarian atau tambahkan file baru ke case.</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if listing.pages > 1 %}
+        <nav class="case-pagination" aria-label="Case file pages">
+            <a class="btn btn-light {% if listing.page == 1 %}disabled{% endif %}" href="{{ url_for('dashboard.case_file_manager', q=listing.search, type=listing.category, page=listing.page - 1) }}">
+                <i class="bi bi-chevron-left"></i> Previous
+            </a>
+            <span>{{ ((listing.page - 1) * listing.page_size) + 1 }}–{{ [listing.page * listing.page_size, listing.total_filtered]|min }} of {{ listing.total_filtered }}</span>
+            <a class="btn btn-light {% if listing.page == listing.pages %}disabled{% endif %}" href="{{ url_for('dashboard.case_file_manager', q=listing.search, type=listing.category, page=listing.page + 1) }}">
+                Next <i class="bi bi-chevron-right"></i>
+            </a>
+        </nav>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
+
+{% block body_end %}
+<div class="modal fade case-editor-modal" id="editCaseFileModal" tabindex="-1" aria-labelledby="editCaseFileTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content case-modal-content">
+            <form method="post" data-modal-text-editor-form>
+                <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token', '') }}">
+                <div class="modal-header">
+                    <div class="case-modal-title-wrap">
+                        <span class="section-kicker"><i class="bi bi-pencil-square"></i> Text editor</span>
+                        <h2 class="modal-title" id="editCaseFileTitle" data-editor-file-title>Loading file...</h2>
+                        <p data-editor-file-path>Menyiapkan isi file.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="case-editor-loading" data-editor-loading>
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <span>Membaca file dari case...</span>
+                    </div>
+                    <div class="alert alert-danger mb-0" role="alert" data-editor-error hidden></div>
+                    <textarea class="case-code-editor" name="content" spellcheck="false" aria-label="Isi file" data-editor-content disabled></textarea>
+                </div>
+                <div class="modal-footer case-editor-modal-footer">
+                    <span><i class="bi bi-shield-check"></i> UTF-8, maksimal 2 MB.</span>
+                    <div>
+                        <a class="btn btn-light" href="#" data-editor-download>
+                            <i class="bi bi-download me-1"></i> Download
+                        </a>
+                        <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary" type="submit" data-editor-save disabled>
+                            <i class="bi bi-floppy me-1"></i> Save Changes
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="uploadCaseFileModal" tabindex="-1" aria-labelledby="uploadCaseFileTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content case-modal-content">
+            <form method="post" action="{{ url_for('dashboard.upload_case_files') }}" enctype="multipart/form-data" data-case-upload-form>
+                <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token', '') }}">
+                <div class="modal-header">
+                    <div>
+                        <span class="section-kicker"><i class="bi bi-file-earmark-plus"></i> Add to active case</span>
+                        <h2 class="modal-title" id="uploadCaseFileTitle">Upload New Files</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="case-upload-picker" for="caseFileInput">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <span>
+                            <strong>Pilih satu atau beberapa file</strong>
+                            <em data-case-selected-files>STL, konfigurasi, log, atau file custom</em>
+                        </span>
+                    </label>
+                    <input id="caseFileInput" class="visually-hidden" type="file" name="files" multiple required data-case-file-input>
+
+                    <div class="case-upload-fields">
+                        <label>
+                            <span>Folder tujuan di dalam case</span>
+                            <input class="form-control" type="text" name="target_folder" list="caseFolderOptions" placeholder="Contoh: constant/triSurface">
+                            <small>Kosongkan untuk menyimpan di root case. Folder baru akan dibuat otomatis.</small>
+                        </label>
+                        <datalist id="caseFolderOptions">
+                            {% for folder in listing.directories %}
+                            <option value="{% if folder != '.' %}{{ folder }}{% endif %}"></option>
+                            {% endfor %}
+                        </datalist>
+                        <label class="case-replace-check">
+                            <input class="form-check-input" type="checkbox" name="replace" value="1">
+                            <span><strong>Replace file dengan nama yang sama</strong><small>Versi asli dicadangkan agar dapat dipulihkan saat “Clear uploaded files”.</small></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" type="submit" data-case-upload-submit disabled>
+                        <i class="bi bi-upload me-1"></i> Upload Files
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="clearCaseModal" tabindex="-1" aria-labelledby="clearCaseTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content case-modal-content">
+            <form method="post" action="{{ url_for('dashboard.clear_case_files') }}" data-clear-case-form>
+                <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token', '') }}">
+                <div class="modal-header">
+                    <div>
+                        <span class="section-kicker text-danger"><i class="bi bi-exclamation-triangle"></i> Destructive action</span>
+                        <h2 class="modal-title" id="clearCaseTitle">Clear / Reset Case</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="case-clear-warning">
+                        <i class="bi bi-shield-exclamation"></i>
+                        <div>
+                            <strong>Pilih cakupan dengan teliti.</strong>
+                            <span>Operasi hasil dan log tidak memiliki undo. File lama yang di-replace melalui menu ini dapat dipulihkan.</span>
+                        </div>
+                    </div>
+
+                    <div class="case-clear-options">
+                        <label>
+                            <input type="radio" name="mode" value="results" checked>
+                            <span><strong>Clear results only</strong><small>Hapus time-step selain 0, processor*, postProcessing, VTK, constant/polyMesh, dan log.</small></span>
+                        </label>
+                        <label>
+                            <input type="radio" name="mode" value="logs">
+                            <span><strong>Clear logs only</strong><small>Hapus file log.*, log_*, *.log, *.out, dan *.err di dalam case.</small></span>
+                        </label>
+                        <label>
+                            <input type="radio" name="mode" value="uploads">
+                            <span><strong>Clear uploaded files</strong><small>Hapus file baru dari menu ini dan pulihkan file asli yang pernah di-replace.</small></span>
+                        </label>
+                        <label class="danger-option">
+                            <input type="radio" name="mode" value="reset">
+                            <span><strong>Reset simulation case</strong><small>Gabungkan clear results, logs, dan uploads. Input inti 0, constant, system, scripts, dan Allrun tetap dijaga.</small></span>
+                        </label>
+                    </div>
+
+                    <label class="case-confirm-field">
+                        <span>Ketik <strong>CLEAR</strong> untuk konfirmasi</span>
+                        <input class="form-control" type="text" name="confirmation" autocomplete="off" placeholder="CLEAR" data-clear-confirmation>
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-danger" type="submit" data-clear-submit disabled>
+                        <i class="bi bi-eraser me-1"></i> Run Clear Operation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

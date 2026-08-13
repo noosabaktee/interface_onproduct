@@ -210,6 +210,184 @@ function initZipUploadForm() {
     validateForm();
 }
 
+function initCaseFileManager() {
+    const uploadForm = document.querySelector("[data-case-upload-form]");
+    if (uploadForm) {
+        const input = uploadForm.querySelector("[data-case-file-input]");
+        const label = uploadForm.querySelector(".case-upload-picker");
+        const selected = uploadForm.querySelector("[data-case-selected-files]");
+        const submit = uploadForm.querySelector("[data-case-upload-submit]");
+
+        const updateUploadState = () => {
+            const files = input && input.files ? Array.from(input.files) : [];
+            if (label) {
+                label.classList.toggle("is-ready", files.length > 0);
+            }
+            if (selected) {
+                const visibleNames = files.slice(0, 3).map((file) => file.name).join(", ");
+                const remaining = files.length > 3 ? ` +${files.length - 3} lainnya` : "";
+                selected.textContent = files.length ? `${visibleNames}${remaining}` : "STL, konfigurasi, log, atau file custom";
+            }
+            if (submit) {
+                submit.disabled = files.length === 0;
+            }
+        };
+
+        if (input) {
+            input.addEventListener("change", updateUploadState);
+        }
+        uploadForm.addEventListener("submit", () => {
+            if (submit) {
+                submit.disabled = true;
+                submit.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Uploading';
+            }
+        });
+        updateUploadState();
+    }
+
+    document.querySelectorAll("[data-confirm-file-delete]").forEach((form) => {
+        form.addEventListener("submit", (event) => {
+            const filename = form.dataset.fileName || "file ini";
+            if (!window.confirm(`Hapus ${filename} secara permanen dari case?`)) {
+                event.preventDefault();
+            }
+        });
+    });
+
+    const clearForm = document.querySelector("[data-clear-case-form]");
+    if (clearForm) {
+        const confirmation = clearForm.querySelector("[data-clear-confirmation]");
+        const submit = clearForm.querySelector("[data-clear-submit]");
+        const updateClearState = () => {
+            if (submit && confirmation) {
+                submit.disabled = confirmation.value.trim().toUpperCase() !== "CLEAR";
+            }
+        };
+        if (confirmation) {
+            confirmation.addEventListener("input", updateClearState);
+        }
+        clearForm.addEventListener("submit", (event) => {
+            const selectedMode = clearForm.querySelector('input[name="mode"]:checked');
+            const modeLabel = selectedMode ? selectedMode.closest("label").querySelector("strong").textContent : "operasi ini";
+            if (!window.confirm(`Jalankan “${modeLabel}” pada case aktif?`)) {
+                event.preventDefault();
+                return;
+            }
+            if (submit) {
+                submit.disabled = true;
+                submit.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Processing';
+            }
+        });
+        updateClearState();
+    }
+
+    const editorModal = document.getElementById("editCaseFileModal");
+    if (editorModal) {
+        const editorForm = editorModal.querySelector("[data-modal-text-editor-form]");
+        const editor = editorModal.querySelector("[data-editor-content]");
+        const title = editorModal.querySelector("[data-editor-file-title]");
+        const pathLabel = editorModal.querySelector("[data-editor-file-path]");
+        const loading = editorModal.querySelector("[data-editor-loading]");
+        const error = editorModal.querySelector("[data-editor-error]");
+        const download = editorModal.querySelector("[data-editor-download]");
+        const save = editorModal.querySelector("[data-editor-save]");
+        let editorRequestId = 0;
+
+        const setEditorLoading = (filePath) => {
+            title.textContent = filePath.split("/").pop() || filePath;
+            pathLabel.textContent = filePath;
+            editor.value = "";
+            editor.disabled = true;
+            editor.hidden = true;
+            loading.hidden = false;
+            error.hidden = true;
+            error.textContent = "";
+            save.disabled = true;
+            editorForm.removeAttribute("action");
+            download.removeAttribute("href");
+            download.classList.add("disabled");
+        };
+
+        const setEditorError = (message) => {
+            loading.hidden = true;
+            editor.hidden = true;
+            editor.disabled = true;
+            error.textContent = message;
+            error.hidden = false;
+            save.disabled = true;
+        };
+
+        editorModal.addEventListener("show.bs.modal", (event) => {
+            const trigger = event.relatedTarget;
+            if (!trigger || !trigger.matches("[data-edit-file]")) {
+                setEditorError("File yang akan diedit tidak ditemukan.");
+                return;
+            }
+
+            const filePath = trigger.dataset.filePath || "File";
+            const requestId = ++editorRequestId;
+            setEditorLoading(filePath);
+
+            fetch(trigger.dataset.readUrl, { headers: { Accept: "application/json" } })
+                .then(async (response) => {
+                    const payload = await response.json();
+                    if (!response.ok) {
+                        throw new Error(payload.error || "File gagal dibaca.");
+                    }
+                    return payload;
+                })
+                .then((payload) => {
+                    if (requestId !== editorRequestId) {
+                        return;
+                    }
+                    title.textContent = payload.path.split("/").pop() || payload.path;
+                    pathLabel.textContent = payload.path;
+                    editor.value = payload.content;
+                    editor.disabled = false;
+                    editor.hidden = false;
+                    loading.hidden = true;
+                    error.hidden = true;
+                    editorForm.action = trigger.dataset.saveUrl;
+                    download.href = trigger.dataset.downloadUrl;
+                    download.classList.remove("disabled");
+                    save.disabled = false;
+                    window.setTimeout(() => editor.focus(), 150);
+                })
+                .catch((fetchError) => {
+                    if (requestId === editorRequestId) {
+                        setEditorError(fetchError.message || "File gagal dibaca.");
+                    }
+                });
+        });
+
+        editorModal.addEventListener("hidden.bs.modal", () => {
+            editorRequestId += 1;
+            editor.value = "";
+            editor.disabled = true;
+            editorForm.removeAttribute("action");
+        });
+
+        editorForm.addEventListener("submit", (event) => {
+            if (!editorForm.hasAttribute("action") || editor.disabled) {
+                event.preventDefault();
+                return;
+            }
+            save.disabled = true;
+            save.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Saving';
+        });
+
+        editor.addEventListener("keydown", (event) => {
+            if (event.key !== "Tab") {
+                return;
+            }
+            event.preventDefault();
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            editor.setRangeText("    ", start, end, "end");
+        });
+    }
+}
+
 let activityChart = null;
 let statusChart = null;
 
@@ -295,6 +473,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initSynchronizedInputs();
     initTerminalBlocks();
     initZipUploadForm();
+    initCaseFileManager();
     renderDashboardCharts();
     window.addEventListener("resize", renderDashboardCharts);
 });

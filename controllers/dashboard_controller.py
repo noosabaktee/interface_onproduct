@@ -9,6 +9,7 @@ import zipfile
 
 from flask import abort, Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 
+from models.case_file_manager import CaseFileError, CaseFileManager
 from models.parameter_model import (
     IGNORED_FIELD_NAMES,
     PRODUCT_LABELS,
@@ -45,6 +46,13 @@ SYSTEM_DIR = CASE_ROOT / "system"
 DECOMPOSE_PAR_DICT = SYSTEM_DIR / "decomposeParDict"
 DEFAULT_PROCESSOR_COUNT = 16
 MAX_PROCESSOR_COUNT = 32
+CASE_FILE_STATE_ROOT = APP_ROOT / ".case_file_manager"
+CASE_FILES = CaseFileManager(
+    case_root=CASE_ROOT,
+    state_root=CASE_FILE_STATE_ROOT,
+    report_root=APP_ROOT / "report",
+    graph_root=GRAFIK_OUTPUT_PATH,
+)
 
 
 class ZipUploadError(ValueError):
@@ -151,6 +159,28 @@ def _count_case_files(path):
     if not path.exists():
         return 0
     return sum(1 for item in path.rglob("*") if item.is_file())
+
+
+def _valid_form_csrf():
+    supplied_token = request.form.get("csrf_token", "")
+    session_token = session.get("csrf_token", "")
+    return bool(
+        session_token
+        and supplied_token
+        and hmac.compare_digest(supplied_token, session_token)
+    )
+
+
+def _send_temporary_archive(archive_path, download_name):
+    response = send_file(
+        archive_path,
+        as_attachment=True,
+        download_name=download_name,
+        mimetype="application/zip",
+        conditional=False,
+    )
+    response.call_on_close(lambda: archive_path.unlink(missing_ok=True))
+    return response
 
 
 def _load_number_of_subdomains(default=DEFAULT_PROCESSOR_COUNT):
@@ -341,6 +371,135 @@ def upload_files():
         trisurface_count=_count_case_files(TRISURFACE_DIR),
         system_count=_count_case_files(SYSTEM_DIR),
     )
+
+
+@dashboard_bp.get("/case-files")
+def case_file_manager():
+    listing = CASE_FILES.list_files(
+        search=request.args.get("q", ""),
+        category=request.args.get("type", "all"),
+        page=request.args.get("page", 1),
+    )
+    return render_template(
+        "case_file_manager.html",
+        title="Case File Manager",
+        case_root=CASE_ROOT,
+        listing=listing,
+    )
+
+
+@dashboard_bp.get("/case-files/text/<path:relative_path>")
+def get_case_text_file(relative_path):
+    try:
+        return jsonify(CASE_FILES.read_text(relative_path))
+    except CaseFileError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@dashboard_bp.post("/case-files/upload")
+def upload_case_files():
+    if not _valid_form_csrf():
+        abort(400, "Token keamanan tidak valid.")
+
+    try:
+        result = CASE_FILES.upload_files(
+            request.files.getlist("files"),
+            target_folder=request.form.get("target_folder", ""),
+            replace=request.form.get("replace") == "1",
+        )
+        flash(
+            f"Upload selesai: {result['added']} file baru dan "
+            f"{result['replaced']} file diganti.",
+            "success",
+        )
+    except CaseFileError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("dashboard.case_file_manager"))
+
+
+@dashboard_bp.post("/case-files/save/<path:relative_path>")
+def save_case_text_file(relative_path):
+    if not _valid_form_csrf():
+        abort(400, "Token keamanan tidak valid.")
+
+    try:
+        CASE_FILES.save_text(relative_path, request.form.get("content", ""))
+        flash(f"Perubahan {relative_path} berhasil disimpan.", "success")
+    except CaseFileError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("dashboard.case_file_manager"))
+
+
+@dashboard_bp.get("/case-files/download/<path:relative_path>")
+def download_case_file(relative_path):
+    try:
+        path = CASE_FILES.resolve_path(relative_path)
+        if not path.is_file() or path.is_symlink():
+            raise CaseFileError("Target bukan file biasa dan tidak dapat didownload.")
+    except CaseFileError:
+        abort(404)
+    return send_file(path, as_attachment=True, download_name=path.name)
+
+
+@dashboard_bp.post("/case-files/delete/<path:relative_path>")
+def delete_case_file(relative_path):
+    if not _valid_form_csrf():
+        abort(400, "Token keamanan tidak valid.")
+
+    try:
+        deleted_path = CASE_FILES.delete_file(relative_path)
+        flash(f"File {deleted_path} berhasil dihapus.", "success")
+    except CaseFileError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("dashboard.case_file_manager"))
+
+
+@dashboard_bp.get("/case-files/download-all")
+def download_all_case_files():
+    try:
+        archive_path, _ = CASE_FILES.build_case_archive()
+    except (CaseFileError, OSError, zipfile.BadZipFile) as exc:
+        flash(f"ZIP case gagal dibuat: {exc}", "danger")
+        return redirect(url_for("dashboard.case_file_manager"))
+    return _send_temporary_archive(archive_path, f"{CASE_ROOT.name}-all-files.zip")
+
+
+@dashboard_bp.get("/case-files/download-logs")
+def download_all_case_logs():
+    try:
+        archive_path, _ = CASE_FILES.build_logs_archive()
+    except (CaseFileError, OSError, zipfile.BadZipFile) as exc:
+        flash(f"ZIP log gagal dibuat: {exc}", "danger")
+        return redirect(url_for("dashboard.case_file_manager"))
+    return _send_temporary_archive(archive_path, f"{CASE_ROOT.name}-logs.zip")
+
+
+@dashboard_bp.post("/case-files/clear")
+def clear_case_files():
+    if not _valid_form_csrf():
+        abort(400, "Token keamanan tidak valid.")
+    if request.form.get("confirmation", "").strip().upper() != "CLEAR":
+        flash("Konfirmasi tidak cocok. Ketik CLEAR untuk menjalankan operasi.", "danger")
+        return redirect(url_for("dashboard.case_file_manager"))
+
+    mode = request.form.get("mode", "")
+    labels = {
+        "results": "hasil simulasi dan log",
+        "logs": "file log",
+        "uploads": "file upload yang tercatat",
+        "reset": "hasil, log, dan upload case",
+    }
+    try:
+        result = CASE_FILES.clear(mode)
+        flash(
+            f"Pembersihan {labels.get(mode, mode)} selesai: "
+            f"{result['files']} file dan {result['directories']} folder dihapus; "
+            f"{result['restored']} file asli dipulihkan.",
+            "success",
+        )
+    except (CaseFileError, OSError) as exc:
+        flash(f"Pembersihan case gagal: {exc}", "danger")
+    return redirect(url_for("dashboard.case_file_manager"))
 
 
 @dashboard_bp.route("/meshing")
