@@ -1,6 +1,9 @@
+import sqlite3
 import tempfile
 import time
 import unittest
+from contextlib import closing
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -9,10 +12,12 @@ from models.simulation_run_repository import SimulationRunRepository
 from models.terminal_runner import get_command_state, start_command
 from services import (
     CASE_FILE_MANAGER_KEY,
+    DATABASE_SEEDER_KEY,
     GRAPH_SERVICE_KEY,
     PROCESSOR_SERVICE_KEY,
     SIMULATION_HISTORY_SERVICE_KEY,
 )
+from services.database_seeder import DatabaseSeeder
 from services.processor_service import ProcessorService
 from services.simulation_history_service import SimulationHistoryService
 
@@ -52,6 +57,7 @@ class ApplicationFactoryTestCase(unittest.TestCase):
 
     def test_factory_registers_feature_controllers_and_services(self):
         self.assertIn(CASE_FILE_MANAGER_KEY, self.app.extensions)
+        self.assertIn(DATABASE_SEEDER_KEY, self.app.extensions)
         self.assertIn(GRAPH_SERVICE_KEY, self.app.extensions)
         self.assertIn(PROCESSOR_SERVICE_KEY, self.app.extensions)
         self.assertIn(SIMULATION_HISTORY_SERVICE_KEY, self.app.extensions)
@@ -145,6 +151,45 @@ class ApplicationFactoryTestCase(unittest.TestCase):
         self.assertNotIn(b"1,248", response.data)
         self.assertNotIn(b"452h", response.data)
 
+    def test_seed_cli_populates_database(self):
+        result = self.app.test_cli_runner().invoke(args=["seed-db"])
+
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("12 dibuat", result.output)
+        history = self.app.extensions[SIMULATION_HISTORY_SERVICE_KEY]
+        dashboard = history.dashboard_data(history_limit=20)
+        self.assertEqual(dashboard["summary"]["total_runs"], 12)
+        self.assertEqual(len(dashboard["recent_runs"]), 12)
+
+    def test_dashboard_history_can_be_filtered_by_task_type(self):
+        self.app.test_cli_runner().invoke(args=["seed-db"])
+        with self.client.session_transaction() as session:
+            session.update(
+                authenticated=True,
+                username="engineer",
+                csrf_token="test-token",
+            )
+
+        meshing_response = self.client.get("/dashboard?history_type=meshing")
+        solver_response = self.client.get("/dashboard?history_type=solver")
+        invalid_response = self.client.get("/dashboard?history_type=invalid")
+
+        self.assertEqual(meshing_response.status_code, 200)
+        self.assertIn(b'data-history-task="meshing"', meshing_response.data)
+        self.assertNotIn(b'data-history-task="solver"', meshing_response.data)
+        self.assertIn(
+            b'href="/dashboard?history_type=meshing" class="active"',
+            b" ".join(meshing_response.data.split()),
+        )
+
+        self.assertEqual(solver_response.status_code, 200)
+        self.assertIn(b'data-history-task="solver"', solver_response.data)
+        self.assertNotIn(b'data-history-task="meshing"', solver_response.data)
+
+        self.assertEqual(invalid_response.status_code, 200)
+        self.assertIn(b'data-history-task="meshing"', invalid_response.data)
+        self.assertIn(b'data-history-task="solver"', invalid_response.data)
+
 
 class ProcessorServiceTestCase(unittest.TestCase):
     def setUp(self):
@@ -179,8 +224,8 @@ class ProcessorServiceTestCase(unittest.TestCase):
 class SimulationHistoryServiceTestCase(unittest.TestCase):
     def setUp(self):
         self.temporary_directory = tempfile.TemporaryDirectory()
-        database_path = Path(self.temporary_directory.name) / "history.sqlite3"
-        self.repository = SimulationRunRepository(database_path)
+        self.database_path = Path(self.temporary_directory.name) / "history.sqlite3"
+        self.repository = SimulationRunRepository(self.database_path)
         self.repository.initialize()
         self.service = SimulationHistoryService(self.repository, "Asia/Jakarta")
 
@@ -218,6 +263,14 @@ class SimulationHistoryServiceTestCase(unittest.TestCase):
         self.assertEqual(dashboard["recent_runs"][0]["id"], running_id)
         self.assertEqual(dashboard["recent_runs"][1]["status"], "failed")
         self.assertIn("executable", dashboard["recent_runs"][1]["message"])
+
+        solver_history = self.service.dashboard_data(task_filter="solver")
+        self.assertEqual(solver_history["history_filter"], "solver")
+        self.assertEqual(len(solver_history["recent_runs"]), 1)
+        self.assertTrue(
+            all(run["task_type"] == "solver" for run in solver_history["recent_runs"])
+        )
+        self.assertEqual(solver_history["summary"]["total_runs"], 3)
 
     def test_abandoned_running_process_is_marked_failed(self):
         run_id = self.service.start_run("solver")
@@ -269,6 +322,66 @@ class SimulationHistoryServiceTestCase(unittest.TestCase):
         self.assertEqual(run["exit_code"], 9)
         self.assertIn("Synthetic step", run["message"])
         self.assertIn("fatal meshing error", run["log_excerpt"])
+
+    def test_seeder_is_idempotent_and_preserves_real_history(self):
+        seeder = DatabaseSeeder(self.repository)
+        reference_time = datetime(2026, 8, 14, 5, 0, tzinfo=timezone.utc)
+
+        first = seeder.seed(reference_time=reference_time)
+        second = seeder.seed(reference_time=reference_time)
+
+        self.assertEqual(first, {
+            "created": 12,
+            "updated": 0,
+            "removed": 0,
+            "total": 12,
+        })
+        self.assertEqual(second["created"], 0)
+        self.assertEqual(second["updated"], 12)
+        self.assertEqual(len(self.repository.list_metrics()), 12)
+
+        real_run_id = self.service.start_run("solver")
+        self.service.finish_run(real_run_id, "success", 0, "History asli.")
+        reset = seeder.seed(reset=True, reference_time=reference_time)
+
+        self.assertEqual(reset["removed"], 12)
+        self.assertEqual(reset["created"], 12)
+        self.assertEqual(len(self.repository.list_metrics()), 13)
+        self.assertEqual(seeder.remove(), 12)
+        self.assertEqual(len(self.repository.list_metrics()), 1)
+        self.assertEqual(self.repository.get_run(real_run_id)["message"], "History asli.")
+
+    def test_schema_v2_partial_index_is_migrated_before_seeding(self):
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            connection.execute("DROP INDEX idx_simulation_runs_seed_key")
+            connection.execute(
+                """
+                CREATE UNIQUE INDEX idx_simulation_runs_seed_key
+                ON simulation_runs(seed_key)
+                WHERE seed_key IS NOT NULL
+                """
+            )
+            connection.execute("PRAGMA user_version = 2")
+            connection.commit()
+
+        self.repository.initialize()
+        result = DatabaseSeeder(self.repository).seed(
+            reference_time=datetime(2026, 8, 14, 5, 0, tzinfo=timezone.utc)
+        )
+
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            version = connection.execute("PRAGMA user_version").fetchone()[0]
+            index_sql = connection.execute(
+                """
+                SELECT sql
+                FROM sqlite_master
+                WHERE type = 'index' AND name = 'idx_simulation_runs_seed_key'
+                """
+            ).fetchone()[0]
+
+        self.assertEqual(version, 3)
+        self.assertEqual(result["created"], 12)
+        self.assertNotIn("WHERE", index_sql.upper())
 
 
 if __name__ == "__main__":

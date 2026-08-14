@@ -116,7 +116,28 @@
                 <h3>Riwayat Meshing &amp; Solver</h3>
                 <p>Waktu dan status diambil langsung dari database SQLite.</p>
             </div>
-            <span class="history-count">{{ dashboard.summary.total_runs }} total run</span>
+            <div class="simulation-history-tools">
+                <nav class="history-filter" aria-label="Filter riwayat berdasarkan proses">
+                    <a
+                        href="{{ url_for('dashboard.dashboard', history_type='all') }}"
+                        class="{% if dashboard.history_filter == 'all' %}active{% endif %}"
+                        {% if dashboard.history_filter == 'all' %}aria-current="page"{% endif %}
+                    >All</a>
+                    <a
+                        href="{{ url_for('dashboard.dashboard', history_type='meshing') }}"
+                        class="{% if dashboard.history_filter == 'meshing' %}active{% endif %}"
+                        {% if dashboard.history_filter == 'meshing' %}aria-current="page"{% endif %}
+                    >Meshing</a>
+                    <a
+                        href="{{ url_for('dashboard.dashboard', history_type='solver') }}"
+                        class="{% if dashboard.history_filter == 'solver' %}active{% endif %}"
+                        {% if dashboard.history_filter == 'solver' %}aria-current="page"{% endif %}
+                    >Solver</a>
+                </nav>
+                <span class="history-count">
+                    {{ dashboard.recent_runs|length }} ditampilkan
+                </span>
+            </div>
         </div>
 
         {% if dashboard.recent_runs %}
@@ -134,10 +155,11 @@
                     </thead>
                     <tbody>
                         {% for run in dashboard.recent_runs %}
-                            <tr>
+                            <tr data-history-task="{{ run.task_type }}">
                                 <td>
                                     <strong>{{ run.task_label }}</strong>
                                     {% if run.is_resume %}<small>Resume</small>{% endif %}
+                                    {% if run.is_seed %}<small>Demo data</small>{% endif %}
                                 </td>
                                 <td>{{ run.started_label }}</td>
                                 <td>{{ run.finished_label }}</td>
@@ -161,8 +183,8 @@
         {% else %}
             <div class="simulation-history-empty">
                 <i class="bi bi-database"></i>
-                <strong>Belum ada riwayat simulasi</strong>
-                <span>Jalankan Meshing atau Solver untuk membuat data pertama.</span>
+                <strong>Tidak ada riwayat {{ dashboard.history_filter|title }}</strong>
+                <span>Pilih filter lain atau jalankan proses baru.</span>
             </div>
         {% endif %}
     </section>

@@ -75,6 +75,22 @@ aplikasi dimulai. Schema version disimpan melalui `PRAGMA user_version`. Run yan
 masih berstatus `running` setelah aplikasi restart otomatis ditutup sebagai
 `failed` agar dashboard tidak menampilkan proses aktif yang sebenarnya sudah mati.
 
+### Seeder database
+
+Seeder membuat 12 contoh history Meshing dan Solver untuk tujuh hari terakhir.
+Data seed memiliki identitas khusus sehingga perintah aman dijalankan berulang dan
+tidak akan menggandakan record.
+
+```powershell
+.\venv\Scripts\flask.exe --app app seed-db
+.\venv\Scripts\flask.exe --app app seed-db --reset
+.\venv\Scripts\flask.exe --app app remove-seed-data
+```
+
+`--reset` hanya menghapus dan membuat ulang data seed. Perintah
+`remove-seed-data` juga hanya menghapus data demo; history asli dari proses
+Meshing dan Solver tidak ikut dihapus.
+
 ## Menjalankan dan menguji
 
 ```powershell

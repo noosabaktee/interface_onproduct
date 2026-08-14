@@ -4,6 +4,7 @@ from flask import Flask, current_app
 
 from models.case_file_manager import CaseFileManager
 from models.simulation_run_repository import SimulationRunRepository
+from services.database_seeder import DatabaseSeeder
 from services.graph_service import GraphService
 from services.processor_service import ProcessorService
 from services.simulation_history_service import SimulationHistoryService
@@ -13,6 +14,7 @@ CASE_FILE_MANAGER_KEY = "case_file_manager"
 GRAPH_SERVICE_KEY = "graph_service"
 PROCESSOR_SERVICE_KEY = "processor_service"
 SIMULATION_HISTORY_SERVICE_KEY = "simulation_history_service"
+DATABASE_SEEDER_KEY = "database_seeder"
 
 
 def init_services(app: Flask) -> None:
@@ -42,6 +44,7 @@ def init_services(app: Flask) -> None:
         history_repository,
         app.config["APP_TIMEZONE"],
     )
+    app.extensions[DATABASE_SEEDER_KEY] = DatabaseSeeder(history_repository)
 
 
 def get_case_file_manager() -> CaseFileManager:
@@ -58,3 +61,7 @@ def get_processor_service() -> ProcessorService:
 
 def get_simulation_history_service() -> SimulationHistoryService:
     return current_app.extensions[SIMULATION_HISTORY_SERVICE_KEY]
+
+
+def get_database_seeder() -> DatabaseSeeder:
+    return current_app.extensions[DATABASE_SEEDER_KEY]

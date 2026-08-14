@@ -58,10 +58,14 @@ class SimulationHistoryService:
             excerpt,
         )
 
-    def dashboard_data(self, history_limit: int = 10) -> dict:
+    def dashboard_data(
+        self,
+        history_limit: int = 10,
+        task_filter: str | None = None,
+    ) -> dict:
         now = datetime.now(timezone.utc)
         metric_rows = self.repository.list_metrics()
-        recent_rows = self.repository.list_recent(history_limit)
+        recent_rows = self.repository.list_recent(history_limit, task_filter)
 
         completed = [row for row in metric_rows if row["status"] != "running"]
         successful = sum(row["status"] == "success" for row in completed)
@@ -99,6 +103,7 @@ class SimulationHistoryService:
                 ],
             },
             "recent_runs": [self._present_run(row, now) for row in recent_rows],
+            "history_filter": task_filter or "all",
         }
 
     def _activity_chart(self, rows: list[dict], now: datetime) -> dict:

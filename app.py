@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from flask import Flask
 
+from cli import register_cli
 from config import AppConfig, load_session_secret
 from controllers import register_controllers
 from services import init_services
@@ -29,6 +30,7 @@ def create_app(config: dict | object | None = None) -> Flask:
 
     init_services(app)
     register_controllers(app)
+    register_cli(app)
     return app
 
 
