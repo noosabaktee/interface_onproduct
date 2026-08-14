@@ -3,13 +3,16 @@
 from flask import Flask, current_app
 
 from models.case_file_manager import CaseFileManager
+from models.simulation_run_repository import SimulationRunRepository
 from services.graph_service import GraphService
 from services.processor_service import ProcessorService
+from services.simulation_history_service import SimulationHistoryService
 
 
 CASE_FILE_MANAGER_KEY = "case_file_manager"
 GRAPH_SERVICE_KEY = "graph_service"
 PROCESSOR_SERVICE_KEY = "processor_service"
+SIMULATION_HISTORY_SERVICE_KEY = "simulation_history_service"
 
 
 def init_services(app: Flask) -> None:
@@ -32,6 +35,13 @@ def init_services(app: Flask) -> None:
         default_count=app.config["DEFAULT_PROCESSOR_COUNT"],
         maximum_count=app.config["MAX_PROCESSOR_COUNT"],
     )
+    history_repository = SimulationRunRepository(app.config["DATABASE_PATH"])
+    history_repository.initialize()
+    history_repository.mark_abandoned_runs()
+    app.extensions[SIMULATION_HISTORY_SERVICE_KEY] = SimulationHistoryService(
+        history_repository,
+        app.config["APP_TIMEZONE"],
+    )
 
 
 def get_case_file_manager() -> CaseFileManager:
@@ -45,3 +55,6 @@ def get_graph_service() -> GraphService:
 def get_processor_service() -> ProcessorService:
     return current_app.extensions[PROCESSOR_SERVICE_KEY]
 
+
+def get_simulation_history_service() -> SimulationHistoryService:
+    return current_app.extensions[SIMULATION_HISTORY_SERVICE_KEY]

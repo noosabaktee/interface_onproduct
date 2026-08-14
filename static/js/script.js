@@ -394,6 +394,18 @@ function renderDashboardCharts() {
     const isDark = document.documentElement.getAttribute("data-theme") === "dark";
     const gridColor = isDark ? "#374151" : "#e5e7eb";
     const textColor = isDark ? "#9ca3af" : "#6b7280";
+    const chartDataElement = document.getElementById("dashboardChartData");
+    let dashboardData = {
+        activity: { labels: [], values: [] },
+        status_breakdown: { labels: [], values: [] },
+    };
+    if (chartDataElement) {
+        try {
+            dashboardData = JSON.parse(chartDataElement.textContent);
+        } catch (error) {
+            console.error("Dashboard chart data tidak valid.", error);
+        }
+    }
 
     if (activityCanvas) {
         if (activityChart) {
@@ -402,10 +414,10 @@ function renderDashboardCharts() {
         activityChart = new Chart(activityCanvas.getContext("2d"), {
             type: "line",
             data: {
-                labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+                labels: dashboardData.activity.labels,
                 datasets: [{
                     label: "Simulations",
-                    data: [12, 19, 15, 25, 22, 30, 28],
+                    data: dashboardData.activity.values,
                     borderColor: "#008f4c",
                     backgroundColor: "rgba(0, 143, 76, 0.15)",
                     borderWidth: 3,
@@ -424,7 +436,7 @@ function renderDashboardCharts() {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: { color: textColor, stepSize: 10 },
+                        ticks: { color: textColor, stepSize: 1, precision: 0 },
                         grid: { color: gridColor, drawBorder: false }
                     },
                     x: {
@@ -443,10 +455,16 @@ function renderDashboardCharts() {
         statusChart = new Chart(statusCanvas.getContext("2d"), {
             type: "doughnut",
             data: {
-                labels: ["Success", "Failed", "Running"],
+                labels: dashboardData.status_breakdown.labels,
                 datasets: [{
-                    data: [75, 15, 10],
-                    backgroundColor: ["#10b981", "#f26522", "#008f4c"],
+                    data: dashboardData.status_breakdown.values,
+                    backgroundColor: [
+                        "#10b981",
+                        "#ef4444",
+                        "#008f4c",
+                        "#f59e0b",
+                        "#6b7280",
+                    ],
                     borderWidth: 0,
                     hoverOffset: 4
                 }]

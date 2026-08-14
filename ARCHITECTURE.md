@@ -22,6 +22,7 @@ Interface 1onproduct/
 │   ├── report_controller.py
 │   └── simulation_controller.py
 ├── models/                 # Data/domain model CFD, report, dan file case
+│   └── simulation_run_repository.py # Repository SQLite riwayat proses
 ├── services/               # Use-case dan integrasi proses/filesystem
 ├── templates/              # View HTML (Jinja)
 ├── static/                 # View assets: CSS dan JavaScript
@@ -61,6 +62,7 @@ Konfigurasi default berada di `config.AppConfig`. Deployment dapat memakai:
 - `CFD_GRAPH_ROOT`
 - `CFD_REPORT_ROOT`
 - `CFD_CASE_FILE_STATE_ROOT`
+- `CFD_DATABASE_PATH`
 - `CFD_LOGIN_USERNAME`
 - `CFD_LOGIN_PASSWORD`
 - `FLASK_SECRET_KEY` atau `FLASK_SECRET_FILE`
@@ -68,10 +70,14 @@ Konfigurasi default berada di `config.AppConfig`. Deployment dapat memakai:
 Untuk test, panggil `create_app({...})`. Service app-scoped dapat diganti melalui
 `app.extensions`, sehingga test tidak perlu memodifikasi global variable.
 
+Database SQLite dibuat otomatis pada `instance/simulation_history.sqlite3` saat
+aplikasi dimulai. Schema version disimpan melalui `PRAGMA user_version`. Run yang
+masih berstatus `running` setelah aplikasi restart otomatis ditutup sebagai
+`failed` agar dashboard tidak menampilkan proses aktif yang sebenarnya sudah mati.
+
 ## Menjalankan dan menguji
 
 ```powershell
 .\venv\Scripts\python.exe app.py
 .\venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
-

@@ -96,13 +96,15 @@ _states = {
         "cancel_requested": False,
         "status": "idle",
         "resume_available": False,
+        "history_run_id": None,
+        "history_service": None,
     }
     for key in COMMANDS
 }
 _lock = threading.Lock()
 
 
-def start_command(task_key):
+def start_command(task_key, history_service=None):
     with _lock:
         # Check if other task is running
         other_key = "solver" if task_key == "meshing" else "meshing"
@@ -118,15 +120,31 @@ def start_command(task_key):
             response["error"] = "Meshing harus selesai sebelum menjalankan solver."
             return response
 
+        is_resume = state["resume_available"]
+        try:
+            history_run_id = (
+                history_service.start_run(task_key, is_resume)
+                if history_service
+                else None
+            )
+        except Exception as exc:
+            response = _copy_state(task_key)
+            response["error"] = f"Riwayat proses gagal dibuat: {exc}"
+            return response
+
         state["running"] = True
         state["returncode"] = None
         state["stop_requested"] = False
         state["cancel_requested"] = False
         state["status"] = "running"
+        state["history_run_id"] = history_run_id
+        state["history_service"] = history_service
         if state["resume_available"]:
             if task_key == "meshing":
                 next_step = state["current_step"] + 1
-                state["lines"].append(f"Resuming meshing from step {next_step}/{len(MESHING_STEPS)}...")
+                state["lines"].append(
+                    f"Resuming meshing from step {next_step}/{len(MESHING_STEPS)}..."
+                )
             else:
                 state["lines"].append("Resuming from latest checkpoint/time directory...")
         else:
@@ -163,7 +181,13 @@ def stop_command(task_key):
             if task_key == "solver"
             else "Meshing stopped. Click Resume to continue from the interrupted step."
         )
-        return True
+    _finalize_history(
+        task_key,
+        "stopped",
+        -15,
+        "Proses dihentikan oleh pengguna dan dapat dilanjutkan kembali.",
+    )
+    return True
 
 
 def cancel_command(task_key):
@@ -186,7 +210,13 @@ def cancel_command(task_key):
         state["resume_available"] = False
         state["process"] = None
         state["lines"].append("Process cancelled.")
-        return True
+    _finalize_history(
+        task_key,
+        "cancelled",
+        -15,
+        "Proses dibatalkan oleh pengguna.",
+    )
+    return True
 
 
 def get_command_state(task_key):
@@ -256,16 +286,33 @@ def _run_command(task_key):
             if cancelled_by_user:
                 _states[task_key]["status"] = "cancelled"
                 _states[task_key]["resume_available"] = False
+                history_status = "cancelled"
+                history_message = "Proses dibatalkan oleh pengguna."
             elif stopped_by_user:
                 _states[task_key]["status"] = "stopped"
                 _states[task_key]["resume_available"] = task_key in {"meshing", "solver"}
+                history_status = "stopped"
+                history_message = "Proses dihentikan oleh pengguna."
             elif returncode == 0:
                 _states[task_key]["status"] = "completed"
                 _states[task_key]["resume_available"] = False
                 _states[task_key]["lines"].append("Process completed successfully.")
+                history_status = "success"
+                history_message = "Solver selesai dengan sukses."
             else:
                 _states[task_key]["status"] = "failed"
                 _states[task_key]["lines"].append(f"Process failed with code {returncode}.")
+                history_status = "failed"
+                history_message = _failure_message(
+                    _states[task_key]["lines"],
+                    f"Solver gagal dengan exit code {returncode}.",
+                )
+        _finalize_history(
+            task_key,
+            history_status,
+            returncode,
+            history_message,
+        )
     except Exception as exc:
         with _lock:
             _states[task_key]["running"] = False
@@ -273,6 +320,12 @@ def _run_command(task_key):
             _states[task_key]["process"] = None
             _states[task_key]["status"] = "failed"
             _states[task_key]["lines"].append(f"Error: {exc}")
+        _finalize_history(
+            task_key,
+            "failed",
+            -1,
+            f"Solver gagal dijalankan: {exc}",
+        )
 
 
 def _run_meshing_command():
@@ -302,7 +355,10 @@ def _run_meshing_command():
             )
             with _lock:
                 _states[task_key]["process"] = process
-                should_stop = _states[task_key]["stop_requested"] or _states[task_key]["cancel_requested"]
+                should_stop = (
+                    _states[task_key]["stop_requested"]
+                    or _states[task_key]["cancel_requested"]
+                )
 
             if should_stop and process.poll() is None:
                 _terminate_process_group(process)
@@ -320,6 +376,16 @@ def _run_meshing_command():
             if stopped_by_user or cancelled_by_user:
                 with _lock:
                     _finish_interrupted_meshing(cancelled_by_user)
+                _finalize_history(
+                    task_key,
+                    "cancelled" if cancelled_by_user else "stopped",
+                    -15,
+                    (
+                        "Meshing dibatalkan oleh pengguna."
+                        if cancelled_by_user
+                        else "Meshing dihentikan oleh pengguna dan dapat dilanjutkan."
+                    ),
+                )
                 return
 
             if returncode != 0:
@@ -329,6 +395,16 @@ def _run_meshing_command():
                     _states[task_key]["status"] = "failed"
                     _states[task_key]["resume_available"] = False
                     _states[task_key]["lines"].append(f"Error in {name}: {returncode}")
+                    failure_message = _failure_message(
+                        _states[task_key]["lines"],
+                        f"Meshing gagal pada tahap {name} dengan exit code {returncode}.",
+                    )
+                _finalize_history(
+                    task_key,
+                    "failed",
+                    returncode,
+                    failure_message,
+                )
                 return
 
             with _lock:
@@ -339,19 +415,41 @@ def _run_meshing_command():
         with _lock:
             if _states[task_key]["cancel_requested"]:
                 _finish_interrupted_meshing(True)
-                return
+                interrupted_status = "cancelled"
+                interrupted_message = "Meshing dibatalkan oleh pengguna."
 
-            if _states[task_key]["stop_requested"]:
+            elif _states[task_key]["stop_requested"]:
                 _finish_interrupted_meshing(False)
-                return
+                interrupted_status = "stopped"
+                interrupted_message = (
+                    "Meshing dihentikan oleh pengguna dan dapat dilanjutkan."
+                )
+            else:
+                interrupted_status = None
+                interrupted_message = ""
+                _states[task_key]["running"] = False
+                _states[task_key]["returncode"] = 0
+                _states[task_key]["status"] = "completed"
+                _states[task_key]["resume_available"] = False
+                _states[task_key]["current_step"] = 0
+                _states[task_key]["lines"].append("Meshing finished successfully.")
+                _states[task_key]["lines"].append("Process completed successfully.")
 
-            _states[task_key]["running"] = False
-            _states[task_key]["returncode"] = 0
-            _states[task_key]["status"] = "completed"
-            _states[task_key]["resume_available"] = False
-            _states[task_key]["current_step"] = 0
-            _states[task_key]["lines"].append("Meshing finished successfully.")
-            _states[task_key]["lines"].append("Process completed successfully.")
+        if interrupted_status:
+            _finalize_history(
+                task_key,
+                interrupted_status,
+                -15,
+                interrupted_message,
+            )
+            return
+
+        _finalize_history(
+            task_key,
+            "success",
+            0,
+            "Meshing selesai dengan sukses.",
+        )
     except Exception as exc:
         with _lock:
             _states[task_key]["running"] = False
@@ -360,6 +458,12 @@ def _run_meshing_command():
             _states[task_key]["status"] = "failed"
             _states[task_key]["resume_available"] = False
             _states[task_key]["lines"].append(f"Error: {exc}")
+        _finalize_history(
+            task_key,
+            "failed",
+            -1,
+            f"Meshing gagal dijalankan: {exc}",
+        )
 
 
 def _finish_interrupted_meshing(cancelled):
@@ -377,6 +481,45 @@ def _append_line(task_key, line):
 def _update_progress(task_key, progress):
     with _lock:
         _states[task_key]["progress"] = progress
+
+
+def _finalize_history(task_key, status, exit_code, message):
+    with _lock:
+        state = _states[task_key]
+        run_id = state.get("history_run_id")
+        history_service = state.get("history_service")
+        log_lines = list(state["lines"])
+        state["history_run_id"] = None
+        state["history_service"] = None
+
+    if not run_id or not history_service:
+        return
+
+    try:
+        history_service.finish_run(
+            run_id,
+            status,
+            exit_code,
+            message,
+            log_lines,
+        )
+    except Exception as exc:
+        _append_line(task_key, f"Warning: riwayat proses gagal disimpan: {exc}")
+
+
+def _failure_message(lines, fallback):
+    error_markers = ("error", "fatal", "failed", "cannot", "not found", "traceback")
+    detail = next(
+        (
+            line.strip()
+            for line in reversed(lines)
+            if line.strip() and any(marker in line.lower() for marker in error_markers)
+        ),
+        "",
+    )
+    if not detail or detail.lower() in fallback.lower():
+        return fallback
+    return f"{fallback} Detail terakhir: {detail}"
 
 
 def _copy_state(task_key):

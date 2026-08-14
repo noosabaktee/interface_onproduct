@@ -12,6 +12,7 @@ from models.terminal_runner import (
     start_command,
     stop_command,
 )
+from services import get_simulation_history_service
 
 
 SUPPORTED_TASKS = {"meshing", "solver"}
@@ -49,7 +50,7 @@ def start_terminal(task_key):
     task_error = _unsupported_task_error(task_key)
     if task_error:
         return task_error
-    return jsonify(start_command(task_key))
+    return jsonify(start_command(task_key, get_simulation_history_service()))
 
 
 @dashboard_bp.post("/terminal/<task_key>/cancel")

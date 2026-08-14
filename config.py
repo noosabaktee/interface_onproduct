@@ -31,6 +31,10 @@ CASE_FILE_STATE_ROOT = _environment_path(
     "CFD_CASE_FILE_STATE_ROOT",
     PROJECT_ROOT / ".case_file_manager",
 )
+DATABASE_PATH = _environment_path(
+    "CFD_DATABASE_PATH",
+    PROJECT_ROOT / "instance" / "simulation_history.sqlite3",
+)
 
 
 def load_session_secret() -> str:
@@ -95,13 +99,14 @@ class AppConfig:
     GRAPH_LOG_PATH = CASE_ROOT / "log.run"
     REPORT_ROOT = REPORT_ROOT
     CASE_FILE_STATE_ROOT = CASE_FILE_STATE_ROOT
+    DATABASE_PATH = DATABASE_PATH
     DECOMPOSE_PAR_DICT = CASE_ROOT / "system" / "decomposeParDict"
 
     DEFAULT_PROCESSOR_COUNT = 16
     MAX_PROCESSOR_COUNT = 32
     TRUST_PROXY_HEADERS = os.environ.get("TRUST_PROXY_HEADERS", "0") == "1"
+    APP_TIMEZONE = os.environ.get("APP_TIMEZONE", "Asia/Jakarta")
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = os.environ.get("FLASK_COOKIE_SECURE", "0") == "1"
-
