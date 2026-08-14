@@ -2,7 +2,6 @@
 
 {% block content %}
 {% set internal_mesh = case.internal_mesh %}
-{% set stream_fields = ['AngularVelocity', 'H2O', 'IntegrationTime', 'Normals', 'Rotation', 'T', 'U', 'Vorticity', 'air', 'alphat', 'k', 'nut', 'omega', 'p', 'p_rgh', 'ReasonForTermination', 'SeedIds', 'CasePath'] %}
 <div class="dashboard-wrapper paraview-page">
     <div class="hero-strip">
         <div class="section-head mb-0">
@@ -172,45 +171,6 @@
                         </div>
                     </section>
 
-                    <section class="viewer-setting-group">
-                        <div class="stream-setting-head">
-                            <div>
-                                <h4>Stream Tracer</h4>
-                                <p>Seed Type: Point Cloud</p>
-                            </div>
-                            <label class="stream-visible-toggle" title="Show stream tracer">
-                                <input type="checkbox" data-stream-visible checked>
-                                <span></span>
-                            </label>
-                        </div>
-                        <label class="stream-radius-control">
-                            <span>Radius</span>
-                            <input type="text" inputmode="decimal" value="0,7" data-stream-radius>
-                        </label>
-                        <div class="coloring-control" data-stream-coloring-control>
-                            <span>Coloring</span>
-                            <button type="button" class="coloring-trigger" data-stream-coloring-trigger aria-haspopup="listbox" aria-expanded="false">
-                                <span class="coloring-icon solid"></span>
-                                <strong data-stream-coloring-label>Solid Color</strong>
-                                <i class="bi bi-caret-down-fill"></i>
-                            </button>
-                            <div class="coloring-menu" data-stream-coloring-menu role="listbox">
-                                <button type="button" class="coloring-option active" data-stream-color-mode="solid" data-stream-color-label="Solid Color" role="option" aria-selected="true">
-                                    <span class="coloring-icon solid"></span>
-                                    <span>Solid Color</span>
-                                </button>
-                                {% for field in stream_fields %}
-                                    <button type="button" class="coloring-option" data-stream-color-mode="field" data-stream-color-field="{{ field }}" data-stream-color-label="{{ field }}" role="option" aria-selected="false">
-                                        <span class="coloring-icon {% if field in ['ReasonForTermination', 'SeedIds', 'CasePath'] %}mesh{% else %}point{% endif %}"></span>
-                                        <span>{{ field }}</span>
-                                    </button>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <button type="button" class="btn btn-primary stream-apply-button" data-stream-apply>
-                            <i class="bi bi-check2-circle me-1"></i>Apply
-                        </button>
-                    </section>
                 </aside>
             {% endif %}
 

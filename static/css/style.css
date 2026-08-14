@@ -1987,64 +1987,6 @@ body {
     background: var(--bg-surface);
 }
 
-.stream-setting-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-.stream-setting-head > div {
-    min-width: 0;
-}
-
-.stream-visible-toggle {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    margin: 0;
-    cursor: pointer;
-}
-
-.stream-visible-toggle input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.stream-visible-toggle span {
-    width: 36px;
-    height: 20px;
-    position: relative;
-    display: inline-block;
-    border: 1px solid var(--border-color);
-    border-radius: 999px;
-    background: #d1d5db;
-    transition: background 0.16s ease, border-color 0.16s ease;
-}
-
-.stream-visible-toggle span::after {
-    content: "";
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-    transition: transform 0.16s ease;
-}
-
-.stream-visible-toggle input:checked + span {
-    border-color: var(--primary-brand);
-    background: var(--primary-brand);
-}
-
-.stream-visible-toggle input:checked + span::after {
-    transform: translateX(16px);
-}
-
 .viewer-setting-group h4,
 .viewer-setting-group p {
     margin: 0;
@@ -2060,30 +2002,6 @@ body {
     color: var(--text-muted);
     font-size: 0.78rem;
     font-weight: 700;
-}
-
-.stream-radius-control {
-    display: grid;
-    gap: 6px;
-    margin: 0;
-    color: var(--text-main);
-    font-size: 0.78rem;
-    font-weight: 900;
-}
-
-.stream-radius-control input {
-    width: 100%;
-    min-height: 40px;
-    padding: 8px 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: var(--input-bg);
-    color: var(--text-main);
-    font-weight: 800;
-}
-
-.stream-apply-button {
-    width: 100%;
 }
 
 .paraview-scene-frame {

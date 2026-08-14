@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from app import create_app
 from services import (
@@ -68,6 +69,50 @@ class ApplicationFactoryTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.location.endswith("/dashboard"))
 
+    def test_paraview_keeps_model_controls_without_stream_tracer(self):
+        case = {
+            "case_root_name": "case",
+            "foam_exists": True,
+            "foam_name": "case.foam",
+            "foam_path": "case/case.foam",
+            "foam_size": "1 KB",
+            "internal_mesh": {
+                "available": True,
+                "label": "internalMesh",
+                "name": "internalMesh",
+                "faces_label": "1",
+            },
+            "latest_fields": ["U", "p"],
+            "latest_time": "1",
+            "processors": [],
+            "time_directories": ["0", "1"],
+        }
+        with self.client.session_transaction() as session:
+            session.update(
+                authenticated=True,
+                username="engineer",
+                csrf_token="test-token",
+            )
+
+        with (
+            patch(
+                "controllers.paraview_controller.get_paraview_case",
+                return_value=case,
+            ),
+            patch(
+                "controllers.paraview_controller.latest_report",
+                return_value=None,
+            ),
+        ):
+            response = self.client.get("/paraview")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"<h4>Model</h4>", response.data)
+        self.assertIn(b"data-opacity-slider", response.data)
+        self.assertIn(b"data-coloring-control", response.data)
+        self.assertNotIn(b"Stream Tracer", response.data)
+        self.assertNotIn(b"data-stream-", response.data)
+
 
 class ProcessorServiceTestCase(unittest.TestCase):
     def setUp(self):
@@ -101,4 +146,3 @@ class ProcessorServiceTestCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
