@@ -67,3 +67,4 @@ coverage.xml
 
 grafik/output/
 report/
+.case_file_manager/

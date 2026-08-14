@@ -411,6 +411,39 @@ class CaseFileManager:
 
         return {"added": added, "replaced": replaced, "files": [item[2] for item in destinations]}
 
+    def replace_file(self, relative_path, file_storage):
+        if not file_storage or not (getattr(file_storage, "filename", "") or "").strip():
+            raise CaseFileError("Pilih file baru yang akan digunakan sebagai pengganti.")
+
+        destination = self.resolve_path(relative_path)
+        if not destination.is_file() or destination.is_symlink():
+            raise CaseFileError("Target bukan file biasa dan tidak dapat diganti.")
+
+        relative = destination.relative_to(self.case_root).as_posix()
+        self.state_root.mkdir(parents=True, exist_ok=True)
+        staging_root = Path(tempfile.mkdtemp(prefix="replace-", dir=self.state_root))
+        staged_path = staging_root / "replacement"
+
+        try:
+            file_storage.save(staged_path)
+            entries = self._load_manifest()
+            entry = entries.get(relative)
+            if not entry:
+                self.backup_root.mkdir(parents=True, exist_ok=True)
+                backup_name = uuid.uuid4().hex
+                shutil.copy2(destination, self.backup_root / backup_name)
+                entry = {"kind": "replaced", "backup": backup_name}
+
+            os.replace(staged_path, destination)
+            entries[relative] = entry
+            self._save_manifest(entries)
+        except OSError as exc:
+            raise CaseFileError(f"File pengganti gagal disimpan: {exc}") from exc
+        finally:
+            shutil.rmtree(staging_root, ignore_errors=True)
+
+        return {"path": relative, "source_name": file_storage.filename}
+
     def delete_file(self, relative_path):
         path = self.resolve_path(relative_path)
         if not path.is_file() or path.is_symlink():

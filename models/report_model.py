@@ -3,14 +3,12 @@ import io
 import re
 import shutil
 from datetime import datetime
-from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageOps
 
+from config import GRAPH_ROOT, REPORT_ROOT
 
-APP_ROOT = Path(__file__).resolve().parents[1]
-REPORT_ROOT = APP_ROOT / "report"
-GRAPH_OUTPUT_PATH = APP_ROOT / "grafik" / "output"
+GRAPH_OUTPUT_PATH = GRAPH_ROOT
 REPORT_NAME_PATTERN = re.compile(r"^\d{2}_\d{2}_\d{4}(?:_\d{3})?$")
 
 

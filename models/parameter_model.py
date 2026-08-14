@@ -4,6 +4,8 @@ import ast
 import operator
 from pathlib import Path
 
+from config import CASE_ROOT
+
 
 PARAMETER_TEMPLATE_PATH = Path(__file__).with_name("parameter_templates.json")
 PRODUCTION_PARAMETER_PATHS = {
@@ -14,7 +16,7 @@ PRODUCTION_CONST_PATHS = {
     "ckr": Path(__file__).with_name("const_ckr.json"),
     "bmt": Path(__file__).with_name("const_bmt.json"),
 }
-CASE_DIR = Path(__file__).resolve().parents[2] / "sprayDryer-6.0.0-onProduct-Trial02"
+CASE_DIR = CASE_ROOT
 IGNORED_FIELD_NAMES = {
     "nozzle_operating_pressure",
     # "rosin_rammler_characteristic_diameter_d",

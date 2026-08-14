@@ -146,71 +146,64 @@ function initTerminalBlocks() {
     });
 }
 
-function initZipUploadForm() {
-    const form = document.querySelector("[data-zip-upload-form]");
-    if (!form) {
-        return;
-    }
+function initCaseFileManager() {
+    const replaceModal = document.getElementById("replaceCaseFileModal");
+    if (replaceModal) {
+        const replaceForm = replaceModal.querySelector("[data-case-replace-form]");
+        const input = replaceModal.querySelector("[data-case-replacement-input]");
+        const picker = replaceModal.querySelector("[data-case-replacement-picker]");
+        const selectedName = replaceModal.querySelector("[data-case-replacement-name]");
+        const title = replaceModal.querySelector("[data-replace-file-title]");
+        const pathLabel = replaceModal.querySelector("[data-replace-file-path]");
+        const submit = replaceModal.querySelector("[data-case-replace-submit]");
 
-    const inputs = Array.from(form.querySelectorAll("[data-zip-input]"));
-    const submitButton = form.querySelector("[data-zip-submit]");
-    if (!inputs.length || !submitButton) {
-        return;
-    }
+        const resetReplacement = () => {
+            input.value = "";
+            picker.classList.remove("is-ready");
+            selectedName.textContent = "Klik untuk memilih satu file baru";
+            submit.disabled = true;
+            submit.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Replace File';
+        };
 
-    const validateForm = () => {
-        let allValid = true;
-
-        inputs.forEach((input) => {
-            const panel = input.closest(".upload-panel");
-            const picker = panel ? panel.querySelector(".zip-picker") : null;
-            const selectedFile = panel ? panel.querySelector("[data-selected-file]") : null;
-            const error = panel ? panel.querySelector("[data-zip-error]") : null;
+        input.addEventListener("change", () => {
             const file = input.files && input.files[0];
-            const hasFile = Boolean(file);
-            const isZip = hasFile && file.name.toLowerCase().endsWith(".zip");
-
-            if (selectedFile) {
-                selectedFile.textContent = hasFile ? file.name : "Belum ada file dipilih";
-            }
-
-            if (picker) {
-                picker.classList.toggle("is-ready", isZip);
-                picker.classList.toggle("has-error", hasFile && !isZip);
-            }
-
-            if (error) {
-                error.hidden = !hasFile || isZip;
-            }
-
-            input.setCustomValidity(hasFile && !isZip ? "File harus bertipe .zip." : "");
-            if (!isZip) {
-                allValid = false;
-            }
+            picker.classList.toggle("is-ready", Boolean(file));
+            selectedName.textContent = file ? file.name : "Klik untuk memilih satu file baru";
+            submit.disabled = !file;
         });
 
-        submitButton.disabled = !allValid;
-        return allValid;
-    };
+        replaceModal.addEventListener("show.bs.modal", (event) => {
+            const trigger = event.relatedTarget;
+            resetReplacement();
+            replaceForm.removeAttribute("action");
 
-    inputs.forEach((input) => {
-        input.addEventListener("change", validateForm);
-    });
+            if (!trigger || !trigger.matches("[data-replace-file]")) {
+                title.textContent = "File tidak ditemukan";
+                pathLabel.textContent = "Tutup modal lalu pilih file kembali.";
+                return;
+            }
 
-    form.addEventListener("submit", (event) => {
-        if (!validateForm()) {
-            event.preventDefault();
-            return;
-        }
+            const filePath = trigger.dataset.filePath || "File";
+            title.textContent = filePath.split("/").pop() || filePath;
+            pathLabel.textContent = filePath;
+            replaceForm.action = trigger.dataset.replaceUrl;
+        });
 
-        submitButton.disabled = true;
-        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Processing Upload';
-    });
+        replaceModal.addEventListener("hidden.bs.modal", () => {
+            resetReplacement();
+            replaceForm.removeAttribute("action");
+        });
 
-    validateForm();
-}
+        replaceForm.addEventListener("submit", (event) => {
+            if (!replaceForm.hasAttribute("action") || !input.files || !input.files.length) {
+                event.preventDefault();
+                return;
+            }
+            submit.disabled = true;
+            submit.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Replacing';
+        });
+    }
 
-function initCaseFileManager() {
     const uploadForm = document.querySelector("[data-case-upload-form]");
     if (uploadForm) {
         const input = uploadForm.querySelector("[data-case-file-input]");
@@ -472,7 +465,6 @@ document.addEventListener("DOMContentLoaded", () => {
     initThemeToggle();
     initSynchronizedInputs();
     initTerminalBlocks();
-    initZipUploadForm();
     initCaseFileManager();
     renderDashboardCharts();
     window.addEventListener("resize", renderDashboardCharts);

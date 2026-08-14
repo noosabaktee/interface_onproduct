@@ -3,11 +3,8 @@ import sys
 import os
 import signal
 import threading
-from pathlib import Path
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CASE_ROOT = PROJECT_ROOT.parent / "sprayDryer-6.0.0-onProduct-Trial02"
+from config import CASE_ROOT, PROJECT_ROOT
 
 
 MESHING_STEPS = [

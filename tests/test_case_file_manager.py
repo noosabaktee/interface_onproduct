@@ -7,8 +7,8 @@ from pathlib import Path
 from werkzeug.datastructures import FileStorage
 
 from app import app
-from controllers import dashboard_controller
 from models.case_file_manager import CaseFileError, CaseFileManager
+from services import CASE_FILE_MANAGER_KEY
 
 
 class CaseFileManagerTestCase(unittest.TestCase):
@@ -76,6 +76,23 @@ class CaseFileManagerTestCase(unittest.TestCase):
         self.assertEqual((self.case_root / "system" / "controlDict").read_bytes(), original)
         self.assertFalse((self.case_root / "system" / "notes.custom").exists())
 
+    def test_replace_file_keeps_target_name_and_can_restore_original(self):
+        target = self.case_root / "system" / "controlDict"
+        original = target.read_bytes()
+
+        result = self.manager.replace_file(
+            "system/controlDict",
+            self.upload("replacement.cfg", b"application replacement;\n"),
+        )
+
+        self.assertEqual(result["path"], "system/controlDict")
+        self.assertEqual(target.read_bytes(), b"application replacement;\n")
+        self.assertFalse((target.parent / "replacement.cfg").exists())
+
+        cleared = self.manager.clear("uploads")
+        self.assertEqual(cleared["restored"], 1)
+        self.assertEqual(target.read_bytes(), original)
+
     def test_text_edit_and_binary_rejection(self):
         self.manager.save_text("system/controlDict", "application changedSolver;\n")
         self.assertIn("changedSolver", self.manager.read_text("system/controlDict")["content"])
@@ -129,8 +146,8 @@ class CaseFileRoutesTestCase(unittest.TestCase):
         case_root.mkdir()
         (case_root / "controlDict").write_text("application solver;\n", encoding="utf-8")
         self.manager = CaseFileManager(case_root, base / "state")
-        self.original_manager = dashboard_controller.CASE_FILES
-        dashboard_controller.CASE_FILES = self.manager
+        self.original_manager = app.extensions[CASE_FILE_MANAGER_KEY]
+        app.extensions[CASE_FILE_MANAGER_KEY] = self.manager
         app.config.update(TESTING=True)
         self.client = app.test_client()
         with self.client.session_transaction() as session:
@@ -139,7 +156,7 @@ class CaseFileRoutesTestCase(unittest.TestCase):
             session["csrf_token"] = "csrf-test"
 
     def tearDown(self):
-        dashboard_controller.CASE_FILES = self.original_manager
+        app.extensions[CASE_FILE_MANAGER_KEY] = self.original_manager
         self.temporary_directory.cleanup()
 
     def test_manager_page_renders_and_write_routes_require_csrf(self):
@@ -148,7 +165,9 @@ class CaseFileRoutesTestCase(unittest.TestCase):
         self.assertIn(b"Case File Manager", response.data)
         self.assertIn(b"controlDict", response.data)
         self.assertIn(b'id="editCaseFileModal"', response.data)
+        self.assertIn(b'id="replaceCaseFileModal"', response.data)
         self.assertIn(b"data-edit-file", response.data)
+        self.assertIn(b"data-replace-file", response.data)
         self.assertLess(response.data.index(b"</main>"), response.data.index(b'id="editCaseFileModal"'))
 
         response = self.client.post(
@@ -157,6 +176,32 @@ class CaseFileRoutesTestCase(unittest.TestCase):
             content_type="multipart/form-data",
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_legacy_upload_page_is_removed(self):
+        response = self.client.get("/upload")
+        self.assertEqual(response.status_code, 404)
+
+        dashboard_response = self.client.get("/dashboard")
+        self.assertEqual(dashboard_response.status_code, 200)
+        self.assertNotIn(b'href="/upload"', dashboard_response.data)
+        self.assertIn(b'href="/case-files"', dashboard_response.data)
+
+    def test_replace_route_overwrites_selected_path_without_renaming_it(self):
+        response = self.client.post(
+            "/case-files/replace/controlDict",
+            data={
+                "csrf_token": "csrf-test",
+                "file": (io.BytesIO(b"application replaced;\n"), "local-name.txt"),
+            },
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            (self.manager.case_root / "controlDict").read_bytes(),
+            b"application replaced;\n",
+        )
+        self.assertFalse((self.manager.case_root / "local-name.txt").exists())
 
     def test_upload_edit_download_and_delete_routes(self):
         response = self.client.post(

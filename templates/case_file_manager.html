@@ -118,6 +118,18 @@
                         <td>{{ file.modified }}</td>
                         <td>
                             <div class="case-row-actions">
+                                <button
+                                    type="button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#replaceCaseFileModal"
+                                    data-replace-file
+                                    data-file-path="{{ file.path }}"
+                                    data-replace-url="{{ url_for('dashboard.replace_case_file', relative_path=file.path) }}"
+                                    title="Replace {{ file.name }}"
+                                    aria-label="Replace {{ file.name }}"
+                                >
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </button>
                                 {% if file.editable %}
                                 <button
                                     type="button"
@@ -209,6 +221,45 @@
                             <i class="bi bi-floppy me-1"></i> Save Changes
                         </button>
                     </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="replaceCaseFileModal" tabindex="-1" aria-labelledby="replaceCaseFileTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content case-modal-content">
+            <form method="post" enctype="multipart/form-data" data-case-replace-form>
+                <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token', '') }}">
+                <div class="modal-header">
+                    <div class="case-modal-title-wrap">
+                        <span class="section-kicker"><i class="bi bi-arrow-repeat"></i> Replace case file</span>
+                        <h2 class="modal-title" id="replaceCaseFileTitle" data-replace-file-title>Pilih file yang akan diganti</h2>
+                        <p data-replace-file-path>Path file akan tampil di sini.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="case-upload-picker" for="replacementFileInput" data-case-replacement-picker>
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <span>
+                            <strong>Pilih file pengganti</strong>
+                            <em data-case-replacement-name>Klik untuk memilih satu file baru</em>
+                        </span>
+                    </label>
+                    <input id="replacementFileInput" class="visually-hidden" type="file" name="file" required data-case-replacement-input>
+
+                    <div class="case-replace-notice">
+                        <i class="bi bi-info-circle"></i>
+                        <span>Isi file lama akan diganti, sedangkan nama dan lokasinya tetap sama. Versi asli dicadangkan untuk fitur <strong>Clear uploaded files</strong>.</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" type="submit" data-case-replace-submit disabled>
+                        <i class="bi bi-arrow-repeat me-1"></i> Replace File
+                    </button>
                 </div>
             </form>
         </div>

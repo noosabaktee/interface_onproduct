@@ -34,7 +34,7 @@
                     {% endif %}
                 {% endwith %}
 
-                <form method="post" action="{{ url_for('login') }}">
+                <form method="post" action="{{ url_for('auth.login') }}">
                     <input type="hidden" name="next" value="{{ next_url }}">
                     <div class="mb-4">
                         <label class="form-label text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">EMAIL / USERNAME</label>

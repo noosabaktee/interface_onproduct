@@ -23,7 +23,6 @@
                 ('dashboard.dashboard', 'Dashboard', 'bi-speedometer2'),
                 ('dashboard.input_parameter', 'Input Parameters', 'bi-sliders2'),
                 ('dashboard.set_processor', 'Processor Setup', 'bi-cpu'),
-                ('dashboard.upload_files', 'Upload Files', 'bi-cloud-arrow-up'),
                 ('dashboard.case_file_manager', 'Case File Manager', 'bi-folder2-open'),
                 ('dashboard.meshing', 'Meshing', 'bi-bounding-box'),
                 ('dashboard.solver', 'Solver', 'bi-play-circle-fill'),
@@ -35,7 +34,6 @@
                 'dashboard.dashboard': 'bi-speedometer2',
                 'dashboard.input_parameter': 'bi-sliders2',
                 'dashboard.set_processor': 'bi-cpu',
-                'dashboard.upload_files': 'bi-cloud-arrow-up',
                 'dashboard.case_file_manager': 'bi-folder2-open',
                 'dashboard.meshing': 'bi-bounding-box',
                 'dashboard.solver': 'bi-play-circle-fill',
@@ -52,7 +50,7 @@
                 </a>
             {% endfor %}
 
-            <a class="module-icon logout-btn" href="{{ url_for('logout') }}" title="Logout">
+            <a class="module-icon logout-btn" href="{{ url_for('auth.logout') }}" title="Logout">
                 <i class="bi bi-box-arrow-left"></i>
                 <span>Logout</span>
             </a>
