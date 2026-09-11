@@ -478,6 +478,10 @@ body {
     padding: 0;
 }
 
+.module-content.page-dashboard-terminal {
+    overflow: hidden;
+}
+
 .flash-stack {
     display: grid;
     gap: 12px;
@@ -3671,7 +3675,8 @@ body {
 /* Case Terminal */
 .case-terminal-workspace {
     display: flex;
-    min-height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .case-terminal-panel {
