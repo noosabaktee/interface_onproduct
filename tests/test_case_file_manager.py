@@ -27,6 +27,8 @@ class CaseFileManagerTestCase(unittest.TestCase):
         (self.case_root / "system" / "controlDict").write_text("application solver;\n", encoding="utf-8")
         (self.case_root / "constant" / "triSurface" / "dryer.stl").write_bytes(b"solid dryer\nendsolid\n")
         (self.case_root / "log.run").write_text("solver output\n", encoding="utf-8")
+        (self.case_root / "scripts").mkdir()
+        (self.case_root / "scripts" / "Allrun").write_text("./solver\n", encoding="utf-8")
         (self.report_root / "summary.txt").write_text("report\n", encoding="utf-8")
         (self.graph_root / "residual.png").write_bytes(b"png-data")
         (self.graph_root.parent / "log_all").write_text("graph log\n", encoding="utf-8")
@@ -47,11 +49,23 @@ class CaseFileManagerTestCase(unittest.TestCase):
     def test_recursive_listing_classifies_text_stl_and_logs(self):
         listing = self.manager.list_files()
         records = {record["path"]: record for record in listing["files"]}
+        def collect_folders(nodes):
+            collected = set()
+            for node in nodes:
+                if node["is_folder"]:
+                    collected.add(node["path"])
+                    collected.update(collect_folders(node["children"]))
+            return collected
 
-        self.assertEqual(listing["stats"]["all"], 3)
+        folders = collect_folders(listing["tree"])
+
+        self.assertEqual(listing["stats"]["all"], 4)
         self.assertTrue(records["system/controlDict"]["editable"])
         self.assertFalse(records["constant/triSurface/dryer.stl"]["editable"])
+        self.assertFalse(records["log.run"]["editable"])
         self.assertEqual(records["log.run"]["kind"], "log")
+        self.assertEqual(folders, {"0", "constant", "constant/triSurface", "system"})
+        self.assertFalse(any(node.get("path") == "log.run" for node in listing["tree"]))
 
     def test_path_traversal_is_rejected(self):
         with self.assertRaises(CaseFileError):
@@ -75,6 +89,39 @@ class CaseFileManagerTestCase(unittest.TestCase):
         self.assertEqual(cleared["restored"], 1)
         self.assertEqual((self.case_root / "system" / "controlDict").read_bytes(), original)
         self.assertFalse((self.case_root / "system" / "notes.custom").exists())
+
+    def test_folder_upload_requires_matching_allowed_root(self):
+        result = self.manager.upload_files(
+            [
+                self.upload("constant/transportProperties", b"nu 1e-05;\n"),
+                self.upload("constant/sub/model", b"model\n"),
+            ],
+            target_folder="constant",
+            folder_upload=True,
+        )
+
+        self.assertEqual(result["added"], 2)
+        self.assertTrue((self.case_root / "constant" / "transportProperties").exists())
+        self.assertTrue((self.case_root / "constant" / "sub" / "model").exists())
+
+        with self.assertRaises(CaseFileError):
+            self.manager.upload_files(
+                [self.upload("system/fvSchemes", b"schemes\n")],
+                target_folder="constant",
+                folder_upload=True,
+            )
+
+    def test_writes_are_restricted_to_core_case_folders(self):
+        with self.assertRaises(CaseFileError):
+            self.manager.save_text("scripts/Allrun", "./other\n")
+        with self.assertRaises(CaseFileError):
+            self.manager.replace_file("scripts/Allrun", self.upload("Allrun", b"./other\n"))
+        with self.assertRaises(CaseFileError):
+            self.manager.delete_file("scripts/Allrun")
+        with self.assertRaises(CaseFileError):
+            self.manager.upload_files([self.upload("notes.txt", b"notes\n")], target_folder="scripts")
+
+        self.assertEqual((self.case_root / "scripts" / "Allrun").read_text(encoding="utf-8"), "./solver\n")
 
     def test_replace_file_keeps_target_name_and_can_restore_original(self):
         target = self.case_root / "system" / "controlDict"
@@ -143,8 +190,11 @@ class CaseFileRoutesTestCase(unittest.TestCase):
         self.temporary_directory = tempfile.TemporaryDirectory()
         base = Path(self.temporary_directory.name)
         case_root = base / "case"
-        case_root.mkdir()
-        (case_root / "controlDict").write_text("application solver;\n", encoding="utf-8")
+        (case_root / "0").mkdir(parents=True)
+        (case_root / "constant").mkdir()
+        (case_root / "system").mkdir()
+        (case_root / "log.run").write_text("solver log;\n", encoding="utf-8")
+        (case_root / "system" / "controlDict").write_text("application solver;\n", encoding="utf-8")
         self.manager = CaseFileManager(case_root, base / "state")
         self.original_manager = app.extensions[CASE_FILE_MANAGER_KEY]
         app.extensions[CASE_FILE_MANAGER_KEY] = self.manager
@@ -164,11 +214,11 @@ class CaseFileRoutesTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Case File Manager", response.data)
         self.assertIn(b"controlDict", response.data)
-        self.assertIn(b'id="editCaseFileModal"', response.data)
+        self.assertIn(b'data-case-explorer', response.data)
+        self.assertIn(b'data-inline-content', response.data)
+        self.assertIn(b'data-folder-picker', response.data)
         self.assertIn(b'id="replaceCaseFileModal"', response.data)
-        self.assertIn(b"data-edit-file", response.data)
         self.assertIn(b"data-replace-file", response.data)
-        self.assertLess(response.data.index(b"</main>"), response.data.index(b'id="editCaseFileModal"'))
 
         response = self.client.post(
             "/case-files/upload",
@@ -188,7 +238,7 @@ class CaseFileRoutesTestCase(unittest.TestCase):
 
     def test_replace_route_overwrites_selected_path_without_renaming_it(self):
         response = self.client.post(
-            "/case-files/replace/controlDict",
+            "/case-files/replace/system/controlDict",
             data={
                 "csrf_token": "csrf-test",
                 "file": (io.BytesIO(b"application replaced;\n"), "local-name.txt"),
@@ -198,46 +248,84 @@ class CaseFileRoutesTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(
-            (self.manager.case_root / "controlDict").read_bytes(),
+            (self.manager.case_root / "system" / "controlDict").read_bytes(),
             b"application replaced;\n",
         )
-        self.assertFalse((self.manager.case_root / "local-name.txt").exists())
+        self.assertFalse((self.manager.case_root / "system" / "local-name.txt").exists())
 
     def test_upload_edit_download_and_delete_routes(self):
         response = self.client.post(
             "/case-files/upload",
             data={
                 "csrf_token": "csrf-test",
-                "target_folder": "custom",
+                "target_folder": "system",
                 "files": (io.BytesIO(b"hello\n"), "notes.txt"),
             },
             content_type="multipart/form-data",
         )
         self.assertEqual(response.status_code, 302)
-        self.assertTrue((self.manager.case_root / "custom" / "notes.txt").exists())
+        self.assertTrue((self.manager.case_root / "system" / "notes.txt").exists())
 
-        response = self.client.get("/case-files/text/custom/notes.txt")
+        response = self.client.get("/case-files/text/system/notes.txt")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()["content"], "hello\n")
 
         response = self.client.post(
-            "/case-files/save/custom/notes.txt",
+            "/case-files/save/system/notes.txt",
             data={"csrf_token": "csrf-test", "content": "updated\n"},
+            headers={"Accept": "application/json"},
         )
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual((self.manager.case_root / "custom" / "notes.txt").read_text(), "updated\n")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["message"], "Perubahan berhasil disimpan.")
+        self.assertEqual((self.manager.case_root / "system" / "notes.txt").read_text(), "updated\n")
 
-        response = self.client.get("/case-files/download/custom/notes.txt")
+        response = self.client.get("/case-files/download/system/notes.txt")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, b"updated\n")
         response.close()
 
         response = self.client.post(
-            "/case-files/delete/custom/notes.txt",
+            "/case-files/delete/system/notes.txt",
             data={"csrf_token": "csrf-test"},
         )
         self.assertEqual(response.status_code, 302)
-        self.assertFalse((self.manager.case_root / "custom" / "notes.txt").exists())
+        self.assertFalse((self.manager.case_root / "system" / "notes.txt").exists())
+
+    def test_folder_upload_route_and_read_only_save_rejection(self):
+        response = self.client.post(
+            "/case-files/upload",
+            data={
+                "csrf_token": "csrf-test",
+                "upload_mode": "folder",
+                "target_folder": "constant",
+                "files": (io.BytesIO(b"nu 1e-05;\n"), "constant/transportProperties"),
+            },
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue((self.manager.case_root / "constant" / "transportProperties").exists())
+
+        response = self.client.post(
+            "/case-files/upload",
+            data={
+                "csrf_token": "csrf-test",
+                "upload_mode": "folder",
+                "target_folder": "constant",
+                "files": (io.BytesIO(b"schemes\n"), "system/fvSchemes"),
+            },
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse((self.manager.case_root / "system" / "fvSchemes").exists())
+
+        response = self.client.post(
+            "/case-files/save/log.run",
+            data={"csrf_token": "csrf-test", "content": "changed\n"},
+            headers={"Accept": "application/json"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Perubahan hanya diizinkan", response.get_json()["error"])
+        self.assertEqual((self.manager.case_root / "log.run").read_text(encoding="utf-8"), "solver log;\n")
 
 
 if __name__ == "__main__":

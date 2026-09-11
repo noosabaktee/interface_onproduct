@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="case-terminal-workspace" data-case-terminal
+    data-status-url="{{ url_for('dashboard.terminal_status') }}"
+    data-run-url="{{ url_for('dashboard.terminal_run') }}"
+    data-stop-url="{{ url_for('dashboard.terminal_stop') }}">
+    <div class="case-terminal-panel">
+        <div class="case-terminal-titlebar">
+            <div class="case-terminal-window-controls" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="case-terminal-title" title="{{ terminal_state.case_root }}">
+                <i class="bi bi-terminal"></i>
+                <span>case terminal - {{ terminal_state.case_root }}</span>
+            </div>
+            <div class="case-terminal-actions">
+                <button class="case-terminal-tool" type="button" data-terminal-stop disabled title="Stop process">
+                    <i class="bi bi-stop-fill"></i>
+                </button>
+                <button class="case-terminal-tool" type="button" data-terminal-clear title="Clear terminal">
+                    <i class="bi bi-trash3"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="case-terminal-screen" data-terminal-screen>
+            <pre class="case-terminal-output" data-terminal-output>{{ terminal_state.lines|join('\n') }}</pre>
+            <form class="case-terminal-form" data-terminal-form autocomplete="off">
+                <label class="case-terminal-prompt" for="terminalCommand" data-terminal-prompt>{{ terminal_state.prompt }}</label>
+                <input class="case-terminal-input" id="terminalCommand" name="command" type="text"
+                    spellcheck="false" autocapitalize="none" data-terminal-input autofocus>
+                <button class="visually-hidden" type="submit" data-terminal-submit>Run</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/case_terminal.js') }}"></script>
+{% endblock %}

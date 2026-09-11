@@ -23,6 +23,7 @@ def register_controllers(app: Flask) -> None:
         processor_controller,
         report_controller,
         simulation_controller,
+        terminal_controller,
     )
 
     app.register_blueprint(auth_bp)

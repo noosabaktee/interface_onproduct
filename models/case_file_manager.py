@@ -16,6 +16,7 @@ class CaseFileError(ValueError):
 
 
 class CaseFileManager:
+    EDITABLE_FOLDERS = ("0", "constant", "system")
     MAX_EDIT_BYTES = 2 * 1024 * 1024
     MAX_UPLOAD_FILES = 100
     PAGE_SIZE = 100
@@ -176,11 +177,19 @@ class CaseFileManager:
         except (OSError, UnicodeDecodeError):
             return False
 
+    def _require_writable_path(self, relative_path):
+        relative = self._normalize_relative(relative_path)
+        if not relative.parts or relative.parts[0] not in self.EDITABLE_FOLDERS:
+            raise CaseFileError("Perubahan hanya diizinkan di folder 0, constant, dan system.")
+        return relative
+
     def _record_for(self, path):
         relative = path.relative_to(self.case_root).as_posix()
         stat = path.stat()
         is_log = self._is_log_name(path.name)
-        editable = self._is_editable_path(path)
+        readable = self._is_editable_path(path)
+        writable = PurePosixPath(relative).parts[0] in self.EDITABLE_FOLDERS
+        editable = readable and writable
         if is_log:
             kind = "log"
             label = "Log"
@@ -189,7 +198,7 @@ class CaseFileManager:
             kind = "stl"
             label = "STL"
             icon = "bi-badge-3d"
-        elif editable:
+        elif readable:
             kind = "text"
             label = "Text"
             icon = "bi-file-earmark-code"
@@ -209,6 +218,8 @@ class CaseFileManager:
             "kind_label": label,
             "icon": icon,
             "editable": editable,
+            "readable": readable,
+            "writable": writable,
             "is_result": self._is_result_path(relative),
         }
 
@@ -263,6 +274,7 @@ class CaseFileManager:
 
         return {
             "files": filtered[start : start + self.PAGE_SIZE],
+            "tree": self._build_tree(filtered, include_empty=not normalized_search and selected_category == "all"),
             "stats": {
                 **counts,
                 "editable": editable_count,
@@ -278,6 +290,44 @@ class CaseFileManager:
             "page_size": self.PAGE_SIZE,
         }
 
+    def _build_tree(self, records, include_empty=True):
+        root = {"children": {}}
+        visible_roots = set(self.EDITABLE_FOLDERS)
+
+        def folder(parts):
+            if not parts or parts[0] not in visible_roots:
+                return None
+            node = root
+            for index, name in enumerate(parts):
+                node = node["children"].setdefault(name, {
+                    "name": name, "path": "/".join(parts[:index + 1]),
+                    "children": {}, "is_folder": True,
+                    "writable": parts[0] in self.EDITABLE_FOLDERS,
+                })
+            return node
+
+        if include_empty:
+            for current, directories, _ in os.walk(self.case_root, followlinks=False):
+                directories[:] = [name for name in directories if not (Path(current) / name).is_symlink()]
+                for name in directories:
+                    folder((Path(current) / name).relative_to(self.case_root).parts)
+        for record in records:
+            parts = PurePosixPath(record["path"]).parts
+            if not parts or parts[0] not in visible_roots:
+                continue
+            parent = folder(parts[:-1])
+            if parent is not None:
+                parent["children"][parts[-1]] = {**record, "is_folder": False}
+
+        def children(node):
+            result = sorted(node["children"].values(), key=lambda item: (not item["is_folder"], item["name"].casefold()))
+            for item in result:
+                if item["is_folder"]:
+                    item["children"] = children(item)
+            return result
+
+        return children(root)
+
     def read_text(self, relative_path):
         path = self.resolve_path(relative_path)
         if not path.is_file() or not self._is_editable_path(path):
@@ -289,6 +339,7 @@ class CaseFileManager:
         return {"path": path.relative_to(self.case_root).as_posix(), "content": content}
 
     def save_text(self, relative_path, content):
+        self._require_writable_path(relative_path)
         path = self.resolve_path(relative_path)
         if not path.is_file() or not self._is_editable_path(path):
             raise CaseFileError("File ini tidak dapat diedit sebagai teks UTF-8.")
@@ -338,14 +389,16 @@ class CaseFileManager:
             return None
         return self.backup_root / backup_name
 
-    def upload_files(self, file_storages, target_folder="", replace=False):
+    def upload_files(self, file_storages, target_folder="", replace=False, folder_upload=False):
         uploads = [storage for storage in file_storages if (getattr(storage, "filename", "") or "").strip()]
         if not uploads:
             raise CaseFileError("Pilih minimal satu file untuk diupload.")
         if len(uploads) > self.MAX_UPLOAD_FILES:
             raise CaseFileError(f"Maksimal {self.MAX_UPLOAD_FILES} file dalam satu upload.")
 
-        target_relative = self._normalize_relative(target_folder, allow_root=True)
+        target_relative = self._require_writable_path(target_folder)
+        if folder_upload and target_relative.as_posix() not in self.EDITABLE_FOLDERS:
+            raise CaseFileError("Tujuan upload folder harus 0, constant, atau system.")
         target_dir = self.resolve_path(target_relative.as_posix(), must_exist=False, allow_root=True)
         if target_dir.exists() and not target_dir.is_dir():
             raise CaseFileError("Lokasi tujuan bukan sebuah folder.")
@@ -354,17 +407,26 @@ class CaseFileManager:
         seen = set()
         for storage in uploads:
             filename = (storage.filename or "").strip()
-            if (
+            if folder_upload:
+                uploaded_path = self._normalize_relative(filename)
+                if len(uploaded_path.parts) < 2 or uploaded_path.parts[0] != target_relative.as_posix():
+                    raise CaseFileError(f"Nama folder upload harus sama dengan folder tujuan: {target_relative}.")
+                relative_path = uploaded_path
+            elif (
                 filename in {".", ".."}
                 or Path(filename).name != filename
                 or any(character in filename for character in ("/", "\\", ":", "\x00"))
             ):
                 raise CaseFileError(f"Nama file tidak aman: {filename}")
-            destination = (target_dir / filename).resolve(strict=False)
-            try:
-                destination.relative_to(self.case_root)
-            except ValueError as exc:
-                raise CaseFileError(f"Lokasi file tidak aman: {filename}") from exc
+            else:
+                relative_path = target_relative / filename
+            self._require_writable_path(relative_path)
+            destination = self.resolve_path(relative_path, must_exist=False)
+            parent = destination.parent
+            while parent != self.case_root:
+                if parent.exists() and not parent.is_dir():
+                    raise CaseFileError(f"Lokasi tujuan bukan sebuah folder: {relative_path}")
+                parent = parent.parent
             relative = destination.relative_to(self.case_root).as_posix()
             if relative.casefold() in seen:
                 raise CaseFileError(f"File duplikat dipilih: {filename}")
@@ -374,6 +436,11 @@ class CaseFileManager:
             if destination.exists() and not replace:
                 raise CaseFileError(f"File sudah ada: {relative}. Aktifkan opsi replace untuk menggantinya.")
             destinations.append((storage, destination, relative))
+
+        for _, destination, relative in destinations:
+            if any(parent.relative_to(self.case_root).as_posix().casefold() in seen
+                   for parent in destination.parents if parent != self.case_root and self.case_root in parent.parents):
+                raise CaseFileError(f"Path file bertabrakan dengan folder: {relative}")
 
         self.state_root.mkdir(parents=True, exist_ok=True)
         staging_root = Path(tempfile.mkdtemp(prefix="upload-", dir=self.state_root))
@@ -412,6 +479,7 @@ class CaseFileManager:
         return {"added": added, "replaced": replaced, "files": [item[2] for item in destinations]}
 
     def replace_file(self, relative_path, file_storage):
+        self._require_writable_path(relative_path)
         if not file_storage or not (getattr(file_storage, "filename", "") or "").strip():
             raise CaseFileError("Pilih file baru yang akan digunakan sebagai pengganti.")
 
@@ -445,6 +513,7 @@ class CaseFileManager:
         return {"path": relative, "source_name": file_storage.filename}
 
     def delete_file(self, relative_path):
+        self._require_writable_path(relative_path)
         path = self.resolve_path(relative_path)
         if not path.is_file() or path.is_symlink():
             raise CaseFileError("Target bukan file biasa dan tidak dapat dihapus.")

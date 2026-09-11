@@ -15,6 +15,7 @@ from services import (
     DATABASE_SEEDER_KEY,
     GRAPH_SERVICE_KEY,
     PROCESSOR_SERVICE_KEY,
+    SANDBOX_TERMINAL_KEY,
     SIMULATION_HISTORY_SERVICE_KEY,
 )
 from services.database_seeder import DatabaseSeeder
@@ -60,10 +61,15 @@ class ApplicationFactoryTestCase(unittest.TestCase):
         self.assertIn(DATABASE_SEEDER_KEY, self.app.extensions)
         self.assertIn(GRAPH_SERVICE_KEY, self.app.extensions)
         self.assertIn(PROCESSOR_SERVICE_KEY, self.app.extensions)
+        self.assertIn(SANDBOX_TERMINAL_KEY, self.app.extensions)
         self.assertIn(SIMULATION_HISTORY_SERVICE_KEY, self.app.extensions)
         self.assertEqual(
             self.app.view_functions["dashboard.case_file_manager"].__module__,
             "controllers.case_file_controller",
+        )
+        self.assertEqual(
+            self.app.view_functions["dashboard.terminal"].__module__,
+            "controllers.terminal_controller",
         )
         self.assertEqual(
             self.app.view_functions["dashboard.update_graph"].__module__,
@@ -189,6 +195,32 @@ class ApplicationFactoryTestCase(unittest.TestCase):
         self.assertEqual(invalid_response.status_code, 200)
         self.assertIn(b'data-history-task="meshing"', invalid_response.data)
         self.assertIn(b'data-history-task="solver"', invalid_response.data)
+
+    def test_terminal_page_is_case_root_bounded(self):
+        (self.app.config["CASE_ROOT"] / "constant").mkdir()
+        with self.client.session_transaction() as session:
+            session.update(
+                authenticated=True,
+                username="engineer",
+                csrf_token="test-token",
+            )
+
+        page = self.client.get("/terminal")
+        blocked = self.client.post("/terminal/run", json={"command": "dir .."})
+        cd_constant = self.client.post("/terminal/run", json={"command": "cd constant"})
+        in_constant = self.client.get("/terminal/status")
+        cd_parent = self.client.post("/terminal/run", json={"command": "cd .."})
+        status = self.client.get("/terminal/status")
+
+        self.assertEqual(page.status_code, 200)
+        self.assertIn(b"case terminal", page.data)
+        self.assertEqual(blocked.status_code, 400)
+        self.assertIn("tidak diizinkan", blocked.get_json()["error"])
+        self.assertEqual(cd_constant.status_code, 200)
+        self.assertEqual(in_constant.get_json()["cwd"], "constant")
+        self.assertEqual(cd_parent.status_code, 200)
+        self.assertEqual(status.status_code, 200)
+        self.assertEqual(status.get_json()["cwd"], ".")
 
 
 class ProcessorServiceTestCase(unittest.TestCase):

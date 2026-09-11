@@ -3667,3 +3667,200 @@ body {
         text-align: center;
     }
 }
+
+/* Case Terminal */
+.case-terminal-workspace {
+    display: flex;
+    min-height: 100%;
+}
+
+.case-terminal-panel {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #263238;
+    border-radius: 10px;
+    background: #070b0a;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.2);
+}
+
+.case-terminal-titlebar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    min-height: 42px;
+    padding: 0 12px;
+    border-bottom: 1px solid #1d2b27;
+    background: #111827;
+    color: #cbd5e1;
+    user-select: none;
+}
+
+.case-terminal-window-controls {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.case-terminal-window-controls span {
+    width: 11px;
+    height: 11px;
+    flex: 0 0 11px;
+    border-radius: 50%;
+}
+
+.case-terminal-window-controls span:nth-child(1) {
+    background: #ef4444;
+}
+
+.case-terminal-window-controls span:nth-child(2) {
+    background: #f59e0b;
+}
+
+.case-terminal-window-controls span:nth-child(3) {
+    background: #22c55e;
+}
+
+.case-terminal-title {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 8px;
+    color: #d1d5db;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.case-terminal-title i {
+    color: #34d399;
+}
+
+.case-terminal-title span {
+    overflow: hidden;
+    font-family: Consolas, "Courier New", monospace;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.case-terminal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.case-terminal-tool {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #2f3f46;
+    border-radius: 6px;
+    background: #0f172a;
+    color: #cbd5e1;
+}
+
+.case-terminal-tool:hover:not(:disabled) {
+    border-color: #34d399;
+    color: #34d399;
+}
+
+.case-terminal-tool:disabled {
+    opacity: 0.35;
+}
+
+.case-terminal-screen {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 18px 20px;
+    background: #070b0a;
+    color: #d1fae5;
+    cursor: text;
+}
+
+.case-terminal-output {
+    margin: 0;
+    overflow: visible;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #d1fae5;
+    font: 0.86rem/1.55 Consolas, "Courier New", monospace;
+    white-space: pre-wrap;
+}
+
+.case-terminal-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 24px;
+    margin-top: 4px;
+    background: transparent;
+}
+
+.case-terminal-prompt {
+    flex: 0 0 auto;
+    color: #34d399;
+    font: 0.86rem/1.55 Consolas, "Courier New", monospace;
+    white-space: nowrap;
+}
+
+.case-terminal-input {
+    flex: 1;
+    min-width: 0;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #f8fafc;
+    caret-color: #34d399;
+    font: 0.86rem/1.55 Consolas, "Courier New", monospace;
+}
+
+.case-terminal-input:focus {
+    box-shadow: none;
+}
+
+.case-terminal-input::placeholder {
+    color: #64748b;
+}
+
+.case-terminal-error {
+    color: #f87171;
+}
+
+.case-terminal-workspace.is-running .case-terminal-prompt::after {
+    content: " running";
+    color: #f59e0b;
+}
+
+@media (max-width: 768px) {
+    .case-terminal-titlebar {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .case-terminal-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-end;
+    }
+
+    .case-terminal-screen {
+        padding: 14px;
+    }
+
+    .case-terminal-prompt {
+        max-width: 46vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .case-terminal-output {
+        font-size: 0.8rem;
+    }
+}

@@ -11,8 +11,10 @@
 | Mesin simulasi | OpenFOAM dan MPI |
 | Visualisasi | Three.js pada browser dan ParaView Desktop melalui `pvserver` |
 | Penyimpanan aplikasi | SQLite dan filesystem |
-| Versi dokumen | 1.0 |
+| Versi dokumen | 1.1 |
 | Tanggal pemetaan | 14 Agustus 2026 |
+| Tanggal pembaruan | 11 September 2026 |
+| Metode pengembangan | Agile dengan pendekatan iteratif dan inkremental |
 | Dasar dokumentasi | Implementasi aktual pada repository, bukan rancangan konseptual semata |
 
 ---
@@ -46,6 +48,7 @@
 25. [Pemeliharaan dan Troubleshooting](#25-pemeliharaan-dan-troubleshooting)
 26. [Bahan Penyusunan Skripsi](#26-bahan-penyusunan-skripsi)
 27. [Matriks Ketertelusuran](#27-matriks-ketertelusuran)
+28. [Realisasi Pengembangan Sistem](#28-realisasi-pengembangan-sistem)
 
 ---
 
@@ -1800,17 +1803,21 @@ Alternatif fokus:
 5. Visualisasi browser difokuskan pada geometri; kontur hasil ilmiah menggunakan ParaView Desktop.
 6. Pengujian ilmiah disesuaikan dengan data validasi yang tersedia.
 
-### 26.4 Metodologi pengembangan yang dapat digunakan
+### 26.4 Metodologi pengembangan yang digunakan
 
-Metodologi dapat disesuaikan dengan aturan kampus. Salah satu pilihan adalah prototyping iteratif:
+Pengembangan sistem ini menggunakan metode Agile dengan pendekatan iteratif dan inkremental. Agile dipilih karena kebutuhan sistem CFD berbasis web berkembang secara bertahap: mulai dari kebutuhan dasar pengelolaan case, input parameter, eksekusi OpenFOAM, pemantauan proses, visualisasi, sampai penyusunan report. Setiap fitur dapat dibangun, diuji, dievaluasi, lalu disempurnakan pada iterasi berikutnya.
 
-1. **Communication**: wawancara process engineer dan identifikasi workflow manual.
-2. **Quick plan**: definisi fitur, actor, data, dan batasan.
-3. **Modeling**: use case, activity diagram, arsitektur, database, dan rancangan UI.
-4. **Construction**: Flask, OpenFOAM integration, database, visualization, dan report.
-5. **Deployment and feedback**: pengujian dengan pengguna, revisi, dan evaluasi.
+Dalam konteks skripsi, Agile dapat dijelaskan melalui tahapan berikut:
 
-Jika kampus mewajibkan Waterfall, artefak yang sama dapat disusun sebagai analisis kebutuhan, desain, implementasi, pengujian, dan pemeliharaan.
+1. **Identifikasi kebutuhan awal**: mengumpulkan kebutuhan workflow simulasi CFD, kendala penggunaan OpenFOAM manual, kebutuhan monitoring, kebutuhan visualisasi, dan kebutuhan laporan.
+2. **Penyusunan product backlog**: memecah kebutuhan menjadi daftar fitur seperti login, dashboard, case file manager, input parameter, set processor, meshing, solver, graph, ParaView, report, dan pengujian.
+3. **Sprint planning**: menentukan prioritas fitur yang dikerjakan pada setiap iterasi berdasarkan urgensi dan ketergantungan teknis.
+4. **Sprint implementation**: mengimplementasikan fitur secara bertahap menggunakan Flask, SQLite, OpenFOAM command runner, Three.js, ParaView, dan modul pendukung lain.
+5. **Testing dan review**: menguji fitur yang selesai melalui unit test, black-box testing, dan pemeriksaan alur penggunaan.
+6. **Sprint evaluation**: mencatat hasil, kekurangan, bug, dan kebutuhan penyempurnaan untuk dimasukkan ke backlog iterasi berikutnya.
+7. **Increment release**: menghasilkan versi sistem yang semakin lengkap, dari fondasi aplikasi sampai platform terintegrasi.
+
+Artefak Agile yang dapat dimasukkan ke skripsi meliputi product backlog, sprint backlog, hasil increment tiap sprint, catatan pengujian, perubahan fitur, dan evaluasi sprint.
 
 ### 26.5 Variabel evaluasi yang dapat diukur
 
@@ -1887,9 +1894,92 @@ Sistem yang lulus unit test belum otomatis menghasilkan model CFD yang valid. Kl
 
 ---
 
+## 28. Realisasi Pengembangan Sistem
+
+Bagian ini merangkum pekerjaan yang sudah dilakukan selama pengembangan KMI CFD Simulation Platform. Ringkasan ini dapat digunakan sebagai bahan Bab Implementasi, Bab Metodologi, atau Bab Hasil dan Pembahasan pada skripsi.
+
+### 28.1 Ringkasan pekerjaan yang sudah dilakukan
+
+| Area pengembangan | Realisasi |
+| --- | --- |
+| Fondasi aplikasi web | Membuat aplikasi Flask dengan pola application factory, pemisahan controller, model, service, template, static asset, dan konfigurasi environment. |
+| Autentikasi | Membuat login, logout, route guard, session, CSRF token dasar, dan validasi redirect internal. |
+| Dashboard | Membuat ringkasan total run, compute time, success rate, active run, grafik aktivitas, status breakdown, dan recent runs berbasis data SQLite. |
+| Database history | Membuat penyimpanan riwayat simulasi pada SQLite, schema migration, index, lifecycle status, dan seeder data demo. |
+| Case File Manager | Membuat fitur daftar file case, pencarian, filter, pagination, editor teks, upload, replace, download, delete, ZIP archive, clear results, clear logs, clear uploads, dan reset case. |
+| Keamanan filesystem | Menambahkan normalisasi path, containment check, penolakan path traversal, penolakan symlink, atomic write, backup upload, dan mekanisme restore file. |
+| Input Parameter | Membuat mode Developer untuk parameter teknis OpenFOAM dan mode Production untuk parameter operasional produk CKR dan BMT. |
+| Mapping parameter | Menghubungkan input web ke dictionary OpenFOAM, termasuk transformasi satuan, formula produk, boundary condition, initial condition, droplet/nozzle, thermophysical properties, sub-model, dan numerical settings. |
+| Set Processor | Membuat pembacaan dan pembaruan `decomposeParDict`, normalisasi jumlah subdomain, serta pembagian processor weights. |
+| Meshing | Membuat runner untuk menjalankan rangkaian meshing, menyimpan log, mencatat status, durasi, exit code, dan mendukung stop/cancel/resume berbasis step. |
+| Solver | Membuat eksekusi solver paralel menggunakan MPI, pemeriksaan kesiapan processor folder, pemantauan log, indikator residual/Courant number/time step, dan pencatatan lifecycle ke database. |
+| Terminal progress | Membuat endpoint dan halaman progress untuk polling status proses, menampilkan log terbaru, serta mengelola proses aktif. |
+| Graph | Membuat integrasi script Matplotlib/NumPy untuk menghasilkan grafik residual, Courant number, dan time step dari log OpenFOAM. |
+| Visualisasi browser | Membuat viewer Three.js untuk preview geometri internal mesh berbasis VTP, kontrol kamera, tampilan mesh/surface, dan capture screenshot. |
+| Remote ParaView | Membuat integrasi `pvserver`, kontrol start/stop dari web, runtime directory, lock lintas worker, log tail, dan panduan koneksi ParaView Desktop. |
+| Report | Membuat folder report, daftar screenshot/grafik, capture dari visualisasi, export PDF, download ZIP, dan penghapusan report. |
+| Antarmuka | Menyusun template Jinja, navigasi dashboard, halaman modul, responsive layout, tema visual, komponen tabel, form, tombol, dan feedback flash message. |
+| Pengujian | Menambahkan unit test untuk application factory, authentication, dashboard, migration, history lifecycle, terminal runner, processor, ParaView page, case file listing, path security, edit/upload/archive/clear, dan routes. |
+| Dokumentasi | Menyusun dokumentasi teknis, arsitektur, konfigurasi, endpoint, pengujian, keamanan, troubleshooting, bahan skripsi, dan matriks ketertelusuran. |
+
+### 28.2 Tahapan pengembangan berdasarkan Agile
+
+Pengembangan dilakukan secara bertahap sesuai prinsip Agile, yaitu menghasilkan increment yang dapat diuji pada setiap iterasi. Contoh pembagian sprint yang dapat digunakan dalam penulisan skripsi:
+
+| Sprint | Fokus pekerjaan | Increment yang dihasilkan |
+| --- | --- | --- |
+| Sprint 1 | Analisis kebutuhan dan fondasi aplikasi | Struktur Flask, konfigurasi environment, template dasar, dan route awal. |
+| Sprint 2 | Autentikasi dan dashboard | Login, proteksi route, session, dashboard, dan riwayat awal. |
+| Sprint 3 | Pengelolaan file case | Case File Manager, validasi path, editor, upload, download, ZIP, dan clear/reset. |
+| Sprint 4 | Parameter dan processor | Mode Developer, mode Production CKR/BMT, mapping dictionary, dan konfigurasi `decomposeParDict`. |
+| Sprint 5 | Integrasi OpenFOAM | Eksekusi meshing, solver paralel, status proses, log, stop/cancel/resume, dan pencatatan history. |
+| Sprint 6 | Analisis dan visualisasi | Grafik diagnostik, preview Three.js, capture, dan integrasi remote ParaView Desktop. |
+| Sprint 7 | Report dan stabilisasi | Report PDF/ZIP, pengujian otomatis, hardening keamanan dasar, troubleshooting, dan dokumentasi sistem. |
+
+Pembagian sprint di atas dapat disesuaikan dengan catatan pengembangan aktual. Inti narasi Agile yang perlu dipertahankan adalah bahwa sistem dibangun secara berulang, fitur diprioritaskan berdasarkan backlog, setiap increment diuji, lalu hasil evaluasi digunakan untuk memperbaiki iterasi berikutnya.
+
+### 28.3 Kesesuaian hasil implementasi dengan kebutuhan awal
+
+| Kebutuhan awal | Status realisasi | Bukti implementasi |
+| --- | --- | --- |
+| Pengguna dapat mengakses sistem melalui browser | Sudah dilakukan | Flask route, template Jinja, static asset, dan session login. |
+| Pengguna dapat mengelola file case OpenFOAM | Sudah dilakukan | Case File Manager dengan listing, edit, upload, download, archive, dan clear/reset. |
+| Pengguna dapat mengubah parameter simulasi tanpa edit manual | Sudah dilakukan sebagian besar | Input Parameter mode Developer dan Production, dengan beberapa location yang masih dibatasi. |
+| Pengguna dapat mengatur jumlah prosesor | Sudah dilakukan | Service pembacaan dan penulisan `decomposeParDict`. |
+| Pengguna dapat menjalankan meshing dari web | Sudah dilakukan | Runner meshing, status, log, history, dan resume step. |
+| Pengguna dapat menjalankan solver paralel dari web | Sudah dilakukan | Runner solver MPI, pengecekan processor folder, log, status, dan history. |
+| Pengguna dapat memantau proses simulasi | Sudah dilakukan | Terminal progress, dashboard, polling status, log tail, dan indikator kestabilan. |
+| Pengguna dapat membuat grafik diagnostik | Sudah dilakukan | Graph service dan script plotting log OpenFOAM. |
+| Pengguna dapat melihat hasil secara visual | Sudah dilakukan | Preview browser berbasis Three.js dan koneksi remote ParaView Desktop. |
+| Pengguna dapat menyusun laporan hasil | Sudah dilakukan | Report folder, capture screenshot, export PDF, dan ZIP archive. |
+| Sistem memiliki pengujian dasar | Sudah dilakukan | Unit test pada controller, model, service, route, security path, database, dan archive. |
+| Sistem siap production penuh | Belum sepenuhnya | Masih perlu hardening keamanan, validasi OpenFOAM end-to-end, multi-user, queue, dan validasi ilmiah CFD. |
+
+### 28.4 Catatan untuk penulisan skripsi
+
+Dalam skripsi, bagian hasil implementasi dapat ditulis sebagai realisasi increment Agile. Setiap increment menjelaskan fitur yang dibangun, komponen kode yang digunakan, hasil pengujian, serta evaluasi kekurangannya. Dengan demikian, pembahasan tidak hanya menjelaskan bahwa aplikasi sudah dibuat, tetapi juga menunjukkan proses pengembangan yang sistematis.
+
+Contoh narasi singkat:
+
+> Sistem dikembangkan menggunakan metode Agile secara iteratif dan inkremental. Setiap iterasi menghasilkan increment berupa modul yang dapat diuji, dimulai dari fondasi aplikasi, autentikasi, dashboard, pengelolaan case, input parameter, integrasi OpenFOAM, monitoring, visualisasi, hingga report. Hasil review pada setiap iterasi digunakan untuk memperbaiki backlog dan menentukan prioritas pengembangan berikutnya.
+
+### 28.5 Pekerjaan lanjutan yang direkomendasikan
+
+Walaupun fitur utama sudah terealisasi, terdapat beberapa pekerjaan lanjutan yang penting sebelum sistem digunakan sebagai platform production atau dasar validasi ilmiah akhir:
+
+1. Menjalankan pengujian end-to-end OpenFOAM pada server target.
+2. Menetapkan versi OpenFOAM, MPI, ParaView, Python, dan dependency yang resmi digunakan.
+3. Menyelaraskan solver pada web runner, `Allrun`, dan `system/controlDict`.
+4. Memvalidasi mapping parameter CKR/BMT bersama process engineer.
+5. Menambahkan snapshot parameter per run agar setiap hasil simulasi dapat direproduksi.
+6. Meningkatkan keamanan dengan CSRF menyeluruh, password policy, rate limiting, HTTPS, dan role-based access control.
+7. Memindahkan eksekusi simulasi ke worker atau queue bila sistem akan menangani banyak case atau banyak pengguna.
+8. Melakukan validasi ilmiah CFD melalui mesh independence study, convergence check, dan perbandingan dengan data aktual.
+
+---
+
 ## Penutup
 
 KMI CFD Simulation Platform telah menyediakan fondasi terintegrasi untuk mengelola workflow CFD spray dryer melalui web. Kekuatan utamanya terletak pada penyatuan filesystem case, parameter, eksekusi OpenFOAM, monitoring, history, visualisasi, dan report dalam arsitektur modular yang telah memiliki pengujian otomatis.
 
 Untuk digunakan sebagai objek skripsi dan sistem production, tahap berikutnya yang paling penting adalah menyelaraskan solver serta versi OpenFOAM, menjalankan pengujian end-to-end pada server target, menerapkan hardening keamanan secara menyeluruh, dan melakukan verifikasi serta validasi CFD dengan data yang dapat dipertanggungjawabkan.
-

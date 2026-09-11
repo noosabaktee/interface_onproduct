@@ -3,6 +3,7 @@
 from flask import Flask, current_app
 
 from models.case_file_manager import CaseFileManager
+from models.sandbox_terminal import SandboxTerminal
 from models.simulation_run_repository import SimulationRunRepository
 from services.database_seeder import DatabaseSeeder
 from services.graph_service import GraphService
@@ -15,6 +16,7 @@ GRAPH_SERVICE_KEY = "graph_service"
 PROCESSOR_SERVICE_KEY = "processor_service"
 SIMULATION_HISTORY_SERVICE_KEY = "simulation_history_service"
 DATABASE_SEEDER_KEY = "database_seeder"
+SANDBOX_TERMINAL_KEY = "sandbox_terminal"
 
 
 def init_services(app: Flask) -> None:
@@ -25,6 +27,9 @@ def init_services(app: Flask) -> None:
         state_root=app.config["CASE_FILE_STATE_ROOT"],
         report_root=app.config["REPORT_ROOT"],
         graph_root=app.config["GRAPH_OUTPUT_PATH"],
+    )
+    app.extensions[SANDBOX_TERMINAL_KEY] = SandboxTerminal(
+        case_root=app.config["CASE_ROOT"],
     )
     app.extensions[GRAPH_SERVICE_KEY] = GraphService(
         project_root=app.config["PROJECT_ROOT"],
@@ -65,3 +70,7 @@ def get_simulation_history_service() -> SimulationHistoryService:
 
 def get_database_seeder() -> DatabaseSeeder:
     return current_app.extensions[DATABASE_SEEDER_KEY]
+
+
+def get_sandbox_terminal() -> SandboxTerminal:
+    return current_app.extensions[SANDBOX_TERMINAL_KEY]

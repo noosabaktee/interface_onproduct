@@ -51,6 +51,7 @@ def upload_case_files():
             request.files.getlist("files"),
             target_folder=request.form.get("target_folder", ""),
             replace=request.form.get("replace") == "1",
+            folder_upload=request.form.get("upload_mode") == "folder",
         )
         flash(
             f"Upload selesai: {result['added']} file baru dan "
@@ -84,8 +85,12 @@ def save_case_text_file(relative_path):
             relative_path,
             request.form.get("content", ""),
         )
+        if request.accept_mimetypes.best == "application/json":
+            return jsonify({"path": relative_path, "message": "Perubahan berhasil disimpan."})
         flash(f"Perubahan {relative_path} berhasil disimpan.", "success")
     except CaseFileError as exc:
+        if request.accept_mimetypes.best == "application/json":
+            return jsonify({"error": str(exc)}), 400
         flash(str(exc), "danger")
     return _manager_redirect()
 
