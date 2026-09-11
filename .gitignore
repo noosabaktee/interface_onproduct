@@ -30,6 +30,12 @@ MANIFEST
 instance/
 .webassets-cache
 
+# Local SQLite databases
+*.sqlite
+*.sqlite3
+*.db
+*.db3
+
 # Virtual Environments
 .venv/
 venv/
