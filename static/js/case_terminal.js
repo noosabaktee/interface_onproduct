@@ -17,12 +17,19 @@
         let commandHistory = [];
         let historyIndex = 0;
 
+        const isOutputAtBottom = () => (
+            output.scrollHeight - output.scrollTop - output.clientHeight < 24
+        );
+
         const render = (state) => {
+            const shouldStickToBottom = isOutputAtBottom() || Boolean(state.running);
             output.textContent = (state.lines && state.lines.length)
                 ? state.lines.join("\n")
                 : "Terminal siap.";
             prompt.textContent = state.prompt || "case:/ $";
-            screen.scrollTop = screen.scrollHeight;
+            if (shouldStickToBottom) {
+                output.scrollTop = output.scrollHeight;
+            }
 
             const running = Boolean(state.running);
             root.classList.toggle("is-running", running);
@@ -35,7 +42,7 @@
                 message.className = "case-terminal-error";
                 message.textContent = state.error;
                 output.textContent += `${output.textContent ? "\n" : ""}${message.textContent}`;
-                screen.scrollTop = screen.scrollHeight;
+                output.scrollTop = output.scrollHeight;
             }
 
             if (running && !pollTimer) {
@@ -81,14 +88,14 @@
                 body: JSON.stringify({ command })
             }).then(render).catch(() => {
                 output.textContent += "\nError: command gagal dikirim.";
-                screen.scrollTop = screen.scrollHeight;
+                output.scrollTop = output.scrollHeight;
             });
         });
 
         stop.addEventListener("click", () => {
             requestJson(root.dataset.stopUrl, { method: "POST" }).then(render).catch(() => {
                 output.textContent += "\nError: command gagal dihentikan.";
-                screen.scrollTop = screen.scrollHeight;
+                output.scrollTop = output.scrollHeight;
             });
         });
 
@@ -102,6 +109,12 @@
         });
 
         input.addEventListener("keydown", (event) => {
+            if (event.key === "Tab") {
+                event.preventDefault();
+                input.focus();
+                return;
+            }
+
             if (event.key === "ArrowUp") {
                 event.preventDefault();
                 if (!commandHistory.length) {
@@ -120,6 +133,15 @@
                 historyIndex = Math.min(commandHistory.length, historyIndex + 1);
                 input.value = commandHistory[historyIndex] || "";
                 input.setSelectionRange(input.value.length, input.value.length);
+            }
+        });
+
+        root.addEventListener("keydown", (event) => {
+            if (event.key === "Tab" && root.contains(document.activeElement)) {
+                event.preventDefault();
+                if (!input.disabled) {
+                    input.focus();
+                }
             }
         });
 

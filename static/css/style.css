@@ -3778,19 +3778,23 @@ body {
 }
 
 .case-terminal-screen {
+    display: flex;
+    flex-direction: column;
     flex: 1;
     min-height: 0;
-    overflow: auto;
-    padding: 18px 20px;
+    overflow: hidden;
+    padding: 0;
     background: #070b0a;
     color: #d1fae5;
     cursor: text;
 }
 
 .case-terminal-output {
+    flex: 1;
+    min-height: 0;
     margin: 0;
-    overflow: visible;
-    padding: 0;
+    overflow: auto;
+    padding: 18px 20px 8px;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -3804,7 +3808,8 @@ body {
     align-items: center;
     gap: 8px;
     min-height: 24px;
-    margin-top: 4px;
+    margin: 0;
+    padding: 4px 20px 18px;
     background: transparent;
 }
 
@@ -3856,7 +3861,15 @@ body {
     }
 
     .case-terminal-screen {
-        padding: 14px;
+        padding: 0;
+    }
+
+    .case-terminal-output {
+        padding: 14px 14px 8px;
+    }
+
+    .case-terminal-form {
+        padding: 4px 14px 14px;
     }
 
     .case-terminal-prompt {
