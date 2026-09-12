@@ -27,8 +27,11 @@ share/python-wheels/
 MANIFEST
 
 # Flask specific files
-instance/
 .webassets-cache
+
+# Local runtime instance folder
+instance/*
+!instance/.gitkeep
 
 # Local SQLite databases
 *.sqlite
