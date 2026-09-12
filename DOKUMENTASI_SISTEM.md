@@ -13,7 +13,7 @@
 | Penyimpanan aplikasi | SQLite dan filesystem |
 | Versi dokumen | 1.1 |
 | Tanggal pemetaan | 14 Agustus 2026 |
-| Tanggal pembaruan | 11 September 2026 |
+| Tanggal pembaruan | 12 September 2026 |
 | Metode pengembangan | Agile dengan pendekatan iteratif dan inkremental |
 | Dasar dokumentasi | Implementasi aktual pada repository, bukan rancangan konseptual semata |
 
@@ -79,6 +79,12 @@ Computational Fluid Dynamics adalah metode komputasi untuk menganalisis perilaku
 
 OpenFOAM menyediakan solver, utilitas pembentukan mesh, format dictionary, pemrosesan paralel, dan hasil numerik yang dibutuhkan. Namun, penggunaan OpenFOAM secara langsung membutuhkan pemahaman struktur folder case, sintaks dictionary, command-line Linux, MPI, interpretasi log, dan ParaView. Hambatan ini dapat meningkatkan waktu persiapan dan risiko kesalahan konfigurasi.
 
+Pada praktik kerja tim CAE, simulasi CFD untuk geometri spray dryer tidak selalu dapat dijalankan secara efektif pada perangkat komputer perusahaan yang tersedia. Tahap pembentukan mesh dan eksekusi solver OpenFOAM merupakan proses yang sangat bergantung pada kemampuan CPU, jumlah core, kapasitas memori, dan kestabilan sistem selama komputasi berjalan. Semakin kompleks geometri, semakin halus mesh, dan semakin panjang durasi simulasi transient, semakin besar pula kebutuhan komputasinya. Keterbatasan hardware lokal dapat menyebabkan waktu meshing dan solving menjadi sangat lama, komputer pengguna tidak responsif, atau proses berhenti sebelum selesai.
+
+Untuk mengatasi keterbatasan tersebut, tim CAE menjalankan alur simulasi melalui Virtual Private Server (VPS) yang disewa dengan spesifikasi prosesor lebih besar. VPS digunakan sebagai lingkungan komputasi utama untuk mengedit parameter case, menjalankan rangkaian meshing, mengeksekusi solver paralel, serta membaca log proses secara berkelanjutan. Dengan pendekatan ini, beban CPU yang berat dipindahkan dari komputer pengguna ke server, sementara pengguna tetap dapat mengakses sistem melalui browser.
+
+Kebutuhan visualisasi hasil juga menjadi faktor penting. Karena hasil OpenFOAM berada pada filesystem VPS dan ukuran datanya dapat besar, pemindahan seluruh hasil ke komputer lokal tidak selalu efisien. Oleh karena itu, preview dan analisis hasil dilakukan secara remote menggunakan `pvserver` yang berjalan di VPS. ParaView Desktop pada komputer pengguna dapat terhubung ke `pvserver` sehingga hasil simulasi dapat dilihat tanpa harus memiliki hardware lokal yang setara dengan server komputasi. Pendekatan client/server ini memisahkan pekerjaan komputasi berat, penyimpanan data hasil, dan aktivitas analisis visual.
+
 KMI CFD Simulation Platform dikembangkan sebagai antarmuka terintegrasi agar proses tersebut dapat dijalankan dan dipantau melalui browser. Sistem juga menyediakan mode parameter produksi untuk menerjemahkan masukan operasional yang lebih mudah dipahami menjadi nilai teknis OpenFOAM melalui rumus yang telah dikonfigurasi.
 
 ### 2.1 Identifikasi masalah
@@ -92,10 +98,14 @@ Permasalahan yang menjadi dasar pengembangan sistem adalah:
 5. Data proses, grafik, screenshot, dan laporan belum berada dalam satu alur kerja.
 6. Riwayat eksekusi perlu disimpan untuk evaluasi keberhasilan dan waktu komputasi.
 7. Visualisasi pada server tanpa antarmuka grafis memerlukan mekanisme remote yang aman.
+8. Hardware lokal perusahaan tidak selalu mencukupi untuk menjalankan proses meshing dan solver CFD yang dominan menggunakan CPU.
+9. Hasil simulasi yang berada di VPS perlu dapat divisualisasikan tanpa memindahkan seluruh data besar ke komputer pengguna.
 
 ### 2.2 Gagasan solusi
 
 Sistem menyediakan antarmuka web sebagai penghubung antara pengguna, file case OpenFOAM, executable simulasi, penyimpanan riwayat, generator grafik, dan ParaView. Setiap fungsi dipisahkan ke dalam controller, model, dan service agar aplikasi lebih mudah diuji dan dikembangkan.
+
+Dalam implementasi operasional, aplikasi ditempatkan pada VPS Linux yang juga menjalankan OpenFOAM, MPI, dan `pvserver`. Browser pengguna berfungsi sebagai antarmuka kendali, sedangkan VPS menjadi pusat komputasi dan penyimpanan hasil. Alur ini memungkinkan proses editing parameter, meshing, solver, monitoring log, pembuatan grafik, dan visualisasi ParaView dilakukan dalam satu workflow remote yang lebih sesuai dengan keterbatasan hardware lokal.
 
 ---
 
@@ -113,7 +123,8 @@ Tujuan utama sistem adalah membangun platform web terintegrasi yang dapat:
 6. menampilkan indikator kestabilan solver dari log;
 7. menghasilkan grafik diagnostik dari log OpenFOAM;
 8. menyediakan visualisasi geometri melalui browser dan ParaView Desktop;
-9. menyusun arsip hasil dalam bentuk folder report dan PDF.
+9. mendukung penggunaan VPS sebagai mesin komputasi dan visualisasi remote;
+10. menyusun arsip hasil dalam bentuk folder report dan PDF.
 
 ### 3.2 Manfaat
 
@@ -123,6 +134,7 @@ Tujuan utama sistem adalah membangun platform web terintegrasi yang dapat:
 - Mengurangi interaksi langsung dengan terminal.
 - Mempercepat pemeriksaan log dan status simulasi.
 - Mempermudah penggunaan kembali case dan hasil.
+- Mengakses komputasi CFD berat di VPS tanpa harus memakai komputer lokal berspesifikasi tinggi.
 
 #### Bagi peneliti
 
@@ -146,6 +158,7 @@ Tujuan utama sistem adalah membangun platform web terintegrasi yang dapat:
 - konfigurasi prosesor OpenFOAM;
 - rangkaian meshing;
 - solver paralel menggunakan MPI;
+- eksekusi OpenFOAM pada VPS atau server Linux;
 - pemantauan log dan indikator numerik;
 - grafik residual, Courant number, dan time step;
 - preview geometri internal mesh;
@@ -182,6 +195,8 @@ Tujuan utama sistem adalah membangun platform web terintegrasi yang dapat:
 | Initial condition | Nilai awal variabel pada domain simulasi. |
 | MPI | Message Passing Interface untuk komputasi paralel. |
 | Processor/subdomain | Bagian domain hasil dekomposisi untuk satu proses MPI. |
+| VPS | Virtual Private Server, server sewaan yang digunakan sebagai lingkungan komputasi dan penyimpanan simulasi. |
+| CPU-bound | Karakter proses yang kinerjanya terutama ditentukan oleh kemampuan prosesor. Dalam sistem ini terutama terjadi pada meshing dan solver. |
 | Residual | Ukuran ketidakseimbangan persamaan pada proses iterasi. |
 | Courant number | Besaran tak berdimensi untuk menilai hubungan kecepatan, ukuran sel, dan time step. |
 | Time step | Interval waktu numerik antarperhitungan transient. |
@@ -668,9 +683,10 @@ Report dapat dipilih, ditampilkan, diekspor sebagai PDF, atau dihapus.
 | FR-18 | Sistem harus membuat grafik dari log. | Python, Matplotlib, dan NumPy. |
 | FR-19 | Sistem harus menampilkan preview geometri 3D. | Konversi internal mesh ke VTP dan Three.js. |
 | FR-20 | Sistem harus mendukung koneksi ParaView Desktop. | `pvserver`, state manager, SSH tunnel info. |
-| FR-21 | Sistem harus menyimpan screenshot dan grafik per report. | Folder report bertanggal. |
-| FR-22 | Sistem harus mengekspor report ke PDF. | Pillow multi-page PDF. |
-| FR-23 | Sistem harus menyediakan data demo riwayat yang aman diulang. | CLI seeder idempotent. |
+| FR-21 | Sistem harus dapat dijalankan pada VPS sebagai pusat komputasi CFD. | Environment path, OpenFOAM runner, MPI, dan remote ParaView. |
+| FR-22 | Sistem harus menyimpan screenshot dan grafik per report. | Folder report bertanggal. |
+| FR-23 | Sistem harus mengekspor report ke PDF. | Pillow multi-page PDF. |
+| FR-24 | Sistem harus menyediakan data demo riwayat yang aman diulang. | CLI seeder idempotent. |
 
 ---
 
@@ -689,7 +705,9 @@ Report dapat dipilih, ditampilkan, diekspor sebagai PDF, atau dihapus.
 | NFR-09 | Configurability | Path, kredensial, cookie, timezone, dan ParaView dapat diubah melalui environment. |
 | NFR-10 | Portability | Web dapat dikembangkan di Windows, tetapi OpenFOAM runner dan pvserver ditujukan untuk Linux/container. |
 | NFR-11 | Performance | Proses berat dijalankan sebagai subprocess/background thread; grafik memiliki timeout. |
-| NFR-12 | Recoverability | Upload replacement mempunyai backup; abandoned run ditutup otomatis saat startup. |
+| NFR-12 | Resource efficiency | Komputasi berat dipindahkan ke VPS/server CPU besar agar komputer pengguna tidak menjadi bottleneck. |
+| NFR-13 | Remote accessibility | Pengguna dapat mengendalikan simulasi, membaca log, dan melihat hasil dari komputer lokal melalui browser dan koneksi ParaView remote. |
+| NFR-14 | Recoverability | Upload replacement mempunyai backup; abandoned run ditutup otomatis saat startup. |
 
 ---
 
@@ -1216,6 +1234,22 @@ export PVSERVER_BINARY="/opt/paraview-5.10.1/bin/pvserver"
 
 Jangan menyimpan password dan secret nyata pada Git.
 
+### 17.4 Konfigurasi VPS untuk simulasi CFD
+
+Pada deployment skripsi atau uji produksi, VPS berperan sebagai mesin komputasi utama. Konfigurasi minimal yang perlu dicatat adalah:
+
+- jumlah vCPU/core yang digunakan;
+- kapasitas RAM;
+- kapasitas dan jenis storage;
+- sistem operasi;
+- versi OpenFOAM, MPI, ParaView, Python, dan dependency web;
+- jumlah subdomain/proses MPI yang dipilih pada aplikasi;
+- lokasi `CFD_CASE_ROOT`, `CFD_GRAPH_ROOT`, dan `CFD_REPORT_ROOT`;
+- alamat publik atau domain VPS;
+- mekanisme koneksi remote, terutama SSH tunnel untuk `pvserver`.
+
+Karena meshing dan solver bersifat CPU-bound, pemilihan VPS sebaiknya memprioritaskan jumlah core, performa single-core, kapasitas memori, dan kestabilan proses jangka panjang. GPU bukan kebutuhan utama untuk solver OpenFOAM pada konfigurasi ini, kecuali bila deployment ParaView menggunakan backend rendering berbasis GPU. Untuk visualisasi headless tanpa GPU, `pvserver` dapat berjalan dengan Xvfb/Mesa atau backend OSMesa sesuai ketersediaan paket.
+
 ---
 
 ## 18. Instalasi dan Menjalankan Aplikasi
@@ -1235,6 +1269,7 @@ Jangan menyimpan password dan secret nyata pada Git.
 - command `rm`, `blockMesh`, `surfaceFeatureExtract`, `snappyHexMesh`, `checkMesh`, dan `decomposePar` tersedia pada PATH;
 - executable solver yang telah diselaraskan;
 - permission read/write pada case.
+- VPS atau server Linux dengan CPU dan RAM yang memadai untuk ukuran mesh dan durasi simulasi.
 
 ### 18.3 Membuat virtual environment
 
@@ -1295,6 +1330,8 @@ gunicorn --workers 1 --threads 4 --bind 127.0.0.1:8000 'app:create_app()'
 ```
 
 Satu worker direkomendasikan untuk implementasi terminal runner saat ini karena state meshing/solver disimpan di memory proses. Menambah worker tanpa memindahkan task state ke penyimpanan bersama dapat membuat status tidak konsisten antarrequest.
+
+Pada penggunaan VPS, OpenFOAM, MPI, folder case, aplikasi web, database SQLite, grafik, report, dan runtime `pvserver` berada pada server yang sama. Komputer pengguna cukup menjalankan browser untuk mengendalikan aplikasi dan ParaView Desktop untuk analisis hasil melalui koneksi client/server. Skema ini mengurangi kebutuhan hardware lokal, tetapi menuntut pengamanan akses server, pengelolaan resource CPU, dan pencatatan spesifikasi server dalam laporan penelitian.
 
 Reverse proxy harus:
 
@@ -1792,16 +1829,18 @@ Alternatif fokus:
 1. Bagaimana merancang platform web yang mengintegrasikan konfigurasi, meshing, solving, monitoring, visualisasi, dan reporting OpenFOAM?
 2. Bagaimana menerjemahkan parameter operasional pengguna menjadi konfigurasi teknis OpenFOAM secara terstruktur?
 3. Bagaimana menyajikan status, log, dan metrik diagnostik agar proses simulasi lebih mudah dipantau?
-4. Bagaimana menguji fungsi, keamanan dasar, usability, dan kinerja platform yang dibangun?
+4. Bagaimana memanfaatkan VPS sebagai lingkungan komputasi CFD untuk mengatasi keterbatasan hardware lokal?
+5. Bagaimana menguji fungsi, keamanan dasar, usability, dan kinerja platform yang dibangun?
 
 ### 26.3 Contoh batasan penelitian
 
 1. Sistem menggunakan satu case spray dryer aktif.
-2. Mesin numerik menggunakan OpenFOAM pada server Linux.
+2. Mesin numerik menggunakan OpenFOAM pada server Linux/VPS.
 3. Komputasi paralel menggunakan MPI dengan maksimum konfigurasi UI 32 prosesor.
 4. Produk pada mode production dibatasi pada CKR dan BMT.
 5. Visualisasi browser difokuskan pada geometri; kontur hasil ilmiah menggunakan ParaView Desktop.
-6. Pengujian ilmiah disesuaikan dengan data validasi yang tersedia.
+6. Preview dan analisis hasil lengkap dilakukan melalui `pvserver` pada VPS.
+7. Pengujian ilmiah disesuaikan dengan data validasi yang tersedia.
 
 ### 26.4 Metodologi pengembangan yang digunakan
 
@@ -1828,6 +1867,8 @@ Artefak Agile yang dapat dimasukkan ke skripsi meliputi product backlog, sprint 
 | Efisiensi workflow | Perbandingan jumlah langkah/waktu sebelum dan sesudah sistem. |
 | Web performance | Response time, waktu render, waktu pembuatan grafik/PDF. |
 | Computational performance | Durasi solver pada variasi jumlah prosesor dan speedup. |
+| VPS utilization | Pemakaian CPU, RAM, storage, dan kestabilan proses saat meshing/solver berjalan. |
+| Remote visualization | Waktu start `pvserver`, keberhasilan koneksi ParaView Desktop, dan kemampuan membuka `case.foam` di VPS. |
 | Reliability | Jumlah kegagalan yang terdeteksi dan tercatat dengan benar. |
 | CFD validity | Error terhadap data aktual, residual, mesh independence, conservation. |
 
@@ -1845,6 +1886,8 @@ Efficiency(N) = \frac{Speedup(N)}{N} \times 100\%
 
 `T1` adalah waktu eksekusi satu prosesor dan `TN` adalah waktu pada `N` prosesor. Gunakan case, mesh, parameter, hardware, dan kondisi server yang sama.
 
+Untuk membandingkan kebutuhan hardware, catat juga spesifikasi VPS yang dipakai, beban CPU rata-rata, beban CPU puncak, pemakaian RAM puncak, ukuran hasil simulasi, serta waktu yang dibutuhkan pada tahap meshing dan solver. Data ini dapat digunakan untuk menjelaskan alasan teknis mengapa simulasi dijalankan pada VPS, bukan pada komputer lokal.
+
 ### 26.7 Artefak yang sebaiknya disertakan dalam lampiran
 
 - diagram use case;
@@ -1859,6 +1902,9 @@ Efficiency(N) = \frac{Speedup(N)}{N} \times 100\%
 - sample log meshing dan solver;
 - grafik residual dan Courant number;
 - hasil mesh quality;
+- spesifikasi VPS dan konfigurasi jumlah prosesor;
+- bukti monitoring CPU/RAM saat meshing dan solver;
+- screenshot koneksi `pvserver` dan ParaView Desktop;
 - konfigurasi hardware/software;
 - versi OpenFOAM, MPI, ParaView, Python, dan dependency;
 - hasil validasi ilmiah;
