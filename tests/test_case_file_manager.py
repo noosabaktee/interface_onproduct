@@ -90,6 +90,17 @@ class CaseFileManagerTestCase(unittest.TestCase):
         self.assertEqual((self.case_root / "system" / "controlDict").read_bytes(), original)
         self.assertFalse((self.case_root / "system" / "notes.custom").exists())
 
+    def test_upload_allows_more_than_one_hundred_files(self):
+        uploads = [
+            self.upload(f"batch_{index:03}.txt", f"file {index}\n".encode("utf-8"))
+            for index in range(125)
+        ]
+
+        result = self.manager.upload_files(uploads, target_folder="system")
+
+        self.assertEqual(result["added"], 125)
+        self.assertTrue((self.case_root / "system" / "batch_124.txt").exists())
+
     def test_folder_upload_requires_matching_allowed_root(self):
         result = self.manager.upload_files(
             [

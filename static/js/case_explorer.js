@@ -292,7 +292,6 @@
         var summary = form.querySelector("[data-upload-summary]");
         var submit = form.querySelector("[data-upload-submit]");
         var hint = form.querySelector("[data-upload-hint]");
-        var MAX_FILES = 100;
 
         function activeInput() {
             return mode.value === "folder" ? folderInput : fileInput;
@@ -315,9 +314,6 @@
             if (!files.length) {
                 valid = false;
                 message = mode.value === "folder" ? "Belum ada folder dipilih." : "Belum ada file dipilih.";
-            } else if (files.length > MAX_FILES) {
-                valid = false;
-                message = "Maksimal " + MAX_FILES + " file per upload.";
             } else if (mode.value === "folder") {
                 var roots = files.map(sourceFolder).filter(Boolean);
                 var firstRoot = roots[0] || "";

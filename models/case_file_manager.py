@@ -18,7 +18,6 @@ class CaseFileError(ValueError):
 class CaseFileManager:
     EDITABLE_FOLDERS = ("0", "constant", "system")
     MAX_EDIT_BYTES = 2 * 1024 * 1024
-    MAX_UPLOAD_FILES = 100
     PAGE_SIZE = 100
     BINARY_SUFFIXES = {
         ".7z",
@@ -393,8 +392,6 @@ class CaseFileManager:
         uploads = [storage for storage in file_storages if (getattr(storage, "filename", "") or "").strip()]
         if not uploads:
             raise CaseFileError("Pilih minimal satu file untuk diupload.")
-        if len(uploads) > self.MAX_UPLOAD_FILES:
-            raise CaseFileError(f"Maksimal {self.MAX_UPLOAD_FILES} file dalam satu upload.")
 
         target_relative = self._require_writable_path(target_folder)
         if folder_upload and target_relative.as_posix() not in self.EDITABLE_FOLDERS:

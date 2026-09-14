@@ -327,7 +327,7 @@ Case File Manager mengindeks seluruh file di bawah folder case secara rekursif. 
 - memfilter file text, STL, log, binary, dan result;
 - pagination sebanyak 100 file per halaman;
 - membaca dan mengedit file UTF-8 berukuran maksimal 2 MB;
-- mengunggah maksimal 100 file dalam satu request;
+- mengunggah file/folder tanpa batas jumlah file aplikasi dalam satu request;
 - memilih folder tujuan atau membuat folder baru;
 - mengganti isi file tanpa mengubah nama/path target;
 - mengunduh satu file;
