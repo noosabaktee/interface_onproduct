@@ -151,6 +151,31 @@ class CaseFileManagerTestCase(unittest.TestCase):
         self.assertEqual(cleared["restored"], 1)
         self.assertEqual(target.read_bytes(), original)
 
+    def test_replace_folder_syncs_target_and_can_restore_original_files(self):
+        original = (self.case_root / "constant" / "triSurface" / "dryer.stl").read_bytes()
+
+        result = self.manager.replace_folder(
+            "constant/triSurface",
+            [
+                self.upload("freshGeometry/inlet.stl", b"solid inlet\nendsolid\n"),
+                self.upload("freshGeometry/walls.stl", b"solid walls\nendsolid\n"),
+            ],
+        )
+
+        self.assertEqual(result["path"], "constant/triSurface")
+        self.assertEqual(result["added"], 2)
+        self.assertEqual(result["removed"], 1)
+        self.assertFalse((self.case_root / "constant" / "triSurface" / "dryer.stl").exists())
+        self.assertTrue((self.case_root / "constant" / "triSurface" / "inlet.stl").exists())
+        self.assertTrue((self.case_root / "constant" / "triSurface" / "walls.stl").exists())
+
+        cleared = self.manager.clear("uploads")
+        self.assertEqual(cleared["files"], 2)
+        self.assertEqual(cleared["restored"], 1)
+        self.assertEqual((self.case_root / "constant" / "triSurface" / "dryer.stl").read_bytes(), original)
+        self.assertFalse((self.case_root / "constant" / "triSurface" / "inlet.stl").exists())
+        self.assertFalse((self.case_root / "constant" / "triSurface" / "walls.stl").exists())
+
     def test_text_edit_and_binary_rejection(self):
         self.manager.save_text("system/controlDict", "application changedSolver;\n")
         self.assertIn("changedSolver", self.manager.read_text("system/controlDict")["content"])
@@ -227,7 +252,8 @@ class CaseFileRoutesTestCase(unittest.TestCase):
         self.assertIn(b"controlDict", response.data)
         self.assertIn(b'data-case-explorer', response.data)
         self.assertIn(b'data-inline-content', response.data)
-        self.assertIn(b'data-folder-picker', response.data)
+        self.assertIn(b'data-case-replace-trigger', response.data)
+        self.assertIn(b'data-case-replacement-folder-input', response.data)
         self.assertIn(b'id="replaceCaseFileModal"', response.data)
         self.assertIn(b"data-replace-file", response.data)
 
@@ -263,6 +289,29 @@ class CaseFileRoutesTestCase(unittest.TestCase):
             b"application replaced;\n",
         )
         self.assertFalse((self.manager.case_root / "system" / "local-name.txt").exists())
+
+    def test_replace_folder_route_syncs_selected_folder(self):
+        response = self.client.post(
+            "/case-files/replace-folder/system",
+            data={
+                "csrf_token": "csrf-test",
+                "files": [
+                    (io.BytesIO(b"application replaced;\n"), "fresh/controlDict"),
+                    (io.BytesIO(b"new file\n"), "fresh/fvSchemes"),
+                ],
+            },
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            (self.manager.case_root / "system" / "controlDict").read_bytes(),
+            b"application replaced;\n",
+        )
+        self.assertEqual(
+            (self.manager.case_root / "system" / "fvSchemes").read_bytes(),
+            b"new file\n",
+        )
 
     def test_upload_edit_download_and_delete_routes(self):
         response = self.client.post(

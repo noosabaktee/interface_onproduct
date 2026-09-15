@@ -274,10 +274,150 @@
             return "";
         });
 
+        initReplaceModal();
         initUploadModal();
         updateLineNumbers();
         showWelcome();
     });
+
+    function initReplaceModal() {
+        var modalElement = document.getElementById("replaceCaseFileModal");
+        var form = document.querySelector("[data-case-replace-form]");
+        if (!modalElement || !form) {
+            return;
+        }
+
+        var title = form.querySelector("[data-replace-file-title]");
+        var pathLabel = form.querySelector("[data-replace-file-path]");
+        var filePicker = form.querySelector("[data-case-replacement-file-picker]");
+        var folderPicker = form.querySelector("[data-case-replacement-folder-picker]");
+        var fileInput = form.querySelector("[data-case-replacement-file-input]");
+        var folderInput = form.querySelector("[data-case-replacement-folder-input]");
+        var fileName = form.querySelector("[data-case-replacement-file-name]");
+        var folderName = form.querySelector("[data-case-replacement-folder-name]");
+        var notice = form.querySelector("[data-case-replace-notice]");
+        var submit = form.querySelector("[data-case-replace-submit]");
+        var submitLabel = form.querySelector("[data-case-replace-submit-label]");
+        var currentKind = "file";
+
+        function selectedFolderFiles() {
+            return Array.prototype.slice.call(folderInput.files || []);
+        }
+
+        function selectedFolderName() {
+            var files = selectedFolderFiles();
+            if (!files.length) {
+                return "";
+            }
+            var relativePath = files[0].webkitRelativePath || files[0].name || "";
+            return relativePath.split("/")[0] || "";
+        }
+
+        function resetInputs() {
+            fileInput.value = "";
+            folderInput.value = "";
+            fileName.textContent = "Klik untuk memilih satu file baru";
+            folderName.textContent = "Klik untuk memilih satu folder baru";
+            submit.disabled = true;
+        }
+
+        function validate() {
+            if (currentKind === "folder") {
+                var folderFiles = selectedFolderFiles();
+                var folder = selectedFolderName();
+                if (!folderFiles.length) {
+                    folderName.textContent = "Klik untuk memilih satu folder baru";
+                    submit.disabled = true;
+                    return false;
+                }
+                folderName.textContent = folderFiles.length + " file dari folder " + (folder || "terpilih");
+                submit.disabled = false;
+                return true;
+            }
+
+            var file = (fileInput.files || [])[0];
+            if (!file) {
+                fileName.textContent = "Klik untuk memilih satu file baru";
+                submit.disabled = true;
+                return false;
+            }
+            fileName.textContent = file.name;
+            submit.disabled = false;
+            return true;
+        }
+
+        function configure(trigger) {
+            currentKind = trigger.dataset.replaceKind === "folder" ? "folder" : "file";
+            var targetPath = trigger.dataset.targetPath || trigger.dataset.filePath || "";
+            var action = trigger.dataset.replaceUrl || "#";
+            form.action = action;
+            resetInputs();
+
+            if (currentKind === "folder") {
+                title.textContent = "Replace folder " + targetPath;
+                pathLabel.textContent = targetPath;
+                filePicker.hidden = true;
+                fileInput.disabled = true;
+                fileInput.required = false;
+                folderPicker.hidden = false;
+                folderInput.disabled = false;
+                folderInput.required = true;
+                submitLabel.textContent = "Replace Folder";
+                notice.innerHTML = "Isi folder target akan disamakan dengan folder baru. File lama yang diganti atau dihapus dicadangkan untuk fitur <strong>Clear uploaded files</strong>.";
+            } else {
+                title.textContent = "Replace file " + targetPath;
+                pathLabel.textContent = targetPath;
+                filePicker.hidden = false;
+                fileInput.disabled = false;
+                fileInput.required = true;
+                folderPicker.hidden = true;
+                folderInput.disabled = true;
+                folderInput.required = false;
+                submitLabel.textContent = "Replace File";
+                notice.innerHTML = "Isi file lama akan diganti, sedangkan nama dan lokasinya tetap sama. Versi asli dicadangkan untuk fitur <strong>Clear uploaded files</strong>.";
+            }
+
+            if (window.bootstrap && window.bootstrap.Modal) {
+                window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
+            }
+        }
+
+        Array.prototype.slice.call(document.querySelectorAll("[data-case-replace-trigger]")).forEach(function (trigger) {
+            trigger.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                configure(trigger);
+            });
+        });
+
+        form.addEventListener("formdata", function (event) {
+            if (currentKind !== "folder") {
+                return;
+            }
+            var data = event.formData;
+            data.delete("files");
+            selectedFolderFiles().forEach(function (file) {
+                data.append("files", file, file.webkitRelativePath || file.name);
+            });
+        });
+
+        form.addEventListener("submit", function (event) {
+            if (!validate()) {
+                event.preventDefault();
+                return;
+            }
+            submit.disabled = true;
+            submit.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Replacing...';
+        });
+
+        fileInput.addEventListener("change", validate);
+        folderInput.addEventListener("change", validate);
+        modalElement.addEventListener("hidden.bs.modal", function () {
+            resetInputs();
+            submit.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> <span data-case-replace-submit-label>Replace</span>';
+            submitLabel = form.querySelector("[data-case-replace-submit-label]");
+        });
+    }
 
     function initUploadModal() {
         var form = document.querySelector("[data-explorer-upload]");

@@ -77,6 +77,25 @@ def replace_case_file(relative_path):
     return _manager_redirect()
 
 
+@dashboard_bp.post("/case-files/replace-folder/<path:relative_path>")
+def replace_case_folder(relative_path):
+    _require_form_csrf()
+    try:
+        result = get_case_file_manager().replace_folder(
+            relative_path,
+            request.files.getlist("files"),
+        )
+        flash(
+            f"Folder {result['path']} berhasil diganti: "
+            f"{result['added']} file baru, {result['replaced']} file diganti, "
+            f"dan {result['removed']} file lama dihapus.",
+            "success",
+        )
+    except CaseFileError as exc:
+        flash(str(exc), "danger")
+    return _manager_redirect()
+
+
 @dashboard_bp.post("/case-files/save/<path:relative_path>")
 def save_case_text_file(relative_path):
     _require_form_csrf()

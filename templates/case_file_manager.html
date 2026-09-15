@@ -11,23 +11,41 @@
         <details class="case-tree-folder" {% if listing.search or node.path in ['0', 'constant', 'system'] %}open{% endif %}>
             <summary title="{{ node.path }}{% if not node.writable %} (read-only){% endif %}">
                 <i class="bi bi-chevron-right case-tree-chevron"></i><i class="bi bi-folder2 case-folder-icon"></i>
+                {% if node.writable %}
+                <button type="button" class="case-tree-replace" data-case-replace-trigger data-replace-kind="folder"
+                    data-target-path="{{ node.path }}"
+                    data-replace-url="{{ url_for('dashboard.replace_case_folder', relative_path=node.path) }}"
+                    title="Replace folder {{ node.path }}" aria-label="Replace folder {{ node.path }}">
+                    <i class="bi bi-arrow-repeat"></i>
+                </button>
+                {% endif %}
                 <span>{{ node.name }}</span>{% if not node.writable %}<i class="bi bi-lock case-tree-lock" aria-label="Read-only"></i>{% endif %}
             </summary>
             {{ render_tree(node.children) }}
         </details>
         {% else %}
-        <button type="button" class="case-tree-file" data-open-case-file
-            data-file-path="{{ node.path }}" data-readable="{{ 'true' if node.readable else 'false' }}"
-            data-editable="{{ 'true' if node.editable else 'false' }}" data-writable="{{ 'true' if node.writable else 'false' }}"
-            data-read-url="{{ url_for('dashboard.get_case_text_file', relative_path=node.path) }}"
-            data-save-url="{{ url_for('dashboard.save_case_text_file', relative_path=node.path) }}"
-            data-download-url="{{ url_for('dashboard.download_case_file', relative_path=node.path) }}"
-            data-replace-url="{{ url_for('dashboard.replace_case_file', relative_path=node.path) }}"
-            data-delete-url="{{ url_for('dashboard.delete_case_file', relative_path=node.path) }}"
-            data-size="{{ node.size_label }}" title="{{ node.path }}">
-            <i class="bi {{ node.icon }}"></i><span>{{ node.name }}</span>
-            {% if not node.writable %}<i class="bi bi-lock case-tree-lock" aria-label="Read-only"></i>{% endif %}
-        </button>
+        <div class="case-tree-file-row">
+            <button type="button" class="case-tree-file" data-open-case-file
+                data-file-path="{{ node.path }}" data-readable="{{ 'true' if node.readable else 'false' }}"
+                data-editable="{{ 'true' if node.editable else 'false' }}" data-writable="{{ 'true' if node.writable else 'false' }}"
+                data-read-url="{{ url_for('dashboard.get_case_text_file', relative_path=node.path) }}"
+                data-save-url="{{ url_for('dashboard.save_case_text_file', relative_path=node.path) }}"
+                data-download-url="{{ url_for('dashboard.download_case_file', relative_path=node.path) }}"
+                data-replace-url="{{ url_for('dashboard.replace_case_file', relative_path=node.path) }}"
+                data-delete-url="{{ url_for('dashboard.delete_case_file', relative_path=node.path) }}"
+                data-size="{{ node.size_label }}" title="{{ node.path }}">
+                <i class="bi {{ node.icon }}"></i><span>{{ node.name }}</span>
+                {% if not node.writable %}<i class="bi bi-lock case-tree-lock" aria-label="Read-only"></i>{% endif %}
+            </button>
+            {% if node.writable %}
+            <button type="button" class="case-tree-replace" data-case-replace-trigger data-replace-kind="file"
+                data-target-path="{{ node.path }}"
+                data-replace-url="{{ url_for('dashboard.replace_case_file', relative_path=node.path) }}"
+                title="Replace file {{ node.path }}" aria-label="Replace file {{ node.path }}">
+                <i class="bi bi-arrow-repeat"></i>
+            </button>
+            {% endif %}
+        </div>
         {% endif %}
     </li>
     {% endfor %}
@@ -39,7 +57,6 @@
     <div class="case-explorer-heading">
         <div><h2>Case File Manager</h2><p>Edit file di <code>0</code>, <code>constant</code>, dan <code>system</code>. File lainnya read-only.</p></div>
         <div class="case-explorer-actions">
-            <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#uploadCaseFileModal"><i class="bi bi-upload me-1"></i> Upload Folder / File</button>
             <a class="btn btn-outline-primary btn-sm" href="{{ url_for('dashboard.download_all_case_files') }}">Download Case ZIP</a>
             <a class="btn btn-outline-primary btn-sm" href="{{ url_for('dashboard.download_all_case_logs') }}">Download Logs</a>
             <button class="btn btn-outline-danger btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#clearCaseModal">Clear / Reset</button>
@@ -66,7 +83,7 @@
                 <span class="case-editor-breadcrumb" data-open-path title="{{ case_root }}">{{ case_root }}</span>
                 <div class="case-editor-tools">
                     <a class="btn btn-sm btn-outline-light" data-open-download hidden>Download</a>
-                    <button class="btn btn-sm btn-outline-light" type="button" data-replace-file data-bs-toggle="modal" data-bs-target="#replaceCaseFileModal" hidden>Replace</button>
+                    <button class="btn btn-sm btn-outline-light" type="button" data-replace-file data-case-replace-trigger data-replace-kind="file" hidden>Replace</button>
                     <form method="post" data-confirm-file-delete hidden>
                         <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token', '') }}">
                         <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
@@ -97,72 +114,41 @@
                 <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token', '') }}">
                 <div class="modal-header">
                     <div class="case-modal-title-wrap">
-                        <span class="section-kicker"><i class="bi bi-arrow-repeat"></i> Replace case file</span>
-                        <h2 class="modal-title" id="replaceCaseFileTitle" data-replace-file-title>Pilih file yang akan diganti</h2>
-                        <p data-replace-file-path>Path file akan tampil di sini.</p>
+                        <span class="section-kicker"><i class="bi bi-arrow-repeat"></i> Replace case item</span>
+                        <h2 class="modal-title" id="replaceCaseFileTitle" data-replace-file-title>Pilih item yang akan diganti</h2>
+                        <p data-replace-file-path>Path target akan tampil di sini.</p>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <label class="case-upload-picker" for="replacementFileInput" data-case-replacement-picker>
+                    <label class="case-upload-picker" for="replacementFileInput" data-case-replacement-file-picker>
                         <i class="bi bi-cloud-arrow-up"></i>
                         <span>
                             <strong>Pilih file pengganti</strong>
-                            <em data-case-replacement-name>Klik untuk memilih satu file baru</em>
+                            <em data-case-replacement-file-name>Klik untuk memilih satu file baru</em>
                         </span>
                     </label>
-                    <input id="replacementFileInput" class="visually-hidden" type="file" name="file" required data-case-replacement-input>
+                    <input id="replacementFileInput" class="visually-hidden" type="file" name="file" data-case-replacement-file-input>
+
+                    <label class="case-upload-picker" for="replacementFolderInput" data-case-replacement-folder-picker hidden>
+                        <i class="bi bi-folder-symlink"></i>
+                        <span>
+                            <strong>Pilih folder pengganti</strong>
+                            <em data-case-replacement-folder-name>Klik untuk memilih satu folder baru</em>
+                        </span>
+                    </label>
+                    <input id="replacementFolderInput" class="visually-hidden" type="file" name="files" webkitdirectory multiple data-case-replacement-folder-input>
 
                     <div class="case-replace-notice">
                         <i class="bi bi-info-circle"></i>
-                        <span>Isi file lama akan diganti, sedangkan nama dan lokasinya tetap sama. Versi asli dicadangkan untuk fitur <strong>Clear uploaded files</strong>.</span>
+                        <span data-case-replace-notice>Isi lama akan diganti, sedangkan nama dan lokasinya tetap sama. Versi asli dicadangkan untuk fitur <strong>Clear uploaded files</strong>.</span>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
                     <button class="btn btn-primary" type="submit" data-case-replace-submit disabled>
-                        <i class="bi bi-arrow-repeat me-1"></i> Replace File
+                        <i class="bi bi-arrow-repeat me-1"></i> <span data-case-replace-submit-label>Replace</span>
                     </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="uploadCaseFileModal" tabindex="-1" aria-labelledby="uploadCaseFileTitle" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content case-modal-content">
-            <form method="post" action="{{ url_for('dashboard.upload_case_files') }}" enctype="multipart/form-data" data-explorer-upload>
-                <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token', '') }}">
-                <div class="modal-header">
-                    <h2 class="modal-title" id="uploadCaseFileTitle">Upload ke Case</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="case-upload-fields">
-                        <label><span>Jenis upload</span>
-                            <select class="form-select" name="upload_mode" data-upload-mode>
-                                <option value="folder">Folder</option><option value="files">File</option>
-                            </select>
-                        </label>
-                        <label><span>Folder tujuan</span>
-                            <select class="form-select" name="target_folder" data-upload-target>
-                                <option value="0">0</option><option value="constant">constant</option><option value="system">system</option>
-                            </select>
-                        </label>
-                        <p class="small mb-0" data-upload-hint>Nama folder harus sama persis dengan tujuan. Contoh: pilih folder constant untuk tujuan constant. Subfolder tetap dipertahankan.</p>
-                        <input class="form-control" type="file" name="files" webkitdirectory multiple required aria-label="Pilih folder upload" data-folder-picker>
-                        <input class="form-control" type="file" name="files" multiple required disabled hidden aria-label="Pilih file upload" data-file-picker>
-                        <p class="small mb-0" role="status" data-upload-summary>Belum ada folder dipilih. Folder kosong tidak ikut diupload.</p>
-                        <label class="case-replace-check">
-                            <input class="form-check-input" type="checkbox" name="replace" value="1">
-                            <span><strong>Replace file dengan nama yang sama</strong><small>File lain tetap ada. Versi asli dicadangkan untuk Clear uploaded files.</small></span>
-                        </label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-primary" type="submit" data-upload-submit disabled><i class="bi bi-upload me-1"></i> Upload</button>
                 </div>
             </form>
         </div>

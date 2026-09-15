@@ -28,6 +28,7 @@ MANIFEST
 
 # Flask specific files
 .webassets-cache
+flask*.log
 
 # Local runtime instance folder
 instance/*

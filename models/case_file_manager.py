@@ -509,6 +509,125 @@ class CaseFileManager:
 
         return {"path": relative, "source_name": file_storage.filename}
 
+    def replace_folder(self, relative_path, file_storages):
+        target_relative = self._require_writable_path(relative_path)
+        target_dir = self.resolve_path(target_relative.as_posix())
+        if not target_dir.is_dir() or target_dir.is_symlink():
+            raise CaseFileError("Target bukan folder biasa dan tidak dapat diganti.")
+
+        uploads = [storage for storage in file_storages if (getattr(storage, "filename", "") or "").strip()]
+        if not uploads:
+            raise CaseFileError("Pilih folder baru yang akan digunakan sebagai pengganti.")
+
+        normalized_uploads = []
+        root_names = set()
+        has_nested_paths = False
+        for storage in uploads:
+            uploaded_path = self._normalize_relative(storage.filename)
+            normalized_uploads.append((storage, uploaded_path))
+            has_nested_paths = has_nested_paths or len(uploaded_path.parts) > 1
+            if len(uploaded_path.parts) > 1:
+                root_names.add(uploaded_path.parts[0])
+
+        strip_uploaded_root = has_nested_paths and len(root_names) == 1
+        if has_nested_paths and len(root_names) > 1:
+            raise CaseFileError("Pilih satu folder saja untuk mengganti folder target.")
+
+        destinations = []
+        seen = set()
+        for storage, uploaded_path in normalized_uploads:
+            inside_parts = uploaded_path.parts[1:] if strip_uploaded_root else uploaded_path.parts
+            if not inside_parts:
+                continue
+            relative_inside = PurePosixPath(*inside_parts)
+            destination = self.resolve_path((target_relative / relative_inside).as_posix(), must_exist=False)
+            destination_relative = destination.relative_to(self.case_root).as_posix()
+            self._require_writable_path(destination_relative)
+            if destination == target_dir or target_dir not in destination.parents:
+                raise CaseFileError("Path folder pengganti tidak aman.")
+            if destination_relative.casefold() in seen:
+                raise CaseFileError(f"File duplikat dipilih: {uploaded_path}")
+            seen.add(destination_relative.casefold())
+            if destination.exists() and (destination.is_dir() or destination.is_symlink()):
+                raise CaseFileError(f"Target bukan file biasa: {destination_relative}")
+            destinations.append((storage, destination, destination_relative))
+
+        if not destinations:
+            raise CaseFileError("Folder kosong tidak dapat digunakan untuk mengganti folder.")
+
+        destination_relatives = {relative.casefold() for _, _, relative in destinations}
+        for _, destination, relative in destinations:
+            for parent in destination.parents:
+                if parent == target_dir or parent == self.case_root:
+                    break
+                if parent.relative_to(self.case_root).as_posix().casefold() in destination_relatives:
+                    raise CaseFileError(f"Path file bertabrakan dengan folder: {relative}")
+
+        existing_files = []
+        for path in self._iter_files(target_dir):
+            relative = path.relative_to(self.case_root).as_posix()
+            self._require_writable_path(relative)
+            existing_files.append((path, relative))
+
+        self.state_root.mkdir(parents=True, exist_ok=True)
+        staging_root = Path(tempfile.mkdtemp(prefix="replace-folder-", dir=self.state_root))
+        staged = []
+        try:
+            for index, (storage, destination, relative) in enumerate(destinations):
+                staged_path = staging_root / str(index)
+                storage.save(staged_path)
+                staged.append((staged_path, destination, relative))
+
+            entries = self._load_manifest()
+            removed = 0
+            added = 0
+            replaced = 0
+
+            for path, relative in existing_files:
+                if relative.casefold() in destination_relatives:
+                    continue
+                entry = entries.get(relative)
+                if not entry:
+                    self.backup_root.mkdir(parents=True, exist_ok=True)
+                    backup_name = uuid.uuid4().hex
+                    shutil.copy2(path, self.backup_root / backup_name)
+                    entries[relative] = {"kind": "replaced", "backup": backup_name}
+                elif entry.get("kind") == "created":
+                    entries.pop(relative, None)
+                path.unlink()
+                removed += 1
+
+            for staged_path, destination, relative in staged:
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                entry = entries.get(relative)
+                if destination.exists():
+                    replaced += 1
+                    if not entry:
+                        self.backup_root.mkdir(parents=True, exist_ok=True)
+                        backup_name = uuid.uuid4().hex
+                        shutil.copy2(destination, self.backup_root / backup_name)
+                        entry = {"kind": "replaced", "backup": backup_name}
+                else:
+                    added += 1
+                    entry = entry or {"kind": "created"}
+                os.replace(staged_path, destination)
+                entries[relative] = entry
+
+            self._remove_empty_descendants(target_dir)
+            self._save_manifest(entries)
+        except OSError as exc:
+            raise CaseFileError(f"Folder pengganti gagal disimpan: {exc}") from exc
+        finally:
+            shutil.rmtree(staging_root, ignore_errors=True)
+
+        return {
+            "path": target_dir.relative_to(self.case_root).as_posix(),
+            "added": added,
+            "replaced": replaced,
+            "removed": removed,
+            "files": [item[2] for item in destinations],
+        }
+
     def delete_file(self, relative_path):
         self._require_writable_path(relative_path)
         path = self.resolve_path(relative_path)
@@ -610,6 +729,16 @@ class CaseFileManager:
             except OSError:
                 break
             current = current.parent
+
+    def _remove_empty_descendants(self, path):
+        if not path.exists() or path.is_symlink() or not path.is_dir():
+            return
+        for child in sorted(path.rglob("*"), key=lambda item: len(item.parts), reverse=True):
+            if child.is_dir() and not child.is_symlink():
+                try:
+                    child.rmdir()
+                except OSError:
+                    continue
 
     def _clear_uploaded(self):
         entries = self._load_manifest()
