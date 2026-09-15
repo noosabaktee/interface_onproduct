@@ -11,6 +11,7 @@
         <details class="case-tree-folder" {% if listing.search or node.path in ['0', 'constant', 'system'] %}open{% endif %}>
             <summary title="{{ node.path }}{% if not node.writable %} (read-only){% endif %}">
                 <i class="bi bi-chevron-right case-tree-chevron"></i><i class="bi bi-folder2 case-folder-icon"></i>
+                <span>{{ node.name }}</span>
                 {% if node.writable %}
                 <button type="button" class="case-tree-replace" data-case-replace-trigger data-replace-kind="folder"
                     data-target-path="{{ node.path }}"
@@ -19,7 +20,7 @@
                     <i class="bi bi-arrow-repeat"></i>
                 </button>
                 {% endif %}
-                <span>{{ node.name }}</span>{% if not node.writable %}<i class="bi bi-lock case-tree-lock" aria-label="Read-only"></i>{% endif %}
+                {% if not node.writable %}<i class="bi bi-lock case-tree-lock" aria-label="Read-only"></i>{% endif %}
             </summary>
             {{ render_tree(node.children) }}
         </details>
