@@ -92,6 +92,9 @@ class AppConfig:
     LOGIN_USERNAME = os.environ.get("CFD_LOGIN_USERNAME", "kmi.cfd")
     LOGIN_PASSWORD = os.environ.get("CFD_LOGIN_PASSWORD", "kmi.cfd")
 
+    # 5 GB (5 * 1024 * 1024 * 1024 bytes)
+    MAX_CONTENT_LENGTH = 5 * 1024 * 1024 * 1024
+
     PROJECT_ROOT = PROJECT_ROOT
     CASE_ROOT = CASE_ROOT
     GRAPH_OUTPUT_PATH = GRAPH_ROOT
