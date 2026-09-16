@@ -8,7 +8,7 @@
     {% for node in nodes %}
     <li>
         {% if node.is_folder %}
-        <details class="case-tree-folder" {% if listing.search or node.path in ['0', 'constant', 'system'] %}open{% endif %}>
+        <details class="case-tree-folder" {% if listing.search or node.path in ['0', 'constant', 'system', 'postProcessing'] %}open{% endif %}>
             <summary title="{{ node.path }}{% if not node.writable %} (read-only){% endif %}">
                 <i class="bi bi-chevron-right case-tree-chevron"></i><i class="bi bi-folder2 case-folder-icon"></i>
                 <span>{{ node.name }}</span>
@@ -56,7 +56,7 @@
 {% block content %}
 <div class="case-explorer-page">
     <div class="case-explorer-heading">
-        <div><h2>Case File Manager</h2><p>Edit file di <code>0</code>, <code>constant</code>, dan <code>system</code>. File lainnya read-only.</p></div>
+        <div><h2>Case File Manager</h2><p>Edit file di <code>0</code>, <code>constant</code>, <code>system</code>, dan <code>postProcessing</code>. File lainnya read-only.</p></div>
         <div class="case-explorer-actions">
             <a class="btn btn-outline-primary btn-sm" href="{{ url_for('dashboard.download_all_case_files') }}">Download Case ZIP</a>
             <a class="btn btn-outline-primary btn-sm" href="{{ url_for('dashboard.download_all_case_logs') }}">Download Logs</a>
@@ -76,7 +76,7 @@
                 {{ render_tree(listing.tree) }}
                 {% if not listing.tree %}<p class="case-tree-empty">Tidak ada file yang cocok.</p>{% endif %}
             </nav>
-            <div class="case-explorer-footnote"><i class="bi bi-lock"></i> Hanya 0, constant, system dapat diubah.</div>
+            <div class="case-explorer-footnote"><i class="bi bi-lock"></i> Hanya 0, constant, system, postProcessing dapat diubah.</div>
         </aside>
         <div class="case-editor-pane">
             <div class="case-editor-tabs"><span class="case-editor-tab"><i class="bi bi-file-earmark-code"></i> <span data-tab-name>Welcome</span><span data-dirty-indicator hidden title="Belum disimpan">*</span></span></div>

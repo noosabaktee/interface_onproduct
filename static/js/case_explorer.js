@@ -185,7 +185,7 @@
                 welcome.hidden = true;
                 updateLineNumbers();
                 updateDirtyState();
-                setNotice(currentEditable ? "Siap diedit." : "File ini read-only karena berada di luar 0, constant, atau system.");
+                setNotice(currentEditable ? "Siap diedit." : "File ini read-only karena berada di luar 0, constant, system, atau postProcessing.");
                 textarea.focus();
             }).catch(function (error) {
                 if (requestId !== localRequest) {

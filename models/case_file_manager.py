@@ -16,7 +16,8 @@ class CaseFileError(ValueError):
 
 
 class CaseFileManager:
-    EDITABLE_FOLDERS = ("0", "constant", "system")
+    EDITABLE_FOLDERS = ("0", "constant", "system", "postProcessing")
+    EDITABLE_FOLDER_LABEL = "0, constant, system, dan postProcessing"
     MAX_EDIT_BYTES = 2 * 1024 * 1024
     PAGE_SIZE = 100
     BINARY_SUFFIXES = {
@@ -179,7 +180,7 @@ class CaseFileManager:
     def _require_writable_path(self, relative_path):
         relative = self._normalize_relative(relative_path)
         if not relative.parts or relative.parts[0] not in self.EDITABLE_FOLDERS:
-            raise CaseFileError("Perubahan hanya diizinkan di folder 0, constant, dan system.")
+            raise CaseFileError(f"Perubahan hanya diizinkan di folder {self.EDITABLE_FOLDER_LABEL}.")
         return relative
 
     def _record_for(self, path):
@@ -395,7 +396,7 @@ class CaseFileManager:
 
         target_relative = self._require_writable_path(target_folder)
         if folder_upload and target_relative.as_posix() not in self.EDITABLE_FOLDERS:
-            raise CaseFileError("Tujuan upload folder harus 0, constant, atau system.")
+            raise CaseFileError(f"Tujuan upload folder harus {self.EDITABLE_FOLDER_LABEL}.")
         target_dir = self.resolve_path(target_relative.as_posix(), must_exist=False, allow_root=True)
         if target_dir.exists() and not target_dir.is_dir():
             raise CaseFileError("Lokasi tujuan bukan sebuah folder.")

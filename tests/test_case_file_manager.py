@@ -22,6 +22,7 @@ class CaseFileManagerTestCase(unittest.TestCase):
         (self.case_root / "0").mkdir(parents=True)
         (self.case_root / "system").mkdir()
         (self.case_root / "constant" / "triSurface").mkdir(parents=True)
+        (self.case_root / "postProcessing").mkdir(exist_ok=True)
         self.report_root.mkdir()
         self.graph_root.mkdir(parents=True)
         (self.case_root / "system" / "controlDict").write_text("application solver;\n", encoding="utf-8")
@@ -64,7 +65,7 @@ class CaseFileManagerTestCase(unittest.TestCase):
         self.assertFalse(records["constant/triSurface/dryer.stl"]["editable"])
         self.assertFalse(records["log.run"]["editable"])
         self.assertEqual(records["log.run"]["kind"], "log")
-        self.assertEqual(folders, {"0", "constant", "constant/triSurface", "system"})
+        self.assertEqual(folders, {"0", "constant", "constant/triSurface", "postProcessing", "system"})
         self.assertFalse(any(node.get("path") == "log.run" for node in listing["tree"]))
 
     def test_path_traversal_is_rejected(self):
@@ -89,6 +90,22 @@ class CaseFileManagerTestCase(unittest.TestCase):
         self.assertEqual(cleared["restored"], 1)
         self.assertEqual((self.case_root / "system" / "controlDict").read_bytes(), original)
         self.assertFalse((self.case_root / "system" / "notes.custom").exists())
+
+    def test_post_processing_is_visible_and_writable(self):
+        listing = self.manager.list_files()
+        root_paths = {node["path"] for node in listing["tree"] if node["is_folder"]}
+        self.assertIn("postProcessing", root_paths)
+
+        self.manager.upload_files(
+            [self.upload("summary.dat", b"time value\n0 12\n")],
+            target_folder="postProcessing",
+        )
+        self.manager.save_text("postProcessing/summary.dat", "time value\n0 14\n")
+
+        self.assertEqual(
+            (self.case_root / "postProcessing" / "summary.dat").read_text(encoding="utf-8"),
+            "time value\n0 14\n",
+        )
 
     def test_upload_allows_more_than_one_hundred_files(self):
         uploads = [
@@ -206,7 +223,7 @@ class CaseFileManagerTestCase(unittest.TestCase):
         (self.case_root / "1.5" / "U").write_text("result", encoding="utf-8")
         (self.case_root / "processor0").mkdir()
         (self.case_root / "processor0" / "p").write_text("result", encoding="utf-8")
-        (self.case_root / "postProcessing").mkdir()
+        (self.case_root / "postProcessing").mkdir(exist_ok=True)
         (self.case_root / "constant" / "polyMesh").mkdir()
         (self.case_root / "constant" / "polyMesh" / "points").write_text("mesh", encoding="utf-8")
 
@@ -229,6 +246,7 @@ class CaseFileRoutesTestCase(unittest.TestCase):
         (case_root / "0").mkdir(parents=True)
         (case_root / "constant").mkdir()
         (case_root / "system").mkdir()
+        (case_root / "postProcessing").mkdir()
         (case_root / "log.run").write_text("solver log;\n", encoding="utf-8")
         (case_root / "system" / "controlDict").write_text("application solver;\n", encoding="utf-8")
         self.manager = CaseFileManager(case_root, base / "state")
@@ -256,6 +274,7 @@ class CaseFileRoutesTestCase(unittest.TestCase):
         self.assertIn(b'data-case-replacement-folder-input', response.data)
         self.assertIn(b'id="replaceCaseFileModal"', response.data)
         self.assertIn(b"data-replace-file", response.data)
+        self.assertIn(b"postProcessing", response.data)
 
         response = self.client.post(
             "/case-files/upload",
@@ -350,6 +369,18 @@ class CaseFileRoutesTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertFalse((self.manager.case_root / "system" / "notes.txt").exists())
+
+        response = self.client.post(
+            "/case-files/upload",
+            data={
+                "csrf_token": "csrf-test",
+                "target_folder": "postProcessing",
+                "files": (io.BytesIO(b"time value\n0 1\n"), "summary.dat"),
+            },
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue((self.manager.case_root / "postProcessing" / "summary.dat").exists())
 
     def test_folder_upload_route_and_read_only_save_rejection(self):
         response = self.client.post(
