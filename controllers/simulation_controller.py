@@ -1,14 +1,13 @@
-"""Meshing and solver execution controller."""
+"""Shared execution API for meshing and solver tasks."""
 
 import io
 
-from flask import abort, jsonify, render_template, send_file
+from flask import abort, jsonify, send_file
 
 from controllers import dashboard_bp
 from models.terminal_runner import (
     cancel_command,
     get_command_state,
-    is_meshing_ready,
     start_command,
     stop_command,
 )
@@ -16,33 +15,6 @@ from services import get_simulation_history_service
 
 
 SUPPORTED_TASKS = {"meshing", "solver"}
-
-
-@dashboard_bp.get("/meshing")
-def meshing():
-    return render_template(
-        "progress.html",
-        title="Meshing",
-        progress_title="Meshing Progress",
-        progress_value=35,
-        status_label="Preparing mesh dictionaries and block generation...",
-        task_key="meshing",
-        action_label="Execute Meshing",
-    )
-
-
-@dashboard_bp.get("/solver")
-def solver():
-    return render_template(
-        "progress.html",
-        title="Solver",
-        progress_title="Solver Progress",
-        progress_value=12,
-        status_label="Waiting for processor setup and initial fields...",
-        task_key="solver",
-        action_label="Execute Solver",
-        meshing_ready=is_meshing_ready(),
-    )
 
 
 @dashboard_bp.post("/terminal/<task_key>/start")

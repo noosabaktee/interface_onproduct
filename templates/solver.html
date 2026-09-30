@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row g-4 h-100" data-simulation-terminal
+    data-task-key="solver"
+    data-other-task-label="meshing"
+    data-action-label="Execute Solver"
+    data-start-url="{{ url_for('dashboard.start_terminal', task_key='solver') }}"
+    data-stop-url="{{ url_for('dashboard.stop_terminal', task_key='solver') }}"
+    data-cancel-url="{{ url_for('dashboard.cancel_terminal', task_key='solver') }}"
+    data-logs-url="{{ url_for('dashboard.terminal_logs', task_key='solver') }}"
+    data-other-logs-url="{{ url_for('dashboard.terminal_logs', task_key='meshing') }}"
+    data-download-url="{{ url_for('dashboard.download_terminal_logs', task_key='solver') }}">
+    <div class="col-12 flex-shrink-0">
+        <div class="card-custom m-0">
+            <div class="d-flex justify-content-between align-items-end mb-3">
+                <div>
+                    <h5 class="fw-bold text-main m-0">Solver Progress</h5>
+                    <p class="small text-muted m-0 mt-1" data-status-label>
+                        Waiting for processor setup and initial fields...
+                    </p>
+                </div>
+                <h3 class="fw-bold text-primary m-0" data-progress-value>12%</h3>
+            </div>
+            <div class="progress" role="progressbar" aria-valuenow="12" aria-valuemin="0" aria-valuemax="100"
+                style="height: 12px; border-radius: 6px; background-color: var(--border-color);">
+                <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated"
+                    data-progress-bar style="width: 12%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 flex-shrink-0">
+        <div class="alert alert-warning shadow-sm mb-0 {% if meshing_ready %}d-none{% endif %}"
+            data-meshing-warning role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Solver belum bisa dijalankan. Selesaikan proses meshing terlebih dahulu sebelum menjalankan solver.
+        </div>
+    </div>
+
+    <div class="col-12 flex-grow-1 d-flex flex-column">
+        <div class="card-custom flex-grow-1 d-flex flex-column m-0">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h6 class="fw-bold text-main m-0">
+                    <i class="bi bi-terminal-fill text-primary me-2 fs-5"></i> Solver Terminal Log
+                </h6>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary shadow-sm" type="button" data-terminal-start
+                        {% if not meshing_ready %}disabled{% endif %}>
+                        <i class="bi bi-play-fill me-1"></i> Execute Solver
+                    </button>
+                    <button class="btn btn-outline-danger shadow-sm" type="button" data-terminal-cancel hidden>
+                        <i class="bi bi-stop-fill me-1"></i> Cancel Solver
+                    </button>
+                    <button class="btn btn-outline-secondary shadow-sm" type="button" data-terminal-download hidden>
+                        <i class="bi bi-download me-1"></i> Download Logs
+                    </button>
+                </div>
+            </div>
+
+            <div class="solver-safety-panel mb-3" data-solver-safety-panel>
+                <div class="solver-safety-head">
+                    <div>
+                        <p class="solver-safety-kicker">Catatan parameter log</p>
+                        <p class="solver-safety-copy mb-0">
+                            Batas aman saat solver log berjalan. Indikator membaca nilai terbaru yang muncul di terminal.
+                        </p>
+                    </div>
+                    <span class="solver-safety-summary is-waiting" data-safety-summary>
+                        <span class="solver-safety-dot"></span>
+                        Menunggu log
+                    </span>
+                </div>
+                <div class="solver-safety-table-wrap">
+                    <table class="solver-safety-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter log</th>
+                                <th>Target aman</th>
+                                <th>Nilai terbaru</th>
+                                <th>Indikator</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr data-safety-row="courantMax">
+                                <td>Courant max</td>
+                                <td>&lt; 0.8 - 1.0</td>
+                                <td data-safety-value>-</td>
+                                <td><span class="solver-safety-state is-waiting" data-safety-status>Menunggu</span></td>
+                            </tr>
+                            <tr data-safety-row="courantMean">
+                                <td>Courant mean</td>
+                                <td>&lt; 0.1</td>
+                                <td data-safety-value>-</td>
+                                <td><span class="solver-safety-state is-waiting" data-safety-status>Menunggu</span></td>
+                            </tr>
+                            <tr data-safety-row="residualU">
+                                <td>Final residual U</td>
+                                <td>&lt; 1e-6</td>
+                                <td data-safety-value>-</td>
+                                <td><span class="solver-safety-state is-waiting" data-safety-status>Menunggu</span></td>
+                            </tr>
+                            <tr data-safety-row="residualPrgh">
+                                <td>Final residual p rgh</td>
+                                <td>&lt; 1e-5</td>
+                                <td data-safety-value>-</td>
+                                <td><span class="solver-safety-state is-waiting" data-safety-status>Menunggu</span></td>
+                            </tr>
+                            <tr data-safety-row="residualHH2O">
+                                <td>Final residual h/H2O</td>
+                                <td>&lt; 1e-6</td>
+                                <td data-safety-value>-</td>
+                                <td><span class="solver-safety-state is-waiting" data-safety-status>Menunggu</span></td>
+                            </tr>
+                            <tr data-safety-row="continuity">
+                                <td>Continuity local/global</td>
+                                <td>&lt; 1e-5</td>
+                                <td data-safety-value>-</td>
+                                <td><span class="solver-safety-state is-waiting" data-safety-status>Menunggu</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <pre class="terminal flex-grow-1 mb-0" data-terminal-output>Menunggu command dijalankan...</pre>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/simulation_terminal.js') }}"></script>
+<script src="{{ url_for('static', filename='js/solver.js') }}"></script>
+{% endblock %}

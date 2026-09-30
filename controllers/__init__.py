@@ -18,11 +18,13 @@ def register_controllers(app: Flask) -> None:
         case_file_controller,
         dashboard_controller,
         graph_controller,
+        meshing_controller,
         parameter_controller,
         paraview_controller,
         processor_controller,
         report_controller,
         simulation_controller,
+        solver_controller,
         terminal_controller,
     )
 

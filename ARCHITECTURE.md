@@ -19,8 +19,10 @@ Interface 1onproduct/
 │   ├── parameter_controller.py
 │   ├── paraview_controller.py
 │   ├── processor_controller.py
+│   ├── meshing_controller.py
 │   ├── report_controller.py
-│   └── simulation_controller.py
+│   ├── simulation_controller.py # API eksekusi bersama
+│   └── solver_controller.py
 ├── models/                 # Data/domain model CFD, report, dan file case
 │   └── simulation_run_repository.py # Repository SQLite riwayat proses
 ├── services/               # Use-case dan integrasi proses/filesystem

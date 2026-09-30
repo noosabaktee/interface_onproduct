@@ -75,6 +75,14 @@ class ApplicationFactoryTestCase(unittest.TestCase):
             self.app.view_functions["dashboard.update_graph"].__module__,
             "controllers.graph_controller",
         )
+        self.assertEqual(
+            self.app.view_functions["dashboard.meshing"].__module__,
+            "controllers.meshing_controller",
+        )
+        self.assertEqual(
+            self.app.view_functions["dashboard.solver"].__module__,
+            "controllers.solver_controller",
+        )
 
     def test_authentication_guard_and_safe_redirect(self):
         response = self.client.get("/dashboard")
@@ -195,6 +203,29 @@ class ApplicationFactoryTestCase(unittest.TestCase):
         self.assertEqual(invalid_response.status_code, 200)
         self.assertIn(b'data-history-task="meshing"', invalid_response.data)
         self.assertIn(b'data-history-task="solver"', invalid_response.data)
+
+    def test_meshing_and_solver_pages_load_independent_assets(self):
+        with self.client.session_transaction() as session:
+            session.update(
+                authenticated=True,
+                username="engineer",
+                csrf_token="test-token",
+            )
+
+        meshing_response = self.client.get("/meshing")
+        solver_response = self.client.get("/solver")
+
+        self.assertEqual(meshing_response.status_code, 200)
+        self.assertIn(b'data-task-key="meshing"', meshing_response.data)
+        self.assertIn(b'/static/js/meshing.js', meshing_response.data)
+        self.assertNotIn(b'/static/js/solver.js', meshing_response.data)
+        self.assertNotIn(b'data-solver-safety-panel', meshing_response.data)
+
+        self.assertEqual(solver_response.status_code, 200)
+        self.assertIn(b'data-task-key="solver"', solver_response.data)
+        self.assertIn(b'/static/js/solver.js', solver_response.data)
+        self.assertNotIn(b'/static/js/meshing.js', solver_response.data)
+        self.assertIn(b'data-solver-safety-panel', solver_response.data)
 
     def test_terminal_page_is_case_root_bounded(self):
         (self.app.config["CASE_ROOT"] / "constant").mkdir()
