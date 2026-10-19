@@ -11,9 +11,9 @@
 | Mesin simulasi | OpenFOAM dan MPI |
 | Visualisasi | Three.js pada browser dan ParaView Desktop melalui `pvserver` |
 | Penyimpanan aplikasi | SQLite dan filesystem |
-| Versi dokumen | 1.3 |
+| Versi dokumen | 1.4 |
 | Tanggal pemetaan | 14 Agustus 2026 |
-| Tanggal pembaruan | 30 September 2026 |
+| Tanggal pembaruan | 19 Oktober 2026 |
 | Metode pengembangan | Agile dengan pendekatan iteratif dan inkremental |
 | Dasar dokumentasi | Implementasi aktual pada repository, bukan rancangan konseptual semata |
 
@@ -57,7 +57,7 @@ Dokumentasi diagram UML terpisah tersedia pada folder [UML](UML/README.md), deng
 
 ## 1. Ringkasan Eksekutif
 
-KMI CFD Simulation Platform adalah aplikasi web yang mengintegrasikan pengelolaan *case* OpenFOAM, pengaturan parameter, alokasi prosesor, proses *meshing*, eksekusi *solver*, pemantauan log, pembuatan grafik diagnostik, visualisasi hasil, dan penyusunan laporan ke dalam satu antarmuka.
+KMI CFD Simulation Platform adalah aplikasi web yang mengintegrasikan pengaturan parameter *case* OpenFOAM, alokasi prosesor, proses *meshing*, eksekusi *solver*, pemantauan log, pembuatan grafik diagnostik, visualisasi hasil, dan penyusunan laporan ke dalam satu antarmuka.
 
 Masalah utama yang diselesaikan sistem adalah tersebarnya aktivitas simulasi CFD di berbagai alat dan perintah terminal. Tanpa sistem ini, pengguna harus mengedit *dictionary* OpenFOAM secara manual, menjalankan rangkaian perintah *meshing* satu per satu, mengatur MPI, membaca log teks, membuat grafik dengan skrip terpisah, membuka ParaView, serta mengarsipkan gambar dan laporan secara manual.
 
@@ -72,8 +72,7 @@ Nilai utama sistem meliputi:
 - dukungan analisis residual dan Courant number;
 - visualisasi geometri langsung di browser;
 - integrasi ParaView Desktop untuk analisis hasil yang lebih lengkap;
-- terminal case berbasis web yang memulai command dari folder case aktif dan menerapkan filter command;
-- pengarsipan screenshot, grafik, ZIP case, ZIP log, dan PDF report.
+- pengarsipan screenshot, grafik, dan PDF report.
 
 ---
 
@@ -119,16 +118,15 @@ Dalam implementasi operasional, aplikasi ditempatkan pada VPS Linux yang juga me
 
 Tujuan utama sistem adalah membangun platform web terintegrasi yang dapat:
 
-1. mengelola file case OpenFOAM secara aman dari browser;
-2. mengubah parameter simulasi tanpa mengedit dictionary secara manual;
-3. mengatur jumlah subdomain untuk komputasi paralel;
-4. menjalankan dan memantau proses meshing serta solver;
-5. mencatat status dan durasi proses secara persisten;
-6. menampilkan indikator kestabilan solver dari log;
-7. menghasilkan grafik diagnostik dari log OpenFOAM;
-8. menyediakan visualisasi geometri melalui browser dan ParaView Desktop;
-9. mendukung penggunaan VPS sebagai mesin komputasi dan visualisasi remote;
-10. menyusun arsip hasil dalam bentuk folder report dan PDF.
+1. mengubah parameter simulasi tanpa mengedit dictionary secara manual;
+2. mengatur jumlah subdomain untuk komputasi paralel;
+3. menjalankan dan memantau proses meshing serta solver;
+4. mencatat status dan durasi proses secara persisten;
+5. menampilkan indikator kestabilan solver dari log;
+6. menghasilkan grafik diagnostik dari log OpenFOAM;
+7. menyediakan visualisasi geometri melalui browser dan ParaView Desktop;
+8. mendukung penggunaan VPS sebagai mesin komputasi dan visualisasi remote;
+9. menyusun arsip hasil dalam bentuk folder report dan PDF.
 
 ### 3.2 Manfaat
 
@@ -156,11 +154,9 @@ Tujuan utama sistem adalah membangun platform web terintegrasi yang dapat:
 
 - autentikasi satu akun berbasis session;
 - dashboard dan riwayat proses;
-- pengelolaan file case;
 - parameter mode developer dan production;
 - produk CKR dan BMT pada mode production;
 - konfigurasi prosesor OpenFOAM;
-- Case Terminal untuk operasi administratif dari folder case, dengan validasi command dasar;
 - rangkaian meshing;
 - solver paralel menggunakan MPI;
 - eksekusi OpenFOAM pada VPS atau server Linux;
@@ -173,6 +169,8 @@ Tujuan utama sistem adalah membangun platform web terintegrasi yang dapat:
 
 ### 3.4 Ruang lingkup yang belum termasuk
 
+- pengelolaan file case melalui browser (Case File Manager);
+- terminal untuk menjalankan perintah bebas melalui browser;
 - manajemen banyak pengguna dan *role-based access control*;
 - antrean pekerjaan terdistribusi;
 - eksekusi beberapa case secara simultan;
@@ -240,8 +238,7 @@ Implementasi saat ini hanya mempunyai satu tingkat akses setelah login. Seluruh 
 
 ```mermaid
 flowchart LR
-    A[Login] --> B[Kelola Case Files]
-    B --> C[Atur Processor]
+    A[Login] --> C[Atur Processor]
     C --> D[Meshing]
     D --> E[Input Initial & Boundary Conditions]
     E --> F[Solver Paralel]
@@ -250,10 +247,10 @@ flowchart LR
     G --> I[Visualisasi ParaView]
     H --> J[Report]
     I --> J
-    J --> K[Export PDF / ZIP]
+    J --> K[Export PDF]
 ```
 
-Urutan pada dashboard menampilkan Case Files, Meshing, Boundary Condition, Solving, dan Result. Dalam praktik, pengaturan prosesor sebaiknya dilakukan sebelum meshing karena tahap terakhir meshing adalah `decomposePar` dan solver memeriksa folder `processorN` sesuai nilai `numberOfSubdomains`.
+Urutan pada dashboard menampilkan Meshing, Boundary Condition, Solving, dan Result. Dalam praktik, pengaturan prosesor sebaiknya dilakukan sebelum meshing karena tahap terakhir meshing adalah `decomposePar` dan solver memeriksa folder `processorN` sesuai nilai `numberOfSubdomains`.
 
 ### 6.2 Alur request aplikasi
 
@@ -321,75 +318,7 @@ Tabel riwayat memuat jenis proses, indikator resume, penanda demo data, waktu mu
 
 Ketika aplikasi dinyalakan ulang, record yang masih `running` ditandai `failed` dengan exit code `-1`. Kebijakan ini mencegah dashboard menampilkan proses aktif yang sebenarnya sudah terputus.
 
-### 7.3 Case File Manager
-
-Case File Manager mengindeks seluruh file di bawah folder case secara rekursif. Symlink tidak diikuti agar akses tidak keluar dari root yang diizinkan.
-
-Folder utama yang ditampilkan sebagai workspace edit adalah `0`, `constant`, `system`, dan `postProcessing`. Dalam implementasi saat ini, `postProcessing` sengaja dimasukkan agar file hasil post-processing, ringkasan, cache, atau data pendukung analisis dapat diperiksa dan dikelola dari antarmuka yang sama.
-
-#### Kemampuan utama
-
-- menampilkan statistik jumlah dan ukuran file;
-- mencari berdasarkan nama atau path;
-- memfilter file text, STL, log, binary, dan result;
-- pagination sebanyak 100 file per halaman;
-- membaca dan mengedit file UTF-8 berukuran maksimal 2 MB;
-- mengunggah file/folder tanpa batas jumlah file aplikasi dalam satu request;
-- memilih folder tujuan atau membuat folder baru;
-- mengganti isi file tanpa mengubah nama/path target;
-- mengganti satu folder dengan isi folder baru dan menyinkronkan file lama;
-- mengunduh satu file;
-- menghapus satu file;
-- mengunduh seluruh case, report, dan grafik sebagai ZIP;
-- mengunduh seluruh log sebagai ZIP;
-- membersihkan hasil, log, upload, atau mereset case.
-
-#### Klasifikasi file
-
-| Jenis | Aturan umum |
-| --- | --- |
-| Log | Nama `log`, awalan `log.`, `log_`, `log-`, atau ekstensi `.log`, `.out`, `.err`. |
-| STL | Ekstensi `.stl`. |
-| Text | UTF-8, tidak memiliki null byte, bukan ekstensi binary, maksimal 2 MB. |
-| Binary | File selain kategori di atas yang tidak aman untuk editor teks. |
-| Result | Berada di time directory positif, `processorN`, `postProcessing`, `VTK`, atau `constant/polyMesh`. |
-
-#### Keamanan path
-
-Path dinormalisasi sebagai path relatif POSIX. Sistem menolak:
-
-- path absolut;
-- komponen `..`;
-- karakter `:` dan null byte;
-- symlink pada setiap bagian path;
-- hasil resolve yang berada di luar `CASE_ROOT`.
-
-#### Upload dan mekanisme pemulihan
-
-Upload disimpan terlebih dahulu ke staging directory. Untuk file yang menggantikan file asli, sistem membuat backup dengan nama UUID pada `.case_file_manager/backups` dan mencatatnya di `uploads.json`. Opsi **Clear uploaded files** akan:
-
-- menghapus file baru yang dibuat melalui UI;
-- mengembalikan file asli yang pernah diganti;
-- membersihkan manifest upload.
-
-Perubahan melalui editor teks tidak dimasukkan ke manifest backup. Karena itu, pengeditan manual melalui editor tidak otomatis dapat dipulihkan oleh **Clear uploaded files**.
-
-Perubahan file melalui editor, upload, replace, replace folder, dan delete hanya diizinkan pada folder `0`, `constant`, `system`, dan `postProcessing`. File lain tetap dapat terlihat pada daftar dan dapat diunduh bila aman, tetapi tidak dapat diubah dari UI.
-
-Catatan khusus: `postProcessing` termasuk folder yang dapat dikelola, tetapi juga diklasifikasikan sebagai hasil simulasi. Karena itu, opsi **Clear results only** akan menghapus folder `postProcessing` bersama time directory, `processor*`, `VTK`, `constant/polyMesh`, dan log.
-
-#### Mode clear/reset
-
-| Mode | Dampak |
-| --- | --- |
-| Results | Menghapus time directory positif, `processor*`, `postProcessing`, `VTK`, `constant/polyMesh`, dan log. |
-| Logs | Menghapus file yang dikenali sebagai log. |
-| Uploads | Menghapus file baru dari UI dan memulihkan file yang diganti melalui UI. |
-| Reset | Menggabungkan clear uploads dan clear results. Folder input inti seperti `0`, `constant` selain `polyMesh`, `system`, script, dan `Allrun` dipertahankan. |
-
-Operasi clear membutuhkan token CSRF, teks konfirmasi `CLEAR`, dan konfirmasi tambahan dari browser.
-
-### 7.4 Input Parameter
+### 7.3 Input Parameter
 
 Fitur Input Parameter mempunyai dua mode.
 
@@ -463,7 +392,7 @@ Contoh:
 
 Model membaca file, mencari block dengan pasangan kurung kurawal, mencari entry yang diakhiri `;`, kemudian mengganti nilainya. Qualifier `uniform` dan `constant` dipertahankan bila nilai lama menggunakannya.
 
-### 7.5 Set Processor
+### 7.4 Set Processor
 
 Fitur ini membaca dan memperbarui `system/decomposeParDict`.
 
@@ -477,32 +406,7 @@ Fitur ini membaca dan memperbarui `system/decomposeParDict`.
 
 Perubahan jumlah prosesor harus diikuti proses meshing/dekomposisi ulang agar jumlah folder `processorN` cocok dengan konfigurasi.
 
-### 7.6 Case Terminal
-
-Case Terminal menyediakan command line berbasis web untuk operasi ringan di folder case aktif. Terminal ini berbeda dari terminal log meshing/solver. Semua command dijalankan dengan working directory di bawah `CASE_ROOT`, dan state terminal disimpan per proses aplikasi.
-
-Kemampuan utama:
-
-- menampilkan prompt `case:/`;
-- menjalankan satu command pada satu waktu;
-- melakukan polling status dan output setiap satu detik;
-- menghentikan command aktif melalui tombol stop;
-- menyimpan riwayat command pada browser;
-- mendukung builtin `cd`, `pwd`, `clear`, `cls`, `exit`, dan `logout`;
-- membatasi jumlah output yang ditampilkan agar halaman tetap responsif.
-
-Pembatasan keamanan Case Terminal:
-
-- menolak command multi-line;
-- menolak path parent `..`, path home `~`, path absolut Linux, path absolut Windows, dan UNC path;
-- menolak ekspansi environment path seperti `$HOME`, `$PWD`, `$env:`, `${...}`, atau `%VAR%`;
-- menolak nested shell seperti `powershell`, `pwsh`, `cmd`, dan `wsl`;
-- menolak interpreter inline seperti `python -c`, `node -e`, `perl -e`, dan `ruby -e`;
-- `cd` harus dijalankan sebagai command terpisah agar batas folder tetap dapat dijaga.
-
-Walaupun cwd dan perpindahan directory telah dijaga di bawah folder case, Case Terminal bukan sandbox OS penuh. Terminal ini tetap harus dianggap fitur administratif dan pada deployment production hanya boleh diberikan kepada pengguna tepercaya dengan permission user service yang minimum.
-
-### 7.7 Meshing
+### 7.5 Meshing
 
 Meshing berjalan pada background thread agar request HTTP dapat segera mengembalikan status. Setiap tahap dijalankan sebagai subprocess di `CASE_ROOT`.
 
@@ -524,7 +428,7 @@ Setiap output stdout/stderr ditambahkan ke terminal web. Jika satu tahap menghas
 - Resume meshing berbasis tahapan, bukan checkpoint native.
 - Jika stop terjadi di tengah satu tahap, tahap tersebut akan dijalankan ulang saat resume.
 
-### 7.8 Solver
+### 7.6 Solver
 
 Sebelum solver dijalankan, aplikasi memeriksa kesiapan hasil dekomposisi. Untuk setiap prosesor dari `processor0` sampai `processorN-1`, folder `constant/polyMesh` harus memuat file:
 
@@ -552,7 +456,7 @@ Nilai `N` dibaca dari `numberOfSubdomains`. Environment `OMPI_ALLOW_RUN_AS_ROOT`
 
 Sistem hanya mengizinkan satu jenis task aktif pada satu waktu. Meshing tidak dapat dimulai ketika solver aktif dan sebaliknya.
 
-### 7.9 Terminal log dan progress
+### 7.7 Terminal log dan progress
 
 Browser melakukan polling status proses setiap sekitar satu detik. Response berisi:
 
@@ -566,7 +470,7 @@ Browser melakukan polling status proses setiap sekitar satu detik. Response beri
 
 Log yang tampil dapat diunduh sebagai file `meshing_log.txt` atau `solver_log.txt`. Riwayat database hanya menyimpan maksimal 80 baris terakhir dan dibatasi 12.000 karakter sebagai excerpt.
 
-### 7.10 Indikator kestabilan solver
+### 7.8 Indikator kestabilan solver
 
 Halaman solver mengekstrak nilai terbaru langsung di browser dari log OpenFOAM.
 
@@ -581,13 +485,13 @@ Halaman solver mengekstrak nilai terbaru langsung di browser dari log OpenFOAM.
 
 Indikator ini merupakan alat bantu monitoring, bukan mekanisme penghentian solver otomatis dan bukan bukti tunggal validitas atau konvergensi ilmiah.
 
-### 7.11 Riwayat proses dan seed data
+### 7.9 Riwayat proses dan seed data
 
 Setiap start membuat record `running`. Setelah proses selesai, record diperbarui dengan waktu selesai, status, exit code, pesan, dan log excerpt.
 
 CLI menyediakan data demo sebanyak 12 record yang tersebar selama tujuh hari. Seed mempunyai `seed_key` unik sehingga perintah dapat dijalankan berulang tanpa duplikasi. Opsi reset seed hanya menghapus data demo dan tidak menghapus riwayat asli.
 
-### 7.12 Graph
+### 7.10 Graph
 
 Fitur Graph menjalankan script `grafik/2plot_residuals.py` menggunakan interpreter Python aplikasi. Sumber default adalah `CASE_ROOT/log.run`, sedangkan output disimpan sebagai PNG di `grafik/output` atau lokasi hasil override.
 
@@ -607,7 +511,7 @@ Output yang mungkin dihasilkan:
 
 Jumlah gambar tidak selalu sembilan karena bergantung pada field yang ditemukan dalam log. Proses update memiliki timeout 300 detik. Halaman hanya menyajikan file `.png` yang berada langsung di output directory dan mencegah path traversal saat mengambil gambar.
 
-### 7.13 ParaView Visualization pada browser
+### 7.11 ParaView Visualization pada browser
 
 Halaman ParaView menampilkan metadata case:
 
@@ -632,7 +536,7 @@ Kontrol viewer meliputi orbit, zoom, enam arah kamera, opacity, solid color, pil
 
 Penting: cache VTP browser saat ini berisi geometri, connectivity, dan offsets, tetapi tidak memasukkan array nilai field OpenFOAM. Karena itu, pilihan coloring selain solid menggunakan pseudo-color berbasis posisi geometri dan nama field sebagai seed. Coloring tersebut berguna sebagai bantuan visual UI, tetapi tidak boleh ditafsirkan sebagai kontur temperatur, tekanan, kecepatan, atau hasil fisik yang sebenarnya. Kontur ilmiah harus dilakukan melalui ParaView Desktop/remote atau pengembangan reader field lebih lanjut.
 
-### 7.14 Remote ParaView Desktop
+### 7.12 Remote ParaView Desktop
 
 Fitur ini mengelola lifecycle `pvserver` pada server Linux dan menampilkan:
 
@@ -662,7 +566,7 @@ ssh -L 11112:localhost:11112 user-vps@host-vps -p 8822
 
 Setelah tunnel aktif, ParaView Desktop terhubung ke `cs://localhost:11112` dan membuka path `case.foam` di filesystem server.
 
-### 7.15 Report
+### 7.13 Report
 
 Ketika **Get Report** dipilih, sistem:
 
@@ -685,7 +589,7 @@ PDF dibuat sebagai dokumen bergambar:
 
 Report dapat dipilih, ditampilkan, diekspor sebagai PDF, atau dihapus.
 
-### 7.16 Tema dan antarmuka responsif
+### 7.14 Tema dan antarmuka responsif
 
 - Antarmuka menggunakan Bootstrap dan CSS khusus.
 - Tema light/dark disimpan pada `localStorage` browser.
@@ -703,11 +607,6 @@ Report dapat dipilih, ditampilkan, diekspor sebagai PDF, atau dihapus.
 | FR-01 | Sistem harus meminta autentikasi sebelum mengakses workspace. | Session guard pada seluruh request kecuali login/static. |
 | FR-02 | Sistem harus menampilkan ringkasan dan aktivitas simulasi. | Dashboard SQLite dan Chart.js. |
 | FR-03 | Sistem harus mencatat lifecycle meshing dan solver. | Repository `simulation_runs`. |
-| FR-04 | Sistem harus mengindeks file case secara rekursif. | Case File Manager. |
-| FR-05 | Sistem harus mencari dan memfilter file. | Query `q`, kategori, dan pagination. |
-| FR-06 | Sistem harus mendukung upload, replace, edit, download, dan delete file. | Route case files dan backup manifest. |
-| FR-07 | Sistem harus menyediakan arsip ZIP case dan log. | ZIP64 temporary archive. |
-| FR-08 | Sistem harus membersihkan hasil/log/upload berdasarkan pilihan. | Mode results, logs, uploads, reset. |
 | FR-09 | Sistem harus membaca dan menulis parameter teknis OpenFOAM. | Mode Developer dan location parser. |
 | FR-10 | Sistem harus mengonversi input operasional produk. | Mode Production CKR/BMT dan safe formula evaluator. |
 | FR-11 | Sistem harus mengatur jumlah prosesor. | Update `decomposeParDict`, batas 1–32. |
@@ -724,7 +623,6 @@ Report dapat dipilih, ditampilkan, diekspor sebagai PDF, atau dihapus.
 | FR-22 | Sistem harus menyimpan screenshot dan grafik per report. | Folder report bertanggal. |
 | FR-23 | Sistem harus mengekspor report ke PDF. | Pillow multi-page PDF. |
 | FR-24 | Sistem harus menyediakan data demo riwayat yang aman diulang. | CLI seeder idempotent. |
-| FR-25 | Sistem harus menyediakan terminal operasional yang memulai command dari folder case dan memvalidasi pola command berisiko. | Case Terminal dan `SandboxTerminal`. |
 
 ---
 
@@ -736,16 +634,11 @@ Report dapat dipilih, ditampilkan, diekspor sebagai PDF, atau dihapus.
 | NFR-02 | Maintainability | Controller dipisah per fitur, model/service tidak bergantung pada controller. |
 | NFR-03 | Testability | Application factory menerima konfigurasi pengganti dan service disimpan app-scoped. |
 | NFR-04 | Data integrity | SQLite memakai transaksi, WAL, constraint status, dan unique seed key. |
-| NFR-05 | File integrity | Edit text dan manifest menggunakan temporary file serta atomic replace. |
-| NFR-06 | Security | Login session, HttpOnly cookie, SameSite Lax, validasi path, dan CSRF pada sebagian operasi. |
-| NFR-07 | Responsiveness | UI memakai layout Bootstrap dan dapat digunakan pada beberapa ukuran layar. |
-| NFR-08 | Observability | Log proses, status, exit code, pesan kegagalan, dan remote server log tersedia. |
 | NFR-09 | Configurability | Path, kredensial, cookie, timezone, dan ParaView dapat diubah melalui environment. |
 | NFR-10 | Portability | Web dapat dikembangkan di Windows, tetapi OpenFOAM runner dan pvserver ditujukan untuk Linux/container. |
 | NFR-11 | Performance | Proses berat dijalankan sebagai subprocess/background thread; grafik memiliki timeout. |
 | NFR-12 | Resource efficiency | Komputasi berat dipindahkan ke VPS/server CPU besar agar komputer pengguna tidak menjadi bottleneck. |
 | NFR-13 | Remote accessibility | Pengguna dapat mengendalikan simulasi, membaca log, dan melihat hasil dari komputer lokal melalui browser dan koneksi ParaView remote. |
-| NFR-14 | Recoverability | Upload replacement mempunyai backup; abandoned run ditutup otomatis saat startup. |
 
 ---
 
@@ -777,7 +670,6 @@ flowchart TB
 
     subgraph DomainInfrastructure[Domain & Infrastructure]
         PARAM[Parameter Model]
-        CASE[Case File Manager]
         RUNNER[Terminal Runner]
         REPO[Simulation Repository]
         PV[ParaView Models]
@@ -798,9 +690,7 @@ flowchart TB
     CTRL --> RUNNER
     CTRL --> PV
     CTRL --> REPORT
-    SVC --> CASE
     SVC --> REPO
-    CASE --> FS
     PARAM --> FS
     RUNNER --> OF
     RUNNER --> REPO
@@ -849,22 +739,17 @@ Interface 1onproduct/
 ├── controllers/
 │   ├── auth_controller.py          # Login, logout, route guard
 │   ├── dashboard_controller.py     # Dashboard dan filter history
-│   ├── case_file_controller.py     # HTTP Case File Manager
 │   ├── parameter_controller.py     # Input Parameter
 │   ├── processor_controller.py     # Set Processor
 │   ├── meshing_controller.py       # Halaman Meshing
 │   ├── solver_controller.py        # Halaman Solver
 │   ├── simulation_controller.py    # API eksekusi Meshing/Solver
-│   ├── terminal_controller.py      # Case Terminal berbasis web
 │   ├── graph_controller.py         # Grafik residual
 │   ├── paraview_controller.py      # Viewer dan remote pvserver
 │   ├── report_controller.py        # Report, capture, PDF
-│   └── helpers.py                  # CSRF dan temporary archive
 ├── models/
-│   ├── case_file_manager.py        # Operasi aman pada file case
 │   ├── parameter_model.py          # Mapping/edit dictionary dan formula
 │   ├── terminal_runner.py          # Background process dan state
-│   ├── sandbox_terminal.py         # Terminal bercwd CASE_ROOT dengan filter command
 │   ├── simulation_run_repository.py# Repository SQLite
 │   ├── paraview_model.py           # Metadata dan konversi mesh ke VTP
 │   ├── paraview_server.py          # Lifecycle pvserver
@@ -967,7 +852,6 @@ Selain SQLite, sistem menggunakan filesystem sebagai penyimpanan utama untuk:
 | File post-processing case | `<case>/postProcessing` |
 | Grafik sementara | `grafik/output` |
 | Report | `report` |
-| Manifest/backup upload | `.case_file_manager` |
 | Cache preview mesh | `<case>/postProcessing/webInternalMesh` |
 | State/log pvserver | `/run/kmi-cfd-paraview` |
 | Session secret Linux | `/run/kmi-cfd-session-secret` |
@@ -1042,39 +926,14 @@ Semua endpoint berikut memerlukan session login kecuali `/login` dan `/static/*`
 | GET | `/` | Redirect ke dashboard. |
 | GET | `/dashboard` | Dashboard; query `history_type=all|meshing|solver`. |
 
-### 14.2 Case File Manager
-
-| Method | Endpoint | Fungsi |
-| --- | --- | --- |
-| GET | `/case-files` | List, statistik, search, filter, pagination. |
-| GET | `/case-files/text/<path>` | Membaca file text sebagai JSON. |
-| POST | `/case-files/upload` | Upload satu/banyak file; memerlukan CSRF. |
-| POST | `/case-files/replace/<path>` | Mengganti isi file; memerlukan CSRF. |
-| POST | `/case-files/replace-folder/<path>` | Mengganti isi folder target; memerlukan CSRF. |
-| POST | `/case-files/save/<path>` | Menyimpan edit text; memerlukan CSRF. |
-| GET | `/case-files/download/<path>` | Download satu file. |
-| POST | `/case-files/delete/<path>` | Menghapus file; memerlukan CSRF. |
-| GET | `/case-files/download-all` | ZIP case + report + graph. |
-| GET | `/case-files/download-logs` | ZIP seluruh sumber log. |
-| POST | `/case-files/clear` | Clear/reset; CSRF dan konfirmasi `CLEAR`. |
-
-### 14.3 Parameter dan prosesor
+### 14.2 Parameter dan prosesor
 
 | Method | Endpoint | Fungsi |
 | --- | --- | --- |
 | GET, POST | `/input-parameter` | Memuat/menyimpan parameter Developer atau Production. |
 | GET, POST | `/set-processor` | Membaca/menulis jumlah prosesor. |
 
-### 14.4 Case Terminal
-
-| Method | Endpoint | Fungsi |
-| --- | --- | --- |
-| GET | `/terminal` | Halaman Case Terminal yang dibatasi ke `CASE_ROOT`. |
-| GET | `/terminal/status` | Snapshot status, prompt, output, dan command terakhir. |
-| POST | `/terminal/run` | Menjalankan satu command pada folder case aktif. |
-| POST | `/terminal/stop` | Menghentikan command Case Terminal yang sedang berjalan. |
-
-### 14.5 Meshing dan solver
+### 14.3 Meshing dan solver
 
 | Method | Endpoint | Fungsi |
 | --- | --- | --- |
@@ -1086,7 +945,7 @@ Semua endpoint berikut memerlukan session login kecuali `/login` dan `/static/*`
 | GET | `/terminal/<task>/logs` | State dan log JSON. |
 | GET | `/terminal/<task>/download-logs` | Download log text. |
 
-### 14.6 Graph
+### 14.4 Graph
 
 | Method | Endpoint | Fungsi |
 | --- | --- | --- |
@@ -1094,7 +953,7 @@ Semua endpoint berikut memerlukan session login kecuali `/login` dan `/static/*`
 | GET | `/graph/image/<filename>` | Mengirim satu PNG yang valid. |
 | POST | `/graph/update` | Menjalankan parser/generator grafik. |
 
-### 14.7 ParaView
+### 14.5 ParaView
 
 | Method | Endpoint | Fungsi |
 | --- | --- | --- |
@@ -1107,7 +966,7 @@ Semua endpoint berikut memerlukan session login kecuali `/login` dan `/static/*`
 | POST | `/paraview/remote/stop` | Menghentikan `pvserver`; CSRF header. |
 | GET | `/paraview/remote/status` | Status, log, dan konfigurasi koneksi JSON. |
 
-### 14.8 Report
+### 14.6 Report
 
 | Method | Endpoint | Fungsi |
 | --- | --- | --- |
@@ -1170,22 +1029,11 @@ Untuk proses aktif, waktu selesai diganti waktu saat ini. Total compute time ada
 
 Timestamp mulai disimpan dalam UTC, dikonversi ke `APP_TIMEZONE`, dikelompokkan berdasarkan tanggal lokal, kemudian dihitung untuk hari ini dan enam hari sebelumnya.
 
-### 15.6 Atomic text save
-
-```text
-1. Validasi path dan jenis file.
-2. Encode content sebagai UTF-8 dan cek batas 2 MB.
-3. Tulis ke temporary file pada folder yang sama.
-4. Salin permission file asli.
-5. Ganti file asli menggunakan os.replace.
-6. Hapus temporary file bila terjadi kegagalan.
-```
-
-### 15.7 Pemilihan pesan kegagalan
+### 15.6 Pemilihan pesan kegagalan
 
 Sistem menelusuri log dari baris terakhir dan mencari marker `error`, `fatal`, `failed`, `cannot`, `not found`, atau `traceback`. Detail relevan ditambahkan ke pesan fallback agar dashboard memberi penyebab yang lebih informatif.
 
-### 15.8 Cache internal mesh
+### 15.7 Cache internal mesh
 
 Cache VTP dianggap valid jika timestamp cache lebih baru atau sama dengan `points`, `faces`, dan `boundary`. Jika salah satu sumber lebih baru, cache dibangun ulang secara atomik.
 
@@ -1202,7 +1050,6 @@ Bagian ini merangkum teknologi yang digunakan oleh implementasi aktual sistem, b
 | Python | Minimal 3.10; snapshot pengembangan terdeteksi 3.14.3 | Bahasa utama aplikasi web, orkestrasi proses, parsing file, dan otomasi OpenFOAM. |
 | Flask | 3.1.3 | Web framework untuk routing, request/response, session, blueprint controller, dan application factory. |
 | Jinja2 | 3.1.6 | Template engine untuk rendering halaman HTML dinamis. |
-| Werkzeug | 3.1.8 | Utilitas WSGI, request handling, upload file, dan response file. |
 | Click | 8.3.3 | Command-line interface Flask dan perintah utilitas aplikasi. |
 | Blinker | 1.9.0 | Infrastruktur signal yang digunakan ekosistem Flask. |
 | ItsDangerous | 2.2.0 | Signing dan proteksi data session/token pada ekosistem Flask. |
@@ -1227,10 +1074,6 @@ Bagian ini merangkum teknologi yang digunakan oleh implementasi aktual sistem, b
 | --- | ---: | --- |
 | SQLite | Modul `sqlite3` bawaan Python | Database riwayat meshing dan solver. |
 | SQLite WAL | Fitur SQLite | Meningkatkan ketahanan dan konkurensi akses database. |
-| Filesystem server | OS/VPS | Penyimpanan case OpenFOAM, log, upload, backup, graph, screenshot, report, dan ZIP archive. |
-| JSON | Bawaan Python / browser | Parameter produk, konstanta, manifest upload, state ParaView, dan pertukaran data frontend. |
-| ZIP archive | Modul `zipfile` | Download case, log, report, dan hasil sebagai arsip. |
-| Temporary file/directory | `tempfile` | Staging upload, archive sementara, dan operasi file yang lebih aman. |
 
 ### 16.4 Library analisis, grafik, dan dokumen
 
@@ -1265,7 +1108,6 @@ Bagian ini merangkum teknologi yang digunakan oleh implementasi aktual sistem, b
 | Three.js | 0.160.0 via CDN jsDelivr | Render preview geometri/internal mesh 3D pada halaman ParaView browser. |
 | OrbitControls | Three.js examples | Kontrol kamera 3D seperti rotate, zoom, dan pan. |
 | Fetch API | Native browser | Komunikasi AJAX untuk polling proses, terminal, ParaView, dan request JSON. |
-| FormData API | Native browser | Upload file dan submit data form kompleks dari browser. |
 | Canvas API | Native browser | Render/capture visualisasi dan grafik pada sisi client. |
 | Local/session UI state | Native browser | Penyimpanan preferensi tampilan seperti theme dan state interaksi tertentu. |
 
@@ -1299,7 +1141,6 @@ Bagian ini merangkum teknologi yang digunakan oleh implementasi aktual sistem, b
 | Markdown | Dokumentasi teknis sistem. |
 | Mermaid | Diagram alur dan arsitektur pada dokumentasi Markdown. |
 | SQLite database file | File persisten riwayat simulasi. |
-| ZIP | Distribusi case, log, report, dan hasil unduhan. |
 
 ### 16.8 Sistem operasi, deployment, dan operasional
 
@@ -1332,10 +1173,6 @@ Bagian ini merangkum teknologi yang digunakan oleh implementasi aktual sistem, b
 | --- | --- |
 | `hmac.compare_digest` | Perbandingan kredensial dan token secara lebih aman terhadap timing attack sederhana. |
 | `secrets` | Pembuatan secret session dan CSRF token. |
-| Path normalization | Menolak path absolut, `..`, null byte, colon, dan akses keluar case root. |
-| Symlink rejection | Mencegah akses file melalui symlink yang mengarah keluar root. |
-| Atomic write dan backup upload | Mengurangi risiko kehilangan file ketika replace/upload. |
-| Command filtering | Menetapkan cwd Case Terminal di dalam case serta menolak sejumlah pola path, shell, dan interpreter berisiko. |
 | Header/form CSRF check | Proteksi dasar untuk request perubahan data. |
 | Session cookie policy | `HttpOnly`, `SameSite`, dan opsi `Secure` untuk deployment HTTPS. |
 
@@ -1350,7 +1187,6 @@ Bagian ini merangkum teknologi yang digunakan oleh implementasi aktual sistem, b
 | `CFD_CASE_ROOT` | sibling `sprayDryer-6.0.0-onProduct-Trial02` | Root case OpenFOAM. |
 | `CFD_GRAPH_ROOT` | `grafik/output` | Output grafik. |
 | `CFD_REPORT_ROOT` | `report` | Root report. |
-| `CFD_CASE_FILE_STATE_ROOT` | `.case_file_manager` | Manifest dan backup upload. |
 | `CFD_DATABASE_PATH` | `instance/simulation_history.sqlite3` | File SQLite. |
 | `CFD_LOGIN_USERNAME` | `kmi.cfd` | Username login. |
 | `CFD_LOGIN_PASSWORD` | `kmi.cfd` | Password login. |
@@ -1494,14 +1330,13 @@ Untuk production Linux, gunakan WSGI server dan reverse proxy HTTPS. Contoh kons
 gunicorn --workers 1 --threads 4 --bind 127.0.0.1:8000 'app:create_app()'
 ```
 
-Satu worker direkomendasikan untuk implementasi terminal runner dan Case Terminal saat ini karena state meshing/solver serta sesi command case disimpan di memory proses. Menambah worker tanpa memindahkan task state ke penyimpanan bersama dapat membuat status tidak konsisten antarrequest.
+Satu worker direkomendasikan untuk implementasi terminal runner saat ini karena state meshing/solver disimpan di memory proses. Menambah worker tanpa memindahkan task state ke penyimpanan bersama dapat membuat status tidak konsisten antarrequest.
 
 Pada penggunaan VPS, OpenFOAM, MPI, folder case, aplikasi web, database SQLite, grafik, report, dan runtime `pvserver` berada pada server yang sama. Komputer pengguna cukup menjalankan browser untuk mengendalikan aplikasi dan ParaView Desktop untuk analisis hasil melalui koneksi client/server. Skema ini mengurangi kebutuhan hardware lokal, tetapi menuntut pengamanan akses server, pengelolaan resource CPU, dan pencatatan spesifikasi server dalam laporan penelitian.
 
 Reverse proxy harus:
 
 - menyediakan HTTPS;
-- membatasi ukuran request upload;
 - meneruskan host hanya bila `TRUST_PROXY_HEADERS=1` dan proxy dipercaya;
 - memberi timeout yang sesuai untuk download file besar;
 - tidak mengekspos port `pvserver` ke internet publik.
@@ -1529,12 +1364,9 @@ Versi ParaView Desktop sebaiknya sama dengan `pvserver`.
 ### 19.1 Menyiapkan simulasi baru
 
 1. Login menggunakan akun yang dikonfigurasi.
-2. Buka **Case File Manager**.
-3. Pastikan folder `0`, `constant`, `system`, `postProcessing`, geometri STL, dan dictionary tersedia.
-4. Upload atau replace file yang diperlukan.
-5. Download ZIP case sebagai backup awal bila diperlukan.
-6. Buka **Set Processor** dan pilih jumlah core sesuai sumber daya server.
-7. Simpan konfigurasi.
+2. Pastikan folder `0`, `constant`, `system`, `postProcessing`, geometri STL, dan dictionary tersedia pada server.
+3. Buka **Set Processor** dan pilih jumlah core sesuai sumber daya server.
+4. Simpan konfigurasi.
 
 ### 19.2 Menjalankan meshing
 
@@ -1623,7 +1455,6 @@ Versi ParaView Desktop sebaiknya sama dengan `pvserver`.
 3. Buka **ParaView**, lakukan capture ke report terbaru.
 4. Kembali ke Report untuk melihat screenshot dan graph.
 5. Pilih **Export PDF**.
-6. Simpan ZIP case/log secara terpisah bila diperlukan untuk reproduksibilitas.
 
 ---
 
@@ -1635,10 +1466,10 @@ Versi ParaView Desktop sebaiknya sama dengan `pvserver`.
 .\venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Hasil verifikasi pada 14 Agustus 2026:
+Hasil verifikasi pada 19 Oktober 2026:
 
 ```text
-Ran 23 tests
+Ran 14 tests
 OK
 ```
 
@@ -1653,16 +1484,8 @@ OK
 | Migration | Upgrade schema/index ke version 3. |
 | History lifecycle | Success, failed, running, abandoned run. |
 | Terminal runner | Kegagalan meshing dan penyimpanan alasan/log. |
-| Case Terminal | Pembatasan ke `CASE_ROOT`, penolakan parent path, dan perubahan directory aman. |
 | Processor | Load, normalize, update subdomain dan weights. |
 | ParaView page | Kontrol model tetap tersedia dan stream tracer sudah dihapus. |
-| Case file listing | Klasifikasi text, STL, log. |
-| Path security | Penolakan path traversal. |
-| File editing | Edit text dan penolakan binary. |
-| Upload/replace | File baru, replacement, backup, restore. |
-| Archive | Isi ZIP case, report, graph, dan log. |
-| Clear results | Menghapus hasil sambil menjaga input inti. |
-| Routes | CSRF case manager, upload, edit, download, delete, legacy route. |
 
 ### 20.3 Pengujian yang disarankan untuk skripsi
 
@@ -1679,7 +1502,6 @@ Gunakan tabel berisi ID test, prasyarat, langkah, input, expected result, actual
 - stop/cancel/resume;
 - grafik dengan log valid/kosong;
 - report dan PDF;
-- upload file aman/path berbahaya;
 - remote pvserver tersedia/tidak tersedia/port sibuk.
 
 #### Usability testing
@@ -1691,8 +1513,6 @@ Gunakan System Usability Scale (SUS) atau instrumen sejenis kepada process engin
 Ukur terpisah:
 
 - response time halaman web;
-- waktu index case berdasarkan jumlah file;
-- waktu membuat ZIP;
 - waktu membuat grafik;
 - waktu konversi internal mesh ke VTP;
 - durasi meshing;
@@ -1724,10 +1544,6 @@ Keberhasilan test aplikasi web tidak sama dengan validitas hasil CFD.
 | Constant-time comparison | Username/password dibandingkan dengan `hmac.compare_digest`. |
 | Safe redirect | `next` dibatasi ke path internal. |
 | Session cookie | HttpOnly dan SameSite Lax. Secure dapat diaktifkan. |
-| CSRF | Diterapkan pada perubahan Case File Manager dan start/stop remote ParaView. |
-| Path traversal | Normalisasi, containment check, dan penolakan symlink. |
-| Case Terminal guard | Command dimulai dari `CASE_ROOT`; filter menolak sejumlah path absolut, `..`, nested shell, dan interpreter inline. Kontrol ini bukan sandbox OS penuh. |
-| Atomic writes | Editor dan manifest memakai temporary file/replace. |
 | Image validation | Screenshot diverifikasi dengan Pillow sebelum disimpan. |
 | Report path | Nama report memakai regex dan hasil resolve harus berada di root. |
 | Graph path | File gambar harus child langsung output root. |
@@ -1744,10 +1560,7 @@ Keberhasilan test aplikasi web tidak sama dengan validitas hasil CFD.
 4. Tidak ada rate limiting atau lockout login.
 5. CSRF belum diterapkan secara konsisten pada input parameter, set processor, start/stop/cancel simulasi, update graph, pembuatan/penghapusan report, capture, dan logout.
 6. Logout menggunakan GET, padahal perubahan state idealnya POST dengan CSRF.
-7. Batas request upload global sudah ada 5 GB, tetapi belum ada kuota storage atau batas per kategori file.
 8. Capture base64 belum memiliki batas ukuran eksplisit sebelum decode.
-9. File upload tidak memiliki allowlist ekstensi karena sistem memang harus menerima banyak format case.
-10. Process command meshing/solver memakai shell command internal; Case Terminal juga menjalankan command pengguna yang sudah dibatasi tetapi tetap memperbesar permukaan risiko.
 11. Log dapat berisi path atau detail sistem yang sensitif.
 12. `pvserver` tidak menyediakan autentikasi/enkripsi bawaan.
 
@@ -1758,11 +1571,9 @@ Keberhasilan test aplikasi web tidak sama dengan validitas hasil CFD.
 - aktifkan HTTPS dan `FLASK_COOKIE_SECURE=1`;
 - tambahkan CSRF ke seluruh operasi perubahan;
 - tambahkan rate limit login;
-- selaraskan batas upload pada Flask dan reverse proxy, lalu tambahkan kuota storage;
 - jalankan service dengan user non-root bila memungkinkan;
 - expose `pvserver` hanya ke loopback dan gunakan SSH tunnel;
 - batasi permission folder case;
-- simpan backup di media terpisah;
 - audit dependency dan update keamanan secara berkala.
 
 ---
@@ -1774,18 +1585,15 @@ Keberhasilan test aplikasi web tidak sama dengan validitas hasil CFD.
 - Meshing dan solver berjalan di background thread dalam proses web.
 - State task tersimpan pada dictionary global di memory.
 - Hanya satu meshing/solver boleh aktif.
-- Case Terminal mempunyai satu sesi command per proses aplikasi dan state-nya juga berada di memory.
 - Log task di memory tidak mempunyai batas total selama proses, walaupun response hanya mengirim 300 baris terakhir.
 - History persisten di SQLite.
 - Remote pvserver mempunyai state file dan lock lintas worker.
 - Grafik dijalankan sinkron terhadap request dengan timeout lima menit.
-- ZIP dibuat ke temporary file lalu dihapus setelah response ditutup.
-- Listing case melakukan scan filesystem pada setiap request.
 
 ### 22.2 Konsekuensi
 
 - Restart aplikasi menghentikan background thread dan menghilangkan state resume in-memory.
-- Deployment multi-worker dapat mengarahkan polling ke worker berbeda sehingga state meshing/solver atau Case Terminal tidak konsisten.
+- Deployment multi-worker dapat mengarahkan polling ke worker berbeda sehingga state meshing/solver tidak konsisten.
 - Log solver yang sangat panjang dapat meningkatkan pemakaian memory.
 - Case dengan sangat banyak file dapat memperlambat listing dan pembuatan ZIP.
 - Pembuatan grafik atau PDF menggunakan resource proses web.
@@ -1802,7 +1610,6 @@ Bagian ini penting untuk menjaga akurasi laporan skripsi.
 
 1. Sistem hanya mendukung satu case root aktif per instance aplikasi.
 2. Autentikasi hanya satu akun dan tidak mempunyai manajemen pengguna.
-3. State meshing/solver dan Case Terminal berada di memory dan tidak aman untuk banyak worker.
 4. Resume meshing hanya berbasis step; proses yang terputus di tengah step diulang.
 5. Resume solver bergantung pada time directory dan `startFrom latestTime`, bukan checkpoint yang dikelola web.
 6. Solver command `buoyantPimpleFoam` tidak selaras dengan `reactingParcelFoam` pada `controlDict`.
@@ -1817,7 +1624,6 @@ Bagian ini penting untuk menjaga akurasi laporan skripsi.
 15. Graph bergantung pada format teks log yang cocok dengan regex.
 16. PDF berisi gambar dan ringkasan dasar, belum memuat metadata parameter/run secara otomatis.
 17. CSRF belum konsisten pada semua operasi perubahan.
-18. Batas upload global ada 5 GB, tetapi belum ada kuota penyimpanan, allowlist ekstensi, atau batas granular per folder.
 19. CDN diperlukan untuk Bootstrap, Chart.js, dan Three.js; tampilan tertentu tidak lengkap saat offline.
 20. Pengujian otomatis belum menjalankan OpenFOAM nyata, MPI nyata, atau ParaView nyata.
 
@@ -2017,7 +1823,7 @@ Pengembangan sistem ini menggunakan metode Agile dengan pendekatan iteratif dan 
 Dalam konteks skripsi, Agile dapat dijelaskan melalui tahapan berikut:
 
 1. **Identifikasi kebutuhan awal**: mengumpulkan kebutuhan workflow simulasi CFD, kendala penggunaan OpenFOAM manual, kebutuhan monitoring, kebutuhan visualisasi, dan kebutuhan laporan.
-2. **Penyusunan product backlog**: memecah kebutuhan menjadi daftar fitur seperti login, dashboard, case file manager, input parameter, set processor, meshing, solver, graph, ParaView, report, dan pengujian.
+2. **Penyusunan product backlog**: memecah kebutuhan menjadi daftar fitur seperti login, dashboard, input parameter, set processor, meshing, solver, graph, ParaView, report, dan pengujian.
 3. **Sprint planning**: menentukan prioritas fitur yang dikerjakan pada setiap iterasi berdasarkan urgensi dan ketergantungan teknis.
 4. **Sprint implementation**: mengimplementasikan fitur secara bertahap menggunakan Flask, SQLite, OpenFOAM command runner, Three.js, ParaView, dan modul pendukung lain.
 5. **Testing dan review**: menguji fitur yang selesai melalui unit test, black-box testing, dan pemeriksaan alur penggunaan.
@@ -2094,16 +1900,14 @@ Sistem yang lulus unit test belum otomatis menghasilkan model CFD yang valid. Kl
 
 | Tujuan | Fitur | Komponen kode | Data/output | Metode verifikasi |
 | --- | --- | --- | --- | --- |
-| Mengelola case | Case File Manager | `case_file_controller.py`, `case_file_manager.py` | File, manifest, ZIP | Unit test path/upload/archive dan black-box UI. |
 | Mempermudah konfigurasi | Input Parameter | `parameter_controller.py`, `parameter_model.py`, JSON | Dictionary OpenFOAM | Uji nilai sebelum/sesudah dan validasi engineer. |
 | Menyiapkan paralelisme | Set Processor | `processor_service.py` | `decomposeParDict` | Unit test dan pemeriksaan folder processor. |
 | Mengotomasi mesh | Meshing | `terminal_runner.py` | polyMesh, processor, log | Exit code, `checkMesh`, history. |
 | Menjalankan simulasi | Solver | `terminal_runner.py` | Time directory dan log | End-to-end OpenFOAM, exit code, convergence. |
-| Memantau proses | Terminal dan dashboard | `meshing.html`, `solver.html`, `simulation_terminal.js`, history service | JSON state, SQLite | Unit test lifecycle dan observasi polling. |
+| Memantau proses | Log proses dan dashboard | `meshing.html`, `solver.html`, `simulation_terminal.js`, history service | JSON state, SQLite | Unit test lifecycle dan observasi polling. |
 | Menganalisis diagnostik | Graph | `graph_service.py`, `2plot_residuals.py` | PNG | Bandingkan parser dengan sample log. |
 | Melihat geometri | Web ParaView | `paraview_model.py`, `paraview_viewer.js` | VTP/cache/capture | Uji load mesh dan pemeriksaan visual. |
 | Melihat field ilmiah | Remote ParaView | `paraview_server.py` | Koneksi client/server | Uji pvserver, tunnel, OpenFOAMReader. |
-| Menjalankan command terbatas | Case Terminal | `terminal_controller.py`, `sandbox_terminal.py` | Output command, status, cwd | Unit test path boundary dan observasi UI. |
 | Mengarsipkan hasil | Report | `report_controller.py`, `report_model.py` | Folder, PNG, PDF | Uji create/capture/export/delete. |
 | Menjaga history | SQLite repository | `simulation_run_repository.py` | `simulation_runs` | Unit test schema/lifecycle/seeder. |
 
@@ -2121,9 +1925,6 @@ Bagian ini merangkum pekerjaan yang sudah dilakukan selama pengembangan KMI CFD 
 | Autentikasi | Membuat login, logout, route guard, session, CSRF token dasar, dan validasi redirect internal. |
 | Dashboard | Membuat ringkasan total run, compute time, success rate, active run, grafik aktivitas, status breakdown, dan recent runs berbasis data SQLite. |
 | Database history | Membuat penyimpanan riwayat simulasi pada SQLite, schema migration, index, lifecycle status, dan seeder data demo. |
-| Case File Manager | Membuat fitur daftar file case, pencarian, filter, pagination, editor teks, upload, replace file, replace folder, download, delete, ZIP archive, clear results, clear logs, clear uploads, dan reset case. |
-| Keamanan filesystem | Menambahkan normalisasi path, containment check, penolakan path traversal, penolakan symlink, atomic write, backup upload, dan mekanisme restore file. |
-| Case Terminal | Membuat terminal web yang memulai command dari folder case aktif, dengan validasi command, polling output, stop command, dan filter terhadap path absolut tertentu, parent path, nested shell, serta interpreter inline. |
 | Input Parameter | Membuat mode Developer untuk parameter teknis OpenFOAM dan mode Production untuk parameter operasional produk CKR dan BMT. |
 | Mapping parameter | Menghubungkan input web ke dictionary OpenFOAM, termasuk transformasi satuan, formula produk, boundary condition, initial condition, droplet/nozzle, thermophysical properties, sub-model, dan numerical settings. |
 | Set Processor | Membuat pembacaan dan pembaruan `decomposeParDict`, normalisasi jumlah subdomain, serta pembagian processor weights. |
@@ -2135,7 +1936,6 @@ Bagian ini merangkum pekerjaan yang sudah dilakukan selama pengembangan KMI CFD 
 | Remote ParaView | Membuat integrasi `pvserver`, kontrol start/stop dari web, runtime directory, lock lintas worker, log tail, dan panduan koneksi ParaView Desktop. |
 | Report | Membuat folder report, daftar screenshot/grafik, capture dari visualisasi, export PDF, download ZIP, dan penghapusan report. |
 | Antarmuka | Menyusun template Jinja, navigasi dashboard, halaman modul, responsive layout, tema visual, komponen tabel, form, tombol, dan feedback flash message. |
-| Pengujian | Menambahkan unit test untuk application factory, authentication, dashboard, migration, history lifecycle, terminal runner, Case Terminal, processor, ParaView page, case file listing, path security, edit/upload/replace folder/archive/clear, dan routes. |
 | Dokumentasi | Menyusun dokumentasi teknis, arsitektur, konfigurasi, endpoint, pengujian, keamanan, troubleshooting, bahan skripsi, dan matriks ketertelusuran. |
 
 ### 28.2 Tahapan pengembangan berdasarkan Agile
@@ -2146,7 +1946,6 @@ Pengembangan dilakukan secara bertahap sesuai prinsip Agile, yaitu menghasilkan 
 | --- | --- | --- |
 | Sprint 1 | Analisis kebutuhan dan fondasi aplikasi | Struktur Flask, konfigurasi environment, template dasar, dan route awal. |
 | Sprint 2 | Autentikasi dan dashboard | Login, proteksi route, session, dashboard, dan riwayat awal. |
-| Sprint 3 | Pengelolaan file case | Case File Manager, validasi path, editor, upload, download, ZIP, dan clear/reset. |
 | Sprint 4 | Parameter dan processor | Mode Developer, mode Production CKR/BMT, mapping dictionary, dan konfigurasi `decomposeParDict`. |
 | Sprint 5 | Integrasi OpenFOAM | Eksekusi meshing, solver paralel, status proses, log, stop/cancel/resume, dan pencatatan history. |
 | Sprint 6 | Analisis dan visualisasi | Grafik diagnostik, preview Three.js, capture, dan integrasi remote ParaView Desktop. |
@@ -2159,7 +1958,6 @@ Pembagian sprint di atas dapat disesuaikan dengan catatan pengembangan aktual. I
 | Kebutuhan awal | Status realisasi | Bukti implementasi |
 | --- | --- | --- |
 | Pengguna dapat mengakses sistem melalui browser | Sudah dilakukan | Flask route, template Jinja, static asset, dan session login. |
-| Pengguna dapat mengelola file case OpenFOAM | Sudah dilakukan | Case File Manager dengan listing, edit, upload, replace file/folder, download, archive, clear/reset, termasuk folder `postProcessing`. |
 | Pengguna dapat mengubah parameter simulasi tanpa edit manual | Sudah dilakukan sebagian besar | Input Parameter mode Developer dan Production, dengan beberapa location yang masih dibatasi. |
 | Pengguna dapat mengatur jumlah prosesor | Sudah dilakukan | Service pembacaan dan penulisan `decomposeParDict`. |
 | Pengguna dapat menjalankan meshing dari web | Sudah dilakukan | Runner meshing, status, log, history, dan resume step. |
@@ -2167,8 +1965,7 @@ Pembagian sprint di atas dapat disesuaikan dengan catatan pengembangan aktual. I
 | Pengguna dapat memantau proses simulasi | Sudah dilakukan | Terminal progress, dashboard, polling status, log tail, dan indikator kestabilan. |
 | Pengguna dapat membuat grafik diagnostik | Sudah dilakukan | Graph service dan script plotting log OpenFOAM. |
 | Pengguna dapat melihat hasil secara visual | Sudah dilakukan | Preview browser berbasis Three.js dan koneksi remote ParaView Desktop. |
-| Pengguna dapat menyusun laporan hasil | Sudah dilakukan | Report folder, capture screenshot, export PDF, dan ZIP archive. |
-| Sistem memiliki pengujian dasar | Sudah dilakukan | Unit test pada controller, model, service, route, security path, database, dan archive. |
+| Sistem memiliki pengujian dasar | Sudah dilakukan | Unit test pada controller, model, service, database, dan route. |
 | Sistem siap production penuh | Belum sepenuhnya | Masih perlu hardening keamanan, validasi OpenFOAM end-to-end, multi-user, queue, dan validasi ilmiah CFD. |
 
 ### 28.4 Catatan untuk penulisan skripsi
@@ -2177,7 +1974,7 @@ Dalam skripsi, bagian hasil implementasi dapat ditulis sebagai realisasi increme
 
 Contoh narasi singkat:
 
-> Sistem dikembangkan menggunakan metode Agile secara iteratif dan inkremental. Setiap iterasi menghasilkan increment berupa modul yang dapat diuji, dimulai dari fondasi aplikasi, autentikasi, dashboard, pengelolaan case, input parameter, integrasi OpenFOAM, monitoring, visualisasi, hingga report. Hasil review pada setiap iterasi digunakan untuk memperbaiki backlog dan menentukan prioritas pengembangan berikutnya.
+> Sistem dikembangkan menggunakan metode Agile secara iteratif dan inkremental. Setiap iterasi menghasilkan increment berupa modul yang dapat diuji, dimulai dari fondasi aplikasi, autentikasi, dashboard, input parameter, integrasi OpenFOAM, monitoring, visualisasi, hingga report. Hasil review pada setiap iterasi digunakan untuk memperbaiki backlog dan menentukan prioritas pengembangan berikutnya.
 
 ### 28.5 Pekerjaan lanjutan yang direkomendasikan
 
@@ -2220,7 +2017,6 @@ flowchart LR
 Urutan inisialisasi saat aplikasi dinyalakan adalah:
 
 1. `create_app()` membuat aplikasi Flask dan memuat `AppConfig`.
-2. Path seperti `CASE_ROOT`, database, output grafik, report, dan state Case File Manager ditentukan dari environment atau nilai default.
 3. `init_services()` membuat satu instance `CaseFileManager`, `SandboxTerminal`, `GraphService`, `ProcessorService`, repository SQLite, dan history service pada `app.extensions`.
 4. SQLite diinisialisasi dan record `running` yang tertinggal dari proses aplikasi sebelumnya ditandai `failed`.
 5. Controller didaftarkan pada blueprint.
@@ -2247,7 +2043,6 @@ sequenceDiagram
     end
 ```
 
-Setelah login, cookie session dikirim otomatis oleh browser pada request berikutnya. Route guard tidak membedakan role; semua pengguna yang terautentikasi mempunyai akses yang sama. Token CSRF dibuat di session, tetapi saat ini baru diperiksa secara konsisten pada mutasi Case File Manager dan start/stop Remote ParaView.
 
 ### 29.3 Alur Dashboard dan riwayat simulasi
 
@@ -2269,226 +2064,7 @@ flowchart TD
 
 Record history dibuat ketika meshing atau solver dimulai, bukan ketika halaman dashboard dibuka. Pada akhir proses, runner memperbarui record yang sama dengan `finished_at`, status, exit code, pesan, dan cuplikan maksimal 80 baris atau 12.000 karakter.
 
-### 29.4 Alur Case Terminal
-
-#### 29.4.1 Cara halaman memperoleh akses command
-
-Case Terminal bukan emulator SSH, bukan PTY interaktif, dan tidak menggunakan WebSocket. Ia adalah form web yang mengirim satu baris command ke Flask. Backend lalu menjalankannya sebagai subprocess non-interaktif dengan current working directory di dalam `CASE_ROOT`.
-
-Komponen yang terlibat:
-
-| Lapisan | Komponen | Tanggung jawab |
-| --- | --- | --- |
-| View | `templates/terminal.html` | Menyediakan layar output, prompt, input, tombol stop, dan clear. |
-| Frontend | `static/js/case_terminal.js` | Mengirim command JSON, polling satu detik, render output, dan command history lokal. |
-| Controller | `controllers/terminal_controller.py` | Endpoint halaman, status, run, dan stop. |
-| Model | `models/sandbox_terminal.py` | Menyimpan state, memvalidasi command, mengelola cwd, menjalankan subprocess, dan menghentikan proses. |
-| Configuration | `services/__init__.py` | Membuat satu `SandboxTerminal` app-scoped dengan `CASE_ROOT`. |
-
-#### 29.4.2 Urutan menjalankan command
-
-```mermaid
-sequenceDiagram
-    actor User as Pengguna
-    participant JS as case_terminal.js
-    participant API as terminal_controller.py
-    participant ST as SandboxTerminal
-    participant TH as Background thread
-    participant OS as Shell subprocess
-
-    User->>JS: Ketik command lalu Enter
-    JS->>API: POST /terminal/run JSON command
-    API->>ST: start(command)
-    ST->>ST: Cek kosong, panjang, multiline, dan command aktif
-    alt builtin cd, pwd, clear, exit
-        ST->>ST: Proses di memory tanpa shell eksternal
-        ST-->>API: snapshot
-    else command eksternal
-        ST->>ST: Validasi pola command
-        ST->>ST: Set running dan simpan prompt + command
-        ST->>TH: Mulai daemon thread
-        TH->>OS: Popen dengan cwd saat ini
-        OS-->>TH: stdout dan stderr digabung per baris
-        TH->>ST: Tambahkan baris ke state
-        ST-->>API: snapshot awal
-    end
-    API-->>JS: JSON state
-    loop selama running, setiap 1 detik
-        JS->>API: GET /terminal/status
-        API->>ST: snapshot()
-        ST-->>JS: prompt, status, returncode, maksimal 600 baris
-    end
-    OS-->>TH: exit code
-    TH->>ST: completed bila 0, failed bila bukan 0
-```
-
-Pada Linux, proses dibuat dengan shell dari environment `SHELL` atau `/bin/bash` melalui opsi `-lc`. Pada Windows development, proses dibuat melalui `powershell.exe -NoProfile -NonInteractive`. `stdout` dan `stderr` digabung, dibaca baris demi baris, lalu disimpan di memory. Karena bukan PTY, program yang membutuhkan input lanjutan, editor interaktif, full-screen TUI, atau prompt password tidak cocok dijalankan dari halaman ini.
-
-#### 29.4.3 Builtin dan perpindahan directory
-
-- `cd`, `chdir`, `set-location`, dan `sl` diproses oleh Python, bukan diteruskan sebagai state shell permanen.
-- Target `cd` di-resolve relatif terhadap cwd terminal saat ini dan harus tetap berada di bawah `CASE_ROOT`.
-- `cd -` bertukar ke directory sebelumnya.
-- `pwd` atau `cwd` menampilkan path aktual backend.
-- `clear` atau `cls` mengosongkan buffer tampilan.
-- `exit` atau `logout` tidak mematikan session web; hanya menampilkan pesan.
-
-Setiap command eksternal memakai subprocess baru. Karena itu, perubahan state shell seperti variable hasil `export`, alias, atau aktivasi environment pada satu command tidak otomatis bertahan pada command berikutnya. Cwd dapat bertahan karena disimpan eksplisit oleh model.
-
-#### 29.4.4 Alur stop command
-
-```mermaid
-flowchart TD
-    A[Klik Stop] --> B[POST /terminal/stop]
-    B --> C[Ambil process aktif dari state]
-    C --> D{Sistem operasi}
-    D -->|Windows| E[terminate lalu kill bila timeout 5 detik]
-    D -->|Linux| F[SIGINT ke process group]
-    F --> G{selesai dalam 8 detik?}
-    G -->|tidak| H[SIGTERM lalu tunggu 5 detik]
-    H --> I{masih hidup?}
-    I -->|ya| J[SIGKILL]
-    E --> K[Thread memperbarui exit code dan status]
-    J --> K
-    G -->|ya| K
-```
-
-#### 29.4.5 Batas keamanan yang sebenarnya
-
-Validasi menolak banyak pola berisiko seperti newline, `..`, `~`, drive Windows/UNC, beberapa ekspansi environment, nested shell, interpreter inline `-c/-e`, dan penggunaan command perubahan directory di tengah ekspresi shell. Namun mekanisme ini adalah filter string dan pengaturan working directory, bukan isolasi kernel seperti container, chroot, AppArmor, seccomp, atau user OS terpisah.
-
-Artinya, `cwd=CASE_ROOT` tidak dengan sendirinya menjamin executable yang dipanggil tidak dapat membaca atau mengubah path lain yang dapat diakses oleh user Flask. Command juga tetap diproses oleh shell. Karena itu Case Terminal hanya layak diberikan kepada pengguna tepercaya, permission user service harus dibatasi, dan fitur sebaiknya dinonaktifkan atau diganti dengan allowlist command untuk deployment multi-user.
-
-State Case Terminal berada di memory proses Flask. Satu worker memiliki satu sesi bersama; restart menghapus state; deployment beberapa worker dapat menghasilkan status berbeda tergantung worker yang menerima request.
-
-### 29.5 Alur Case File Manager
-
-#### 29.5.1 Membuka halaman dan membentuk Explorer
-
-```mermaid
-flowchart TD
-    A[GET /case-files] --> B[CaseFileManager.list_files]
-    B --> C[os.walk CASE_ROOT tanpa follow symlink]
-    C --> D[Catat path, size, modified, readable, writable, kind, result]
-    D --> E[Search dan filter kategori]
-    E --> F[Urutkan dan pagination 100 file]
-    F --> G[Bangun tree untuk 0, constant, system, postProcessing]
-    G --> H[Render case_file_manager.html]
-```
-
-Setiap request halaman melakukan scan filesystem terbaru. Symlink directory tidak ditelusuri dan symlink file dilewati. File dianggap dapat dibaca editor bila ukurannya tidak lebih dari 2 MB, bukan ekstensi binary yang dikenal, sampel awal tidak memiliki null byte, dan dapat didecode sebagai UTF-8.
-
-#### 29.5.2 Membuka dan menyimpan file teks
-
-```mermaid
-sequenceDiagram
-    actor User as Pengguna
-    participant JS as case_explorer.js
-    participant API as case_file_controller.py
-    participant FM as CaseFileManager
-    participant FS as Filesystem
-
-    User->>JS: Klik file di Explorer
-    JS->>API: GET /case-files/text/path
-    API->>FM: read_text(path)
-    FM->>FM: Normalisasi, cek containment dan symlink
-    FM->>FS: Baca UTF-8-sig maksimal 2 MB
-    FS-->>JS: JSON path dan content
-    User->>JS: Edit lalu Ctrl+S atau Save
-    JS->>API: POST /case-files/save/path + FormData + CSRF
-    API->>FM: save_text(path, content)
-    FM->>FM: Pastikan root folder writable dan file editable
-    FM->>FS: Tulis temporary file di folder yang sama
-    FM->>FS: Salin mode file lama
-    FM->>FS: os.replace temporary ke target
-    API-->>JS: JSON sukses atau error
-```
-
-Penulisan editor bersifat atomic pada filesystem yang sama karena file baru ditulis lengkap sebelum `os.replace`. Akan tetapi, edit inline tidak membuat backup manifest. Tombol **Clear uploaded files** tidak dapat mengembalikan perubahan yang dibuat melalui editor.
-
-#### 29.5.3 Mengganti satu file
-
-Ketika pengguna menekan **Replace**, browser tidak mengganti path atau nama target. File yang dipilih hanya menjadi sumber isi baru.
-
-```mermaid
-flowchart TD
-    A[Klik Replace pada file] --> B[Modal membaca target path dan replace URL dari data attribute]
-    B --> C[Pilih satu file lokal]
-    C --> D[POST multipart ke /case-files/replace/path + CSRF]
-    D --> E[Validasi target di folder writable]
-    E --> F[Pastikan target file biasa dan bukan symlink]
-    F --> G[Simpan upload ke staging directory]
-    G --> H{Target sudah punya entry manifest?}
-    H -->|belum| I[Copy file asli ke backups/UUID]
-    H -->|sudah| J[Pertahankan backup pertama]
-    I --> K[os.replace staged file ke target]
-    J --> K
-    K --> L[Update uploads.json secara atomic]
-    L --> M[Redirect dan flash sukses]
-```
-
-Backup pertama dipertahankan walaupun file yang sama di-replace beberapa kali. Dengan demikian, **Clear uploaded files** mengembalikan versi sebelum rangkaian replace melalui UI, bukan versi replace sebelumnya.
-
-#### 29.5.4 Mengganti satu folder
-
-Replace folder adalah operasi sinkronisasi isi, bukan sekadar copy tambahan:
-
-1. Browser memakai `webkitdirectory` dan mengirim setiap file beserta relative path-nya.
-2. Backend memastikan hanya satu root folder yang dipilih dan membuang nama root upload sebelum memetakannya ke folder target.
-3. Semua destination dinormalisasi, dicek duplikasi, dicek konflik file-versus-folder, dan harus tetap berada di folder target.
-4. Seluruh upload disimpan ke staging lebih dahulu.
-5. File lama yang tidak ada pada folder baru dicadangkan bila merupakan file asli, lalu dihapus.
-6. File dengan path yang sama dicadangkan sekali lalu diganti.
-7. File baru dicatat sebagai `created`.
-8. Directory kosong dibersihkan dan manifest disimpan.
-
-```mermaid
-flowchart TD
-    A[Pilih folder pengganti] --> B[Browser kirim daftar relative path]
-    B --> C[Validasi satu root dan semua target aman]
-    C --> D[Stage seluruh file]
-    D --> E[Inventaris file lama pada folder target]
-    E --> F[Backup lalu hapus file lama yang tidak ada di upload]
-    F --> G[Backup file asli yang akan ditimpa]
-    G --> H[Atomic replace tiap staged file]
-    H --> I[Catat created atau replaced di manifest]
-    I --> J[Hapus folder kosong]
-    J --> K[Redirect dengan jumlah added, replaced, removed]
-```
-
-Folder kosong tidak dapat menjadi sumber replace karena browser tidak mengirim entry untuk folder tanpa file.
-
-#### 29.5.5 Upload file/folder dan pemulihan
-
-Upload biasa menempatkan file ke folder tujuan. Jika nama sudah ada, request hanya diterima bila opsi replace aktif. Upload folder mempertahankan subfolder dan mensyaratkan nama root upload sama dengan target top-level yang dipilih.
-
-Manifest `.case_file_manager/uploads.json` membedakan:
-
-| Jenis manifest | Arti | Saat Clear uploaded files |
-| --- | --- | --- |
-| `created` | File tidak ada sebelum upload UI. | File dihapus. |
-| `replaced` + UUID backup | File asli pernah ditimpa atau dihapus oleh operasi replace. | Backup disalin kembali lalu backup dihapus. |
-
-Staging mencegah file target menerima upload parsial sebelum file sumber selesai diterima. Manifest juga ditulis melalui temporary file dan `os.replace`. Meski demikian, rangkaian replace folder melibatkan banyak file dan bukan satu transaksi filesystem global; kegagalan di tengah rangkaian dapat memerlukan pemeriksaan manual.
-
-#### 29.5.6 Perbedaan setiap aksi file
-
-| Aksi UI | Isi berubah | Nama/path target | Backup untuk clear uploads | Teknik utama |
-| --- | --- | --- | --- | --- |
-| Save editor | Ya | Tetap | Tidak | temporary file + atomic replace |
-| Upload file baru | Membuat file | Mengikuti nama upload | Dicatat sebagai `created` | staging + atomic replace |
-| Upload dengan replace | Ya | Mengikuti target upload | Ya, satu backup awal | staging + backup + atomic replace |
-| Replace file | Ya | Selalu tetap | Ya, satu backup awal | staging + backup + atomic replace |
-| Replace folder | Isi folder disamakan | Root target tetap | Ya untuk file asli | staging + sinkronisasi + manifest |
-| Delete | File dihapus | Tidak berlaku | Tidak; entry/backup terkait juga dibuang | unlink |
-| Clear uploads | Restore/hapus | Berdasarkan manifest | Mengonsumsi backup | copy2/unlink |
-| Clear results | Menghapus output CFD dan log | Tidak berlaku | Tidak ada undo | rmtree/unlink |
-
-#### 29.5.7 Boundary path
-
-Semua operasi sensitif melewati `_normalize_relative()` dan `resolve_path()`. Path absolut, `..`, `:`, null byte, symlink pada setiap komponen, dan hasil resolve di luar `CASE_ROOT` ditolak. Mutasi juga melewati `_require_writable_path()` sehingga hanya root `0`, `constant`, `system`, dan `postProcessing` yang dapat diubah.
-
-### 29.6 Alur Input Parameter
+### 29.4 Alur Input Parameter
 
 ```mermaid
 flowchart TD
@@ -2507,9 +2083,8 @@ flowchart TD
 
 Pada mode Developer, `location` berbentuk urutan `file > block > key`. Model membaca file, mencari pasangan kurung kurawal untuk block, lalu mencari entry yang berakhir dengan titik koma. Pada mode Production, input operasional dikonversi menjadi angka teknis menggunakan konstanta dan `rumus_logika`; evaluator hanya menerima konstanta angka, variable yang dikenal, operasi tambah, kurang, kali, bagi, pangkat, dan unary.
 
-Penulisan parameter saat ini langsung menggunakan `Path.write_text`, bukan mekanisme backup Case File Manager dan bukan atomic replace. Tidak ada snapshot parameter per run. Karena itu perubahan harus diverifikasi sebelum meshing/solver dan sebaiknya diarsipkan untuk reproduksibilitas.
 
-### 29.7 Alur Set Processor
+### 29.5 Alur Set Processor
 
 ```mermaid
 flowchart LR
@@ -2524,9 +2099,9 @@ flowchart LR
 
 Perubahan ini hanya mengubah konfigurasi. Folder `processor0` sampai `processorN-1` tidak otomatis dibuat oleh halaman Set Processor; folder tersebut baru dibuat pada tahap `decomposePar -force` dalam meshing.
 
-### 29.8 Alur Meshing
+### 29.6 Alur Meshing
 
-#### 29.8.1 Start dan eksekusi tahapan
+#### 29.6.1 Start dan eksekusi tahapan
 
 ```mermaid
 sequenceDiagram
@@ -2561,7 +2136,7 @@ sequenceDiagram
 
 Tahap dijalankan berurutan dan tahap berikutnya hanya dimulai bila exit code tahap sebelumnya nol. Pembersihan awal menghapus `processor*`, `constant/polyMesh`, dan `log.*`, kemudian runner memanggil `blockMesh`, `surfaceFeatureExtract`, `snappyHexMesh -overwrite`, `checkMesh`, dan `decomposePar -force`.
 
-#### 29.8.2 Stop, cancel, dan resume
+#### 29.6.2 Stop, cancel, dan resume
 
 - Stop menandai `stop_requested`, mengirim sinyal ke process group, menyimpan status `stopped`, dan mengaktifkan `resume_available`.
 - Cancel menandai `cancel_requested`, menghentikan process group, menyimpan status `cancelled`, dan menonaktifkan resume.
@@ -2570,9 +2145,9 @@ Tahap dijalankan berurutan dan tahap berikutnya hanya dimulai bila exit code tah
 
 State proses, object `Popen`, log penuh, progress, dan current step berada di dictionary global memory. SQLite hanya menyimpan lifecycle dan excerpt, bukan state yang dapat dipakai untuk melanjutkan runner setelah restart.
 
-### 29.9 Alur Solver dan safety monitor
+### 29.7 Alur Solver dan safety monitor
 
-#### 29.9.1 Pemeriksaan kesiapan dan eksekusi MPI
+#### 29.7.1 Pemeriksaan kesiapan dan eksekusi MPI
 
 ```mermaid
 flowchart TD
@@ -2593,7 +2168,7 @@ Kesiapan berarti setiap folder processor yang diharapkan memiliki `boundary`, `f
 
 Resume menjalankan command solver dari awal lagi. Kelanjutan numerik bergantung pada konfigurasi OpenFOAM seperti `startFrom latestTime` dan keberadaan time directory terakhir; web tidak membuat checkpoint solver tersendiri.
 
-#### 29.9.2 Monitoring log di browser
+#### 29.7.2 Monitoring log di browser
 
 Frontend mengambil state solver dan meshing secara paralel setiap sekitar satu detik. Browser, bukan backend, menjalankan regex untuk mencari Courant number, final residual beberapa field, dan continuity error dari maksimal 300 baris log terbaru.
 
@@ -2612,7 +2187,7 @@ flowchart LR
 
 Safety monitor bersifat observasi saja. Nilai yang melewati batas tidak mengirim stop ke solver. Karena parser hanya melihat window log terakhir, nilai lama dapat hilang dari evaluasi UI.
 
-### 29.10 Alur Graph
+### 29.8 Alur Graph
 
 ```mermaid
 flowchart TD
@@ -2630,7 +2205,7 @@ flowchart TD
 
 Update graph sinkron terhadap request HTTP. Gambar dilayani melalui endpoint yang me-resolve filename dan hanya menerima file yang parent-nya tepat sama dengan output root, sehingga nested path dan path traversal tidak diterima.
 
-### 29.11 Alur ParaView browser
+### 29.9 Alur ParaView browser
 
 ```mermaid
 flowchart TD
@@ -2651,7 +2226,7 @@ Browser mengambil VTP melalui `/paraview/internal-mesh`. Cache ditempatkan di `p
 
 Capture memakai `canvas.toDataURL`, lalu mengirim base64 ke `/report/capture`. Backend memverifikasi bahwa payload dapat dibuka sebagai gambar menggunakan Pillow sebelum menyimpan bytes ke folder screenshot report.
 
-### 29.12 Alur Remote ParaView Desktop
+### 29.10 Alur Remote ParaView Desktop
 
 ```mermaid
 sequenceDiagram
@@ -2680,7 +2255,7 @@ sequenceDiagram
 
 Berbeda dari runner meshing/solver, state pvserver ditulis pada runtime directory dan lifecycle dilindungi file lock pada Linux agar lebih konsisten lintas worker. SSH tunnel tetap berada di luar browser; pengguna menjalankannya pada komputer lokal. `pvserver` sebaiknya bind ke loopback dan tidak diekspos langsung karena tidak menyediakan autentikasi dan enkripsi bawaan.
 
-### 29.13 Alur Report
+### 29.11 Alur Report
 
 ```mermaid
 flowchart TD
@@ -2701,16 +2276,14 @@ flowchart TD
 
 Nama sisi capture dinormalisasi ke huruf kecil, angka, underscore, atau dash. Capture dengan nama sama menimpa file PNG sebelumnya. PDF dibangun saat request export dan dikirim dari memory; PDF tidak disimpan permanen di folder report. Penghapusan report menggunakan `shutil.rmtree` setelah nama dan containment folder tervalidasi.
 
-### 29.14 Matriks alur halaman ke komponen teknis
+### 29.12 Matriks alur halaman ke komponen teknis
 
 | Halaman | Request utama | Frontend | Controller | Service/model utama | Resource yang berubah |
 | --- | --- | --- | --- | --- | --- |
 | Login | `POST /login` | Form login | `auth_controller.py` | Flask session | Cookie/session |
 | Dashboard | `GET /dashboard` | Chart/template | `dashboard_controller.py` | History service + repository | Tidak ada pada GET |
-| Case Files | `/case-files/*` | `case_explorer.js` | `case_file_controller.py` | `CaseFileManager` | File case, staging, backup, manifest |
 | Input Parameter | `POST /input-parameter` | Form parameter | `parameter_controller.py` | `parameter_model.py` | Dictionary OpenFOAM |
 | Set Processor | `POST /set-processor` | Form processor | `processor_controller.py` | `ProcessorService` | `decomposeParDict` |
-| Case Terminal | `/terminal/run`, `/status`, `/stop` | `case_terminal.js` | `terminal_controller.py` | `SandboxTerminal` | Subprocess dan state memory; command dapat mengubah case |
 | Meshing | `/terminal/meshing/*` | `simulation_terminal.js`, `meshing.js` | `simulation_controller.py` | `terminal_runner.py` | Mesh, processor folders, log memory, SQLite |
 | Solver | `/terminal/solver/*` | `simulation_terminal.js`, `solver.js` | `simulation_controller.py` | `terminal_runner.py` | Time directories, log memory, SQLite |
 | Graph | `/graph`, `/graph/update` | Template | `graph_controller.py` | `GraphService` + plotting script | PNG grafik |
@@ -2718,7 +2291,7 @@ Nama sisi capture dinormalisasi ke huruf kecil, angka, underscore, atau dash. Ca
 | ParaView Remote | `/paraview/remote/*` | `paraview_remote.js` | `paraview_controller.py` | `paraview_server.py` | Proses pvserver, runtime state, log |
 | Report | `/report/*` | Viewer capture + template | `report_controller.py` | `report_model.py` | Folder report, PNG, PDF in-memory |
 
-### 29.15 Lokasi data dan umur state
+### 29.13 Lokasi data dan umur state
 
 ```mermaid
 flowchart TB
@@ -2727,11 +2300,9 @@ flowchart TB
         SQL[(SQLite simulation history)]
         GRAPH[(PNG graph)]
         REPORT[(Report dan screenshot)]
-        MANIFEST[(Upload manifest dan backup)]
         PVRUN[(Runtime state pvserver, selama runtime dir tersedia)]
     end
     subgraph Memory[Hilang saat proses Flask restart]
-        TERM[State Case Terminal]
         TASK[State meshing dan solver]
         LOG[Log penuh runner di memory]
         RESUME[Current step dan resume flag]
@@ -2742,24 +2313,19 @@ flowchart TB
 | --- | --- | --- |
 | Case OpenFOAM | `CFD_CASE_ROOT` | Persisten pada filesystem |
 | Riwayat run | `CFD_DATABASE_PATH` | Persisten SQLite/WAL |
-| Upload manifest/backup | `CFD_CASE_FILE_STATE_ROOT` | Persisten sampai clear/manual delete |
 | Grafik | `CFD_GRAPH_ROOT` | Persisten sampai ditimpa/dihapus |
 | Report | `CFD_REPORT_ROOT` | Persisten sampai report dihapus |
-| Case Terminal | Memory `SandboxTerminal` | Hilang saat worker restart |
 | Meshing/solver state | Global dictionary `terminal_runner.py` | Hilang saat worker restart |
 | pvserver state/log | `PVSERVER_RUNTIME_DIR` | Dapat dibaca lintas worker; mengikuti lifecycle runtime directory |
 
-### 29.16 Catatan operasional penting
+### 29.14 Catatan operasional penting
 
-1. Gunakan satu worker untuk Case Terminal serta meshing/solver pada implementasi saat ini; state keduanya belum berada di shared storage.
-2. Jangan menganggap Case Terminal sebagai sandbox OS penuh. Batasi user service dan pertimbangkan allowlist command.
 3. Jangan menutup atau restart aplikasi ketika runner aktif jika mengharapkan fitur resume UI; state resume berada di memory.
 4. Setelah mengubah jumlah processor, jalankan meshing/decompose ulang sebelum solver.
 5. Setelah mengganti dictionary atau geometri, verifikasi file dan jalankan pemeriksaan mesh sebelum solver.
 6. Simpan snapshot parameter dan konfigurasi secara terpisah karena halaman parameter belum membuat version history.
 7. Gunakan SSH tunnel untuk Remote ParaView dan jangan membuka port `pvserver` langsung ke internet.
 8. Tambahkan CSRF pada seluruh endpoint mutasi sebelum deployment production penuh.
-9. Monitor kapasitas disk karena hasil OpenFOAM, backup upload, graph, screenshot, ZIP sementara, dan report berada pada filesystem server.
 10. Bedakan status proses web, keberhasilan executable, dan validitas ilmiah CFD; ketiganya memerlukan verifikasi berbeda.
 
 ---

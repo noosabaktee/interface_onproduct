@@ -13,7 +13,6 @@ Interface 1onproduct/
 ├── config.py               # Konfigurasi serta seluruh path aplikasi
 ├── controllers/            # Controller HTTP per fitur
 │   ├── auth_controller.py
-│   ├── case_file_controller.py
 │   ├── dashboard_controller.py
 │   ├── graph_controller.py
 │   ├── parameter_controller.py
@@ -23,7 +22,7 @@ Interface 1onproduct/
 │   ├── report_controller.py
 │   ├── simulation_controller.py # API eksekusi bersama
 │   └── solver_controller.py
-├── models/                 # Data/domain model CFD, report, dan file case
+├── models/                 # Data/domain model CFD dan report
 │   └── simulation_run_repository.py # Repository SQLite riwayat proses
 ├── services/               # Use-case dan integrasi proses/filesystem
 ├── templates/              # View HTML (Jinja)
@@ -53,7 +52,7 @@ perhitungan, dan subprocess ditempatkan di model atau service.
 5. Tambahkan unit test untuk model/service serta integration test untuk route.
 
 Semua route area kerja memakai blueprint `dashboard`, sehingga endpoint lama
-seperti `dashboard.graph` dan `dashboard.case_file_manager` tetap stabil walau
+seperti `dashboard.graph` dan `dashboard.meshing` tetap stabil walau
 implementasinya tersebar ke controller per fitur.
 
 ## Konfigurasi
@@ -63,7 +62,6 @@ Konfigurasi default berada di `config.AppConfig`. Deployment dapat memakai:
 - `CFD_CASE_ROOT`
 - `CFD_GRAPH_ROOT`
 - `CFD_REPORT_ROOT`
-- `CFD_CASE_FILE_STATE_ROOT`
 - `CFD_DATABASE_PATH`
 - `CFD_LOGIN_USERNAME`
 - `CFD_LOGIN_PASSWORD`

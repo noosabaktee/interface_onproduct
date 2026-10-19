@@ -10,29 +10,24 @@
     </div>
 
     <div class="workflow-stepper">
-        <a class="wf-node wf-node-link" href="{{ url_for('dashboard.case_file_manager') }}" aria-label="Case file manager">
-            <div class="wf-icon"><i class="bi bi-folder2-open"></i></div>
-            <div class="wf-label">1. Case Files</div>
-        </a>
-        <div class="wf-line"></div>
         <a class="wf-node wf-node-link" href="{{ url_for('dashboard.meshing') }}">
             <div class="wf-icon"><i class="bi bi-grid-3x3"></i></div>
-            <div class="wf-label">2. Meshing</div>
+            <div class="wf-label">1. Meshing</div>
         </a>
         <div class="wf-line"></div>
         <a class="wf-node wf-node-link" href="{{ url_for('dashboard.input_parameter') }}">
             <div class="wf-icon"><i class="bi bi-funnel"></i></div>
-            <div class="wf-label">3. Boundary<br>Condition</div>
+            <div class="wf-label">2. Boundary<br>Condition</div>
         </a>
         <div class="wf-line"></div>
         <a class="wf-node wf-node-link" href="{{ url_for('dashboard.solver') }}">
             <div class="wf-icon"><i class="bi bi-gear-wide-connected"></i></div>
-            <div class="wf-label">4. Solving</div>
+            <div class="wf-label">3. Solving</div>
         </a>
         <div class="wf-line"></div>
         <a class="wf-node wf-node-link result-node" href="{{ url_for('dashboard.paraview') }}">
             <div class="wf-icon"><i class="bi bi-bar-chart-fill"></i></div>
-            <div class="wf-label">5. Result</div>
+            <div class="wf-label">4. Result</div>
         </a>
     </div>
 

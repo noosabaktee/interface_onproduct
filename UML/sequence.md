@@ -44,123 +44,7 @@ sequenceDiagram
     C-->>UI: Render dashboard.html
 ```
 
-## 3. Membuka dan Menyimpan File Case
-
-```mermaid
-sequenceDiagram
-    actor U as Pengguna CFD
-    participant UI as «boundary» Case Explorer
-    participant C as «boundary» CaseFileController
-    participant M as «control» CaseFileManager
-    participant F as «entity» Case File
-    U->>UI: Pilih file
-    UI->>C: GET /case-files/text/path
-    C->>M: read_text(path)
-    M->>F: Validasi path lalu baca UTF-8
-    F-->>UI: JSON content
-    U->>UI: Edit dan Save
-    UI->>C: POST /case-files/save/path + CSRF
-    C->>M: save_text(path, content)
-    M->>F: Temporary write, copy mode, os.replace
-    C-->>UI: JSON sukses atau error
-```
-
-## 4. Upload File atau Folder
-
-```mermaid
-sequenceDiagram
-    actor U as Pengguna CFD
-    participant UI as «boundary» Upload Modal
-    participant C as «boundary» CaseFileController
-    participant M as «control» CaseFileManager
-    participant ST as «entity» Staging
-    participant F as «entity» Case Files
-    participant BK as «entity» Backup dan Manifest
-    U->>UI: Pilih target dan file/folder
-    UI->>C: POST multipart + CSRF
-    C->>M: upload_files()
-    M->>M: Validasi seluruh destination
-    M->>ST: Stage uploads
-    loop setiap file
-        M->>BK: Backup existing atau catat created
-        M->>F: Atomic replace destination
-    end
-    M->>BK: Atomic save uploads.json
-    M-->>C: added dan replaced
-    C-->>UI: Redirect + flash
-```
-
-## 5. Replace Satu File
-
-```mermaid
-sequenceDiagram
-    actor U as Pengguna CFD
-    participant UI as «boundary» Replace Modal
-    participant C as «boundary» CaseFileController
-    participant M as «control» CaseFileManager
-    participant F as «entity» Target File
-    participant BK as «entity» Backup dan Manifest
-    U->>UI: Pilih file pengganti
-    UI->>C: POST /case-files/replace/path + CSRF
-    C->>M: replace_file(path, upload)
-    M->>M: Validasi writable, containment, symlink
-    M->>BK: Backup file asli bila belum tercatat
-    M->>F: os.replace staged ke target
-    M->>BK: Simpan manifest
-    C-->>UI: Redirect + flash sukses
-```
-
-## 6. Replace Folder
-
-```mermaid
-sequenceDiagram
-    actor U as Pengguna CFD
-    participant UI as «boundary» Replace Folder Modal
-    participant C as «boundary» CaseFileController
-    participant M as «control» CaseFileManager
-    participant F as «entity» Target Folder
-    participant BK as «entity» Backup dan Manifest
-    U->>UI: Pilih folder sumber
-    UI->>C: POST relative files + CSRF
-    C->>M: replace_folder()
-    M->>M: Validasi satu root dan semua path
-    M->>F: Inventaris file existing
-    M->>BK: Backup file asli yang dihapus atau ditimpa
-    M->>F: Hapus file lama yang tidak ada di sumber
-    M->>F: Atomic replace staged files
-    M->>BK: Simpan created/replaced manifest
-    M-->>C: added, replaced, removed
-    C-->>UI: Redirect + flash
-```
-
-## 7. Clear atau Reset Case
-
-```mermaid
-sequenceDiagram
-    actor U as Pengguna CFD
-    participant UI as «boundary» Clear Modal
-    participant C as «boundary» CaseFileController
-    participant M as «control» CaseFileManager
-    participant MF as «entity» Upload Manifest
-    participant FS as «entity» Case Filesystem
-    U->>UI: Pilih mode dan ketik CLEAR
-    UI->>C: POST /case-files/clear + CSRF
-    C->>M: clear(mode)
-    alt uploads
-        M->>MF: Baca entries
-        M->>FS: Restore replaced dan hapus created
-    else logs
-        M->>FS: Hapus log
-    else results
-        M->>FS: Hapus result, processor, polyMesh, dan log
-    else reset
-        M->>FS: Clear uploads lalu results
-    end
-    M-->>C: files, directories, restored
-    C-->>UI: Redirect + flash
-```
-
-## 8. Input Parameter
+## 3. Input Parameter
 
 ```mermaid
 sequenceDiagram
@@ -184,7 +68,7 @@ sequenceDiagram
     C-->>UI: Render + flash hasil
 ```
 
-## 9. Set Processor
+## 4. Set Processor
 
 ```mermaid
 sequenceDiagram
@@ -203,40 +87,7 @@ sequenceDiagram
     C-->>UI: Render + flash
 ```
 
-## 10. Case Terminal
-
-```mermaid
-sequenceDiagram
-    actor U as Pengguna CFD
-    participant UI as «boundary» Terminal Page dan JS
-    participant C as «boundary» TerminalController
-    participant T as «control» SandboxTerminal
-    participant ST as «entity» State Memory
-    participant SH as «external» OS Shell
-    U->>UI: Ketik command dan Enter
-    UI->>C: POST /terminal/run JSON
-    C->>T: start(command)
-    T->>ST: Cek proses aktif dan cwd
-    alt builtin
-        T->>ST: Update cwd/output/status
-    else command valid
-        T->>SH: Popen dengan cwd case
-        loop output
-            SH-->>T: stdout/stderr line
-            T->>ST: Append line
-        end
-        SH-->>T: Exit code
-    else ditolak
-        T-->>C: SandboxTerminalError
-    end
-    loop selama running
-        UI->>C: GET /terminal/status
-        C->>T: snapshot()
-        T-->>UI: JSON state
-    end
-```
-
-## 11. Meshing
+## 5. Meshing
 
 ```mermaid
 sequenceDiagram
@@ -267,7 +118,7 @@ sequenceDiagram
     end
 ```
 
-## 12. Solver
+## 6. Solver
 
 ```mermaid
 sequenceDiagram
@@ -301,7 +152,7 @@ sequenceDiagram
     end
 ```
 
-## 13. Stop dan Resume Meshing/Solver
+## 7. Stop dan Resume Meshing/Solver
 
 ```mermaid
 sequenceDiagram
@@ -326,7 +177,7 @@ sequenceDiagram
     R->>DB: INSERT run is_resume=1
 ```
 
-## 14. Update Graph
+## 8. Update Graph
 
 ```mermaid
 sequenceDiagram
@@ -348,7 +199,7 @@ sequenceDiagram
     C-->>UI: Redirect + flash
 ```
 
-## 15. ParaView Browser
+## 9. ParaView Browser
 
 ```mermaid
 sequenceDiagram
@@ -372,7 +223,7 @@ sequenceDiagram
     UI->>W: Parse dan render BufferGeometry
 ```
 
-## 16. Remote ParaView
+## 10. Remote ParaView
 
 ```mermaid
 sequenceDiagram
@@ -398,7 +249,7 @@ sequenceDiagram
     end
 ```
 
-## 17. Get Report
+## 11. Get Report
 
 ```mermaid
 sequenceDiagram
@@ -420,7 +271,7 @@ sequenceDiagram
     C-->>UI: Redirect detail report
 ```
 
-## 18. Capture Report
+## 12. Capture Report
 
 ```mermaid
 sequenceDiagram
@@ -443,7 +294,7 @@ sequenceDiagram
     end
 ```
 
-## 19. Export PDF Report
+## 13. Export PDF Report
 
 ```mermaid
 sequenceDiagram
@@ -467,49 +318,7 @@ sequenceDiagram
     C-->>UI: Attachment PDF
 ```
 
-## 20. Delete File Case
-
-```mermaid
-sequenceDiagram
-    actor U as Pengguna CFD
-    participant UI as «boundary» Case Explorer
-    participant C as «boundary» CaseFileController
-    participant M as «control» CaseFileManager
-    participant F as «entity» Case File
-    participant B as «entity» Manifest dan Backup
-    U->>UI: Konfirmasi Delete
-    UI->>C: POST delete/path + CSRF
-    C->>M: delete_file(path)
-    M->>F: Validasi lalu unlink
-    M->>B: Hapus entry dan backup terkait
-    M-->>C: Deleted path
-    C-->>UI: Redirect + flash
-```
-
-## 21. Download ZIP Case atau Log
-
-```mermaid
-sequenceDiagram
-    actor U as Pengguna CFD
-    participant UI as «boundary» Case File Manager
-    participant C as «boundary» CaseFileController
-    participant M as «control» CaseFileManager
-    participant F as «entity» Source Files
-    participant Z as «entity» Temporary ZIP
-    U->>UI: Klik download archive
-    UI->>C: GET download-all atau download-logs
-    C->>M: build archive
-    M->>Z: Buat ZIP64
-    loop setiap source file
-        M->>F: Baca file tanpa symlink
-        M->>Z: Tambah entry
-    end
-    M-->>C: ZIP path dan count
-    C-->>UI: Stream attachment
-    C->>Z: Hapus setelah response ditutup
-```
-
-## 22. Delete Report
+## 14. Delete Report
 
 ```mermaid
 sequenceDiagram
@@ -531,7 +340,7 @@ sequenceDiagram
     C-->>UI: Redirect + flash
 ```
 
-## 23. Logout
+## 15. Logout
 
 ```mermaid
 sequenceDiagram

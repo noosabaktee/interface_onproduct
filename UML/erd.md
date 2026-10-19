@@ -2,7 +2,7 @@
 
 ## 1. ERD SQLite Aktual
 
-Database relasional aktual hanya memiliki tabel `simulation_runs`. Session autentikasi memakai signed Flask session cookie, sedangkan case, graph, report, manifest, dan backup disimpan pada filesystem.
+Database relasional aktual hanya memiliki tabel `simulation_runs`. Session autentikasi memakai signed Flask session cookie, sedangkan case, graph, dan report disimpan pada filesystem.
 
 ```mermaid
 erDiagram
@@ -31,9 +31,6 @@ erDiagram
     CASE_ROOT ||--o{ PROCESSOR_DIRECTORY : contains
     CASE_ROOT ||--o{ TIME_DIRECTORY : produces
     CASE_ROOT ||--o{ LOG_FILE : produces
-    CASE_ROOT ||--o| UPLOAD_MANIFEST : tracked_by
-    UPLOAD_MANIFEST ||--o{ UPLOAD_ENTRY : contains
-    UPLOAD_ENTRY o|--o| BACKUP_FILE : references
     SIMULATION_RUNS }o--|| CASE_ROOT : executes_against
     SIMULATION_RUNS }o--o| LOG_FILE : summarized_from
     LOG_FILE ||--o{ GRAPH_IMAGE : generates
@@ -49,9 +46,6 @@ erDiagram
     CASE_FILE {
         string relative_path PK
         string category
-        int size_bytes
-        boolean readable
-        boolean writable
     }
     PROCESSOR_DIRECTORY {
         string name PK
@@ -64,18 +58,6 @@ erDiagram
     LOG_FILE {
         string relative_path PK
         string log_type
-    }
-    UPLOAD_MANIFEST {
-        string path PK
-    }
-    UPLOAD_ENTRY {
-        string relative_path PK
-        string kind "created atau replaced"
-        string backup_uuid FK
-    }
-    BACKUP_FILE {
-        string uuid PK
-        string storage_path
     }
     SIMULATION_RUNS {
         int id PK

@@ -27,10 +27,6 @@ CASE_ROOT = _environment_path(
 )
 GRAPH_ROOT = _environment_path("CFD_GRAPH_ROOT", PROJECT_ROOT / "grafik" / "output")
 REPORT_ROOT = _environment_path("CFD_REPORT_ROOT", PROJECT_ROOT / "report")
-CASE_FILE_STATE_ROOT = _environment_path(
-    "CFD_CASE_FILE_STATE_ROOT",
-    PROJECT_ROOT / ".case_file_manager",
-)
 DATABASE_PATH = _environment_path(
     "CFD_DATABASE_PATH",
     PROJECT_ROOT / "instance" / "simulation_history.sqlite3",
@@ -101,7 +97,6 @@ class AppConfig:
     GRAPH_SCRIPT_PATH = PROJECT_ROOT / "grafik" / "2plot_residuals.py"
     GRAPH_LOG_PATH = CASE_ROOT / "log.run"
     REPORT_ROOT = REPORT_ROOT
-    CASE_FILE_STATE_ROOT = CASE_FILE_STATE_ROOT
     DATABASE_PATH = DATABASE_PATH
     DECOMPOSE_PAR_DICT = CASE_ROOT / "system" / "decomposeParDict"
 

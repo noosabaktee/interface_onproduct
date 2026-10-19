@@ -11,3 +11,5 @@ Dokumentasi UML dipisahkan berdasarkan jenis diagram agar lebih mudah dibaca, di
 | [erd.md](erd.md) | ERD SQLite aktual, penyimpanan konseptual, dan rancangan pengembangan. |
 
 Seluruh diagram menggunakan Mermaid. Gunakan preview Markdown yang mendukung Mermaid agar diagram tampil sebagai gambar.
+
+Diagram menggambarkan fitur aktif. Pengelolaan file case dan terminal perintah berbasis web tidak termasuk dalam cakupan sistem. Log Meshing dan Solver tetap ditampilkan untuk memantau proses simulasi.

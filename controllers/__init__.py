@@ -15,7 +15,6 @@ def register_controllers(app: Flask) -> None:
 
     # Importing feature modules registers their routes on dashboard_bp.
     from controllers import (  # noqa: F401
-        case_file_controller,
         dashboard_controller,
         graph_controller,
         meshing_controller,
@@ -25,7 +24,6 @@ def register_controllers(app: Flask) -> None:
         report_controller,
         simulation_controller,
         solver_controller,
-        terminal_controller,
     )
 
     app.register_blueprint(auth_bp)

@@ -47,158 +47,7 @@ flowchart LR
     M2 --> S3 --> U2
 ```
 
-## 3. Membuka dan Menyimpan File Case
-
-```mermaid
-flowchart LR
-    subgraph U[Pengguna CFD]
-        direction TB
-        U0((Mulai)) --> U1[Pilih file]
-        U2[Edit isi file] --> U3[Klik Save atau Ctrl+S]
-        U4[Lihat hasil] --> U5((Selesai))
-    end
-    subgraph S[Sistem Web]
-        direction TB
-        S1[Request isi file] --> S2{File dapat diedit?}
-        S3[Tampilkan read-only]
-        S4[Tampilkan editor]
-        S5[Validasi CSRF dan request]
-        S6[Tampilkan sukses atau error]
-    end
-    subgraph M[CaseFileManager dan Filesystem]
-        direction TB
-        M1[Normalisasi path dan tolak symlink] --> M2[Baca UTF-8 maksimal 2 MB]
-        M3[Tulis temporary file] --> M4[Salin permission dan atomic replace]
-    end
-    U1 --> S1 --> M1 --> M2 --> S2
-    S2 -->|Tidak| S3 --> U4
-    S2 -->|Ya| S4 --> U2
-    U3 --> S5 --> M3 --> M4 --> S6 --> U4
-```
-
-## 4. Upload File atau Folder
-
-```mermaid
-flowchart LR
-    subgraph U[Pengguna CFD]
-        direction TB
-        U0((Mulai)) --> U1[Pilih mode, target, dan file/folder]
-        U2[Konfirmasi upload]
-        U3[Lihat jumlah added dan replaced] --> U4((Selesai))
-    end
-    subgraph S[Sistem Web]
-        direction TB
-        S1[Validasi pilihan dan nama root] --> S2[POST multipart + CSRF]
-        S3[Tampilkan hasil]
-    end
-    subgraph M[CaseFileManager]
-        direction TB
-        M1[Normalisasi seluruh destination] --> M2{Konflik atau existing tanpa replace?}
-        M3[Tolak upload]
-        M4[Stage seluruh file] --> M5[Backup existing atau tandai created]
-        M5 --> M6[Atomic replace dan simpan manifest]
-    end
-    U1 --> S1 --> U2 --> S2 --> M1
-    M2 -->|Ya| M3 --> S3
-    M2 -->|Tidak| M4
-    M6 --> S3 --> U3
-```
-
-## 5. Replace Satu File
-
-```mermaid
-flowchart LR
-    subgraph U[Pengguna CFD]
-        direction TB
-        U0((Mulai)) --> U1[Klik Replace]
-        U1 --> U2[Pilih file sumber]
-        U3[Lihat hasil replace] --> U4((Selesai))
-    end
-    subgraph S[Sistem Web]
-        direction TB
-        S1[Kirim multipart + CSRF]
-        S2[Redirect dan flash]
-    end
-    subgraph M[CaseFileManager dan Filesystem]
-        direction TB
-        M1[Validasi target writable dan bukan symlink] --> M2{Target valid?}
-        M3[Stage file]
-        M4{Backup pertama sudah ada?}
-        M5[Copy file asli ke backups/UUID]
-        M6[Atomic replace target] --> M7[Simpan uploads.json]
-    end
-    U2 --> S1 --> M1
-    M2 -->|Tidak| S2
-    M2 -->|Ya| M3 --> M4
-    M4 -->|Tidak| M5 --> M6
-    M4 -->|Ya| M6
-    M7 --> S2 --> U3
-```
-
-## 6. Replace Folder
-
-```mermaid
-flowchart LR
-    subgraph U[Pengguna CFD]
-        direction TB
-        U0((Mulai)) --> U1[Pilih folder target dan sumber]
-        U2[Lihat added, replaced, removed] --> U3((Selesai))
-    end
-    subgraph S[Sistem Web]
-        direction TB
-        S1[Kirim relative path seluruh file + CSRF]
-        S2[Tampilkan hasil]
-    end
-    subgraph M[CaseFileManager dan Filesystem]
-        direction TB
-        M1[Validasi satu root, duplicate, dan containment] --> M2{Valid?}
-        M3[Stage seluruh file] --> M4[Inventaris file lama]
-        M4 --> M5[Backup dan hapus file lama yang tidak ada]
-        M5 --> M6[Backup lalu ganti file existing]
-        M6 --> M7[Tambahkan file baru dan update manifest]
-        M7 --> M8[Hapus directory kosong]
-    end
-    U1 --> S1 --> M1
-    M2 -->|Tidak| S2
-    M2 -->|Ya| M3
-    M8 --> S2 --> U2
-```
-
-## 7. Clear atau Reset Case
-
-```mermaid
-flowchart LR
-    subgraph U[Pengguna CFD]
-        direction TB
-        U0((Mulai)) --> U1[Pilih mode clear]
-        U1 --> U2[Ketik CLEAR]
-        U3[Lihat jumlah dihapus dan dipulihkan] --> U4((Selesai))
-    end
-    subgraph S[Sistem Web]
-        direction TB
-        S1[Validasi CSRF dan confirmation] --> S2{Valid?}
-        S3[Tolak operasi]
-        S4[Tampilkan hasil]
-    end
-    subgraph M[CaseFileManager dan Filesystem]
-        direction TB
-        M1{Mode}
-        M2[Hapus log]
-        M3[Hapus result, processor, polyMesh, dan log]
-        M4[Restore replaced dan hapus created]
-        M5[Clear uploads lalu results]
-    end
-    U2 --> S1
-    S2 -->|Tidak| S3 --> U3
-    S2 -->|Ya| M1
-    M1 -->|logs| M2 --> S4
-    M1 -->|results| M3 --> S4
-    M1 -->|uploads| M4 --> S4
-    M1 -->|reset| M5 --> S4
-    S4 --> U3
-```
-
-## 8. Input Parameter
+## 3. Input Parameter
 
 ```mermaid
 flowchart LR
@@ -233,7 +82,7 @@ flowchart LR
     S3 --> U4
 ```
 
-## 9. Set Processor
+## 4. Set Processor
 
 ```mermaid
 flowchart LR
@@ -257,43 +106,7 @@ flowchart LR
     M4 --> S2 --> U3
 ```
 
-## 10. Menjalankan Case Terminal
-
-```mermaid
-flowchart LR
-    subgraph U[Pengguna CFD]
-        direction TB
-        U0((Mulai)) --> U1[Ketik satu baris command]
-        U1 --> U2[Tekan Enter]
-        U3[Lihat output dan status] --> U4((Selesai))
-    end
-    subgraph S[Sistem Web]
-        direction TB
-        S1[POST /terminal/run] --> S2{Command diterima?}
-        S3[Polling status tiap 1 detik]
-        S4[Tampilkan error]
-    end
-    subgraph M[SandboxTerminal]
-        direction TB
-        M1[Cek panjang, multiline, dan proses aktif] --> M2{Builtin?}
-        M3[Proses cd, pwd, clear, atau exit]
-        M4[Validasi pola command] --> M5[Set state running]
-    end
-    subgraph E[Shell Sistem Operasi]
-        direction TB
-        E1[Popen dengan cwd case] --> E2[Stream stdout dan stderr]
-        E2 --> E3[Return exit code]
-    end
-    U2 --> S1 --> M1
-    M2 -->|Ya| M3 --> S3
-    M2 -->|Tidak| M4
-    M4 -->|Ditolak| S4 --> U3
-    M4 -->|Valid| M5 --> E1
-    E2 --> S3 --> U3
-    E3 --> S2 --> U3
-```
-
-## 11. Meshing
+## 5. Meshing
 
 ```mermaid
 flowchart LR
@@ -337,7 +150,7 @@ flowchart LR
     M4 --> E7 --> S4 --> U4
 ```
 
-## 12. Solver
+## 6. Solver
 
 ```mermaid
 flowchart LR
@@ -376,7 +189,7 @@ flowchart LR
     E3 --> M4 --> E4 --> S6 --> U4
 ```
 
-## 13. Update Graph
+## 7. Update Graph
 
 ```mermaid
 flowchart LR
@@ -405,7 +218,7 @@ flowchart LR
     E3 --> S2 --> U2
 ```
 
-## 14. Visualisasi ParaView di Browser
+## 8. Visualisasi ParaView di Browser
 
 ```mermaid
 flowchart LR
@@ -436,7 +249,7 @@ flowchart LR
     E3 --> U2
 ```
 
-## 15. Remote ParaView
+## 9. Remote ParaView
 
 ```mermaid
 flowchart LR
@@ -469,7 +282,7 @@ flowchart LR
     U4 --> S1 --> M4 --> M3 --> U5
 ```
 
-## 16. Get Report
+## 10. Get Report
 
 ```mermaid
 flowchart LR
@@ -498,7 +311,7 @@ flowchart LR
     M4 --> E3 --> S2 --> U2
 ```
 
-## 17. Capture Report
+## 11. Capture Report
 
 ```mermaid
 flowchart LR
@@ -527,7 +340,7 @@ flowchart LR
     M4 -->|Ya| E1 --> S3
 ```
 
-## 18. Export PDF Report
+## 12. Export PDF Report
 
 ```mermaid
 flowchart LR
@@ -554,64 +367,7 @@ flowchart LR
     M4 --> S4 --> U2
 ```
 
-## 19. Delete File Case
-
-```mermaid
-flowchart LR
-    subgraph U[Pengguna CFD]
-        direction TB
-        U0((Mulai)) --> U1[Pilih file dan konfirmasi Delete]
-        U2[Lihat hasil] --> U3((Selesai))
-    end
-    subgraph S[Sistem Web]
-        direction TB
-        S1[POST delete + CSRF] --> S2[Redirect dan flash]
-    end
-    subgraph M[CaseFileManager dan Filesystem]
-        direction TB
-        M1[Validasi writable dan containment] --> M2{File biasa?}
-        M3[Unlink target] --> M4[Hapus entry dan backup terkait]
-    end
-    U1 --> S1 --> M1
-    M2 -->|Tidak| S2
-    M2 -->|Ya| M3
-    M4 --> S2 --> U2
-```
-
-## 20. Download ZIP Case atau Log
-
-```mermaid
-flowchart LR
-    subgraph U[Pengguna CFD]
-        direction TB
-        U0((Mulai)) --> U1[Pilih Download Case ZIP atau Logs]
-        U2[Terima file ZIP] --> U3((Selesai))
-    end
-    subgraph S[Sistem Web]
-        direction TB
-        S1[Terima GET download] --> S2[Kirim attachment]
-    end
-    subgraph M[CaseFileManager]
-        direction TB
-        M1[Buat temporary ZIP64] --> M2{Jenis archive}
-        M3[Tambahkan case, report, dan graph]
-        M4[Tambahkan semua sumber log]
-        M5{Archive berisi file?}
-        M6[Hapus archive kosong dan error]
-    end
-    subgraph E[Filesystem]
-        direction TB
-        E1[(Temporary ZIP)] --> E2[Hapus setelah response ditutup]
-    end
-    U1 --> S1 --> M1 --> M2
-    M2 -->|Case| M3 --> M5
-    M2 -->|Log| M4 --> M5
-    M5 -->|Tidak| M6 --> U3
-    M5 -->|Ya| E1 --> S2 --> U2
-    U2 --> E2
-```
-
-## 21. Delete Report
+## 13. Delete Report
 
 ```mermaid
 flowchart LR
@@ -635,7 +391,7 @@ flowchart LR
     S2 --> U2
 ```
 
-## 22. Logout
+## 14. Logout
 
 ```mermaid
 flowchart LR

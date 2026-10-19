@@ -14,18 +14,8 @@ flowchart LR
         LOGIN([Login dan Logout])
         DASH([Melihat Dashboard dan History])
 
-        CASE([Mengelola Case Files])
-        READ([Membaca File])
-        EDIT([Mengedit File])
-        UPLOAD([Upload File atau Folder])
-        REPLACE([Replace File atau Folder])
-        DELETE([Menghapus File])
-        CLEAR([Clear atau Reset Case])
-        ARCHIVE([Download ZIP Case atau Log])
-
         PARAM([Mengatur Parameter Simulasi])
         PROC([Mengatur Jumlah Processor])
-        TERM([Menjalankan Case Terminal])
 
         MESH([Menjalankan Meshing])
         MESHMON([Memantau Meshing])
@@ -47,24 +37,14 @@ flowchart LR
 
     USER --> LOGIN
     USER --> DASH
-    USER --> CASE
     USER --> PARAM
     USER --> PROC
-    USER --> TERM
     USER --> MESH
     USER --> SOLVER
     USER --> GRAPH
     USER --> WEBPV
     USER --> REMOTEPV
     USER --> REPORT
-
-    CASE -. include .-> READ
-    CASE -. include .-> EDIT
-    CASE -. include .-> UPLOAD
-    CASE -. include .-> REPLACE
-    CASE -. include .-> DELETE
-    CASE -. extend .-> CLEAR
-    CASE -. extend .-> ARCHIVE
 
     MESH -. include .-> MESHMON
     MESH -. extend .-> MESHCTRL
@@ -83,10 +63,8 @@ flowchart LR
 | --- | --- | --- | --- |
 | Login | Aplikasi aktif dan kredensial tersedia. | Pengguna mengirim kredensial, sistem memvalidasi dan membuat session. | Pengguna masuk ke workspace. |
 | Dashboard | Pengguna sudah login. | Sistem membaca history SQLite dan menghitung metrik. | Ringkasan dan riwayat tampil. |
-| Kelola Case Files | `CASE_ROOT` dapat diakses. | Pengguna membaca, mengubah, mengunggah, mengganti, menghapus, atau mengarsipkan file. | Filesystem case berubah atau file diunduh. |
 | Input Parameter | Mapping dan dictionary tersedia. | Nilai form dipetakan ke file, block, dan key OpenFOAM. | Dictionary diperbarui. |
 | Set Processor | `decomposeParDict` tersedia. | Sistem memperbarui jumlah subdomain dan bobot processor. | Konfigurasi paralel tersimpan. |
-| Case Terminal | Pengguna sudah login. | Satu command divalidasi dan dijalankan dari cwd case. | Output command ditampilkan. |
 | Meshing | Dictionary dan geometri tersedia. | Enam tahap meshing dijalankan berurutan. | Mesh dan processor directory terbentuk. |
 | Solver | Processor mesh lengkap. | Solver dijalankan paralel melalui MPI. | Time directory dan log solver dihasilkan. |
 | Graph | Log solver tersedia. | Script plotting membaca log dan membuat PNG. | Grafik diagnostik tersedia. |

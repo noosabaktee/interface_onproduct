@@ -11,11 +11,9 @@ from app import create_app
 from models.simulation_run_repository import SimulationRunRepository
 from models.terminal_runner import get_command_state, start_command
 from services import (
-    CASE_FILE_MANAGER_KEY,
     DATABASE_SEEDER_KEY,
     GRAPH_SERVICE_KEY,
     PROCESSOR_SERVICE_KEY,
-    SANDBOX_TERMINAL_KEY,
     SIMULATION_HISTORY_SERVICE_KEY,
 )
 from services.database_seeder import DatabaseSeeder
@@ -46,7 +44,6 @@ class ApplicationFactoryTestCase(unittest.TestCase):
                 "GRAPH_SCRIPT_PATH": root / "plot.py",
                 "GRAPH_LOG_PATH": case_root / "log.run",
                 "REPORT_ROOT": report_root,
-                "CASE_FILE_STATE_ROOT": root / "state",
                 "DATABASE_PATH": root / "simulation_history.sqlite3",
                 "DECOMPOSE_PAR_DICT": case_root / "system" / "decomposeParDict",
             }
@@ -57,20 +54,10 @@ class ApplicationFactoryTestCase(unittest.TestCase):
         self.temporary_directory.cleanup()
 
     def test_factory_registers_feature_controllers_and_services(self):
-        self.assertIn(CASE_FILE_MANAGER_KEY, self.app.extensions)
         self.assertIn(DATABASE_SEEDER_KEY, self.app.extensions)
         self.assertIn(GRAPH_SERVICE_KEY, self.app.extensions)
         self.assertIn(PROCESSOR_SERVICE_KEY, self.app.extensions)
-        self.assertIn(SANDBOX_TERMINAL_KEY, self.app.extensions)
         self.assertIn(SIMULATION_HISTORY_SERVICE_KEY, self.app.extensions)
-        self.assertEqual(
-            self.app.view_functions["dashboard.case_file_manager"].__module__,
-            "controllers.case_file_controller",
-        )
-        self.assertEqual(
-            self.app.view_functions["dashboard.terminal"].__module__,
-            "controllers.terminal_controller",
-        )
         self.assertEqual(
             self.app.view_functions["dashboard.update_graph"].__module__,
             "controllers.graph_controller",
@@ -83,6 +70,19 @@ class ApplicationFactoryTestCase(unittest.TestCase):
             self.app.view_functions["dashboard.solver"].__module__,
             "controllers.solver_controller",
         )
+
+    def test_removed_features_are_unavailable(self):
+        with self.client.session_transaction() as session:
+            session.update(authenticated=True, username="engineer", csrf_token="test-token")
+
+        dashboard = self.client.get("/dashboard")
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertNotIn(b"Case File Manager", dashboard.data)
+        self.assertNotIn(b"1. Case Files", dashboard.data)
+        for path in ("/case-files", "/case-files/upload", "/terminal", "/terminal/status", "/terminal/run"):
+            self.assertEqual(self.client.get(path).status_code, 404, path)
+        self.assertEqual(self.client.post("/case-files/upload").status_code, 404)
+        self.assertEqual(self.client.post("/terminal/run", json={"command": "pwd"}).status_code, 404)
 
     def test_authentication_guard_and_safe_redirect(self):
         response = self.client.get("/dashboard")
@@ -227,31 +227,6 @@ class ApplicationFactoryTestCase(unittest.TestCase):
         self.assertNotIn(b'/static/js/meshing.js', solver_response.data)
         self.assertIn(b'data-solver-safety-panel', solver_response.data)
 
-    def test_terminal_page_is_case_root_bounded(self):
-        (self.app.config["CASE_ROOT"] / "constant").mkdir()
-        with self.client.session_transaction() as session:
-            session.update(
-                authenticated=True,
-                username="engineer",
-                csrf_token="test-token",
-            )
-
-        page = self.client.get("/terminal")
-        blocked = self.client.post("/terminal/run", json={"command": "dir .."})
-        cd_constant = self.client.post("/terminal/run", json={"command": "cd constant"})
-        in_constant = self.client.get("/terminal/status")
-        cd_parent = self.client.post("/terminal/run", json={"command": "cd .."})
-        status = self.client.get("/terminal/status")
-
-        self.assertEqual(page.status_code, 200)
-        self.assertIn(b"case terminal", page.data)
-        self.assertEqual(blocked.status_code, 400)
-        self.assertIn("tidak diizinkan", blocked.get_json()["error"])
-        self.assertEqual(cd_constant.status_code, 200)
-        self.assertEqual(in_constant.get_json()["cwd"], "constant")
-        self.assertEqual(cd_parent.status_code, 200)
-        self.assertEqual(status.status_code, 200)
-        self.assertEqual(status.get_json()["cwd"], ".")
 
 
 class ProcessorServiceTestCase(unittest.TestCase):
