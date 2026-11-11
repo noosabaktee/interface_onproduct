@@ -9,6 +9,7 @@
                 <p class="hero-copy">Screenshots, graphs, and PDF archive.</p>
             </div>
             <form method="post" action="{{ url_for('dashboard.get_simulation_report') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-primary px-4 py-2">
                     <i class="bi bi-file-earmark-plus me-2"></i>Get Report
                 </button>
@@ -56,6 +57,7 @@
                         </a>
                         <form method="post" action="{{ url_for('dashboard.delete_simulation_report', report_name=selected_report.name) }}"
                             onsubmit="return confirm('Hapus folder report {{ selected_report.name }}?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-outline-danger" type="submit">
                                 <i class="bi bi-trash3 me-2"></i>Delete
                             </button>

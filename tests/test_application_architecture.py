@@ -89,12 +89,80 @@ class ApplicationFactoryTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login?next=/dashboard", response.location)
 
+        self.client.get("/login")
+        with self.client.session_transaction() as session:
+            login_token = session["csrf_token"]
+
         response = self.client.post(
             "/login?next=https://example.com",
-            data={"username": "engineer", "password": "safe-password"},
+            data={"username": "engineer", "password": "safe-password", "csrf_token": login_token},
         )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.location.endswith("/dashboard"))
+        with self.client.session_transaction() as session:
+            self.assertNotEqual(session["csrf_token"], login_token)
+
+    def _login_session(self, token="test-token"):
+        with self.client.session_transaction() as session:
+            session.update(authenticated=True, username="engineer", csrf_token=token)
+
+    def test_login_without_csrf_token_is_rejected(self):
+        self.client.get("/login")
+        response = self.client.post(
+            "/login",
+            data={"username": "engineer", "password": "safe-password"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.location.endswith("/login"))
+        with self.client.session_transaction() as session:
+            self.assertFalse(session.get("authenticated"))
+
+    def test_form_post_requires_csrf_token(self):
+        self._login_session()
+        decompose = Path(self.app.config["DECOMPOSE_PAR_DICT"])
+
+        rejected = self.client.post("/set-processor", data={"processor_count": "8"})
+        self.assertEqual(rejected.status_code, 302)
+        self.assertFalse(decompose.exists())
+
+        wrong = self.client.post("/set-processor", data={"processor_count": "8", "csrf_token": "salah"})
+        self.assertEqual(wrong.status_code, 302)
+        self.assertFalse(decompose.exists())
+
+        accepted = self.client.post(
+            "/set-processor",
+            data={"processor_count": "8", "csrf_token": "test-token"},
+        )
+        self.assertEqual(accepted.status_code, 200)
+
+    def test_fetch_post_requires_csrf_header(self):
+        self._login_session()
+
+        rejected = self.client.post("/terminal/meshing/start")
+        self.assertEqual(rejected.status_code, 403)
+        self.assertIn("Token keamanan", rejected.get_json()["error"])
+
+        rejected_capture = self.client.post("/report/capture", json={"image": ""})
+        self.assertEqual(rejected_capture.status_code, 403)
+
+        # Token valid: lolos pemeriksaan CSRF dan diteruskan ke controller
+        # (task tidak dikenal dipakai agar tidak ada proses meshing yang dijalankan).
+        passed = self.client.post("/terminal/unknown/start", headers={"X-CSRF-Token": "test-token"})
+        self.assertEqual(passed.status_code, 404)
+        self.assertEqual(passed.get_json()["error"], "Task tidak dikenal.")
+
+    def test_pages_render_csrf_token_for_forms_and_fetch(self):
+        self._login_session()
+        for path in ("/set-processor", "/graph", "/report", "/input-parameter"):
+            response = self.client.get(path)
+            self.assertEqual(response.status_code, 200, path)
+            self.assertIn(b'<meta name="csrf-token" content="test-token">', response.data, path)
+            self.assertIn(b"js/csrf.js", response.data, path)
+        processor_page = self.client.get("/set-processor").data
+        self.assertIn(b'name="csrf_token" value="test-token"', processor_page)
+        self.client.get("/logout")
+        login_page = self.client.get("/login").data
+        self.assertIn(b'name="csrf_token"', login_page)
 
     def test_paraview_keeps_model_controls_without_stream_tracer(self):
         case = {

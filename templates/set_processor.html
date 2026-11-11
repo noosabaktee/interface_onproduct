@@ -3,6 +3,7 @@
 {% block content %}
 <div class="card-custom">
     <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="row g-5 align-items-center">
             <div class="col-lg-5 col-md-12">
                 <h5 class="fw-bold text-main mb-2">Processor Allocation</h5>

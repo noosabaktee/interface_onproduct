@@ -88,6 +88,7 @@
                                 <div class="accordion-body">
                                     <form method="post" action="{{ url_for('dashboard.input_parameter') }}">
                                         <input type="hidden" name="active_group_key" value="{{ group.key }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="parameter_mode" value="{{ parameter_mode }}">
                                         <input type="hidden" name="product" value="{{ selected_product }}">
                                         <div class="row g-4">

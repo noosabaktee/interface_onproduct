@@ -11,6 +11,7 @@
             memperbarui grafik dari log run terbaru.</p>
     </div>
     <form method="post" action="{{ url_for('dashboard.update_graph') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-primary px-4 py-2">
             <i class="bi bi-arrow-clockwise me-2"></i> Update Graph
         </button>
