@@ -158,7 +158,7 @@ classDiagram
         +snappyHexMesh
         +checkMesh
         +decomposePar
-        +buoyantPimpleFoam
+        +reactingParcelFoam
     }
 
     SimulationHistoryService *-- SimulationRunRepository : repository

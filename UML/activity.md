@@ -177,7 +177,7 @@ flowchart LR
     end
     subgraph E[MPI, Solver, dan SQLite]
         direction TB
-        E1[mpirun -np N buoyantPimpleFoam -parallel] --> E2[Hitung time step]
+        E1[mpirun -np N reactingParcelFoam -parallel] --> E2[Hitung time step]
         E2 --> E3[Return exit code]
         E4[(Simpan history)]
     end

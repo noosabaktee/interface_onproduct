@@ -443,7 +443,7 @@ Jika syarat tidak terpenuhi, tombol solver dinonaktifkan dan API mengembalikan p
 Command solver yang dipanggil implementasi saat ini adalah:
 
 ```bash
-mpirun --allow-run-as-root --oversubscribe -np N buoyantPimpleFoam -parallel
+mpirun --allow-run-as-root --oversubscribe -np N reactingParcelFoam -parallel
 ```
 
 Nilai `N` dibaca dari `numberOfSubdomains`. Environment `OMPI_ALLOW_RUN_AS_ROOT` dan `OMPI_ALLOW_RUN_AS_ROOT_CONFIRM` diset pada subprocess untuk deployment container yang berjalan sebagai root.
@@ -898,14 +898,14 @@ Model dan nilai tersebut adalah konfigurasi case saat ini, bukan ketetapan perma
 
 Metode dekomposisi menggunakan `scotch`. Service web menyelaraskan `numberOfSubdomains` dan `processorWeight`. Tahap `decomposePar -force` membuat folder processor, kemudian solver dijalankan dengan jumlah proses MPI yang sama.
 
-### 13.4 Perbedaan solver yang harus diperhatikan
+### 13.4 Solver yang digunakan
 
-Terdapat ketidaksesuaian penting pada snapshot saat ini:
+Solver yang dijalankan platform adalah `reactingParcelFoam`, sama dengan `application` pada `system/controlDict`:
 
-- `system/controlDict` menyatakan `application reactingParcelFoam`;
-- `terminal_runner.py` dan `Allrun` menjalankan `buoyantPimpleFoam`.
+- `terminal_runner.py` dan `Allrun` menjalankan `mpirun ... reactingParcelFoam -parallel`;
+- model droplet dibaca dari `constant/reactingCloud1Properties`.
 
-Sebelum eksperimen skripsi final, solver harus diselaraskan dan divalidasi terhadap versi OpenFOAM yang digunakan. Ketidaksesuaian executable, dictionary, atau model parcel dapat menyebabkan konfigurasi tidak dipakai sebagaimana dimaksud atau solver gagal dijalankan.
+Solver ini diselaraskan pada 11-11-2026. Sebelumnya perintah yang dijalankan adalah `buoyantPimpleFoam`, yang tidak menghitung parcel sehingga `reactingCloud1Properties` tidak dipakai. Run dengan `reactingParcelFoam` pada OpenFOAM v2512 belum diuji; sebelum eksperimen skripsi final, kestabilan run dan keluaran parcel (direktori `lagrangian`, field `H2O`) harus diperiksa.
 
 ### 13.5 Perbedaan header versi
 
@@ -1612,7 +1612,7 @@ Bagian ini penting untuk menjaga akurasi laporan skripsi.
 2. Autentikasi hanya satu akun dan tidak mempunyai manajemen pengguna.
 4. Resume meshing hanya berbasis step; proses yang terputus di tengah step diulang.
 5. Resume solver bergantung pada time directory dan `startFrom latestTime`, bukan checkpoint yang dikelola web.
-6. Solver command `buoyantPimpleFoam` tidak selaras dengan `reactingParcelFoam` pada `controlDict`.
+6. Solver command sudah diselaraskan ke `reactingParcelFoam` (sesuai `controlDict`), tetapi run dengan solver ini pada OpenFOAM v2512 belum diuji.
 7. Dictionary case memuat header dari versi/fork OpenFOAM berbeda.
 8. Preview browser hanya memvisualisasikan boundary geometry dari internal mesh.
 9. Coloring field pada browser adalah pseudo-color geometris, bukan nilai hasil CFD.
@@ -2157,7 +2157,7 @@ flowchart TD
     C -->|ya| E[Buat record history running]
     E --> F[Background thread menjalankan wrapper Python]
     F --> G[Set environment izin MPI root]
-    G --> H[mpirun --allow-run-as-root --oversubscribe -np N buoyantPimpleFoam -parallel]
+    G --> H[mpirun --allow-run-as-root --oversubscribe -np N reactingParcelFoam -parallel]
     H --> I[Stream stdout dan stderr ke state memory]
     I --> J{Exit code}
     J -->|0| K[completed dan history success]

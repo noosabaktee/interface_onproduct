@@ -90,8 +90,7 @@ class ApplicationFactoryTestCase(unittest.TestCase):
         self.assertIn("/login?next=/dashboard", response.location)
 
         self.client.get("/login")
-        with self.client.session_transaction() as session:
-            login_token = session["csrf_token"]
+        login_token = self.client.get_cookie("login_csrf", path="/login").value
 
         response = self.client.post(
             "/login?next=https://example.com",
@@ -105,6 +104,26 @@ class ApplicationFactoryTestCase(unittest.TestCase):
     def _login_session(self, token="test-token"):
         with self.client.session_transaction() as session:
             session.update(authenticated=True, username="engineer", csrf_token=token)
+
+    @staticmethod
+    def _sets_session_cookie(response):
+        return any(h.startswith("session=") for h in response.headers.getlist("Set-Cookie"))
+
+    def test_anonymous_requests_never_create_session_cookie(self):
+        # Request tanpa cookie (mis. request paralel saat login) tidak boleh membuat cookie
+        # session baru, karena cookie tersebut dapat menimpa cookie hasil login.
+        fresh = self.app.test_client()
+        protected = fresh.get("/dashboard")
+        self.assertEqual(protected.status_code, 302)
+        self.assertFalse(self._sets_session_cookie(protected))
+        login_page = fresh.get("/login?next=/dashboard")
+        self.assertEqual(login_page.status_code, 200)
+        self.assertFalse(self._sets_session_cookie(login_page))
+
+        self._login_session()
+        page = self.client.get("/dashboard")
+        self.assertEqual(page.status_code, 200)
+        self.assertFalse(self._sets_session_cookie(page))
 
     def test_login_without_csrf_token_is_rejected(self):
         self.client.get("/login")

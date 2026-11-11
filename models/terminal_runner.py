@@ -68,7 +68,7 @@ COMMANDS = {
             "    pass\n"
             "os.environ['OMPI_ALLOW_RUN_AS_ROOT'] = '1'\n"
             "os.environ['OMPI_ALLOW_RUN_AS_ROOT_CONFIRM'] = '1'\n"
-            "cmd = f'mpirun --allow-run-as-root --oversubscribe -np {np} buoyantPimpleFoam -parallel'\n"
+            "cmd = f'mpirun --allow-run-as-root --oversubscribe -np {np} reactingParcelFoam -parallel'\n"
             "print(f'Running solver with {np} processors...', flush=True)\n"
             "process = subprocess.Popen(cmd, shell=True, cwd=case_root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)\n"
             "if process.stdout:\n"
