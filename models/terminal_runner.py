@@ -6,6 +6,13 @@ import threading
 
 from config import CASE_ROOT, PROJECT_ROOT
 
+# Log solver ditulis ke CASE_ROOT/log.run; berkas yang sama dibaca GraphService (GRAPH_LOG_PATH).
+# Tahap pembersihan meshing menghapus log.*, sehingga log run lama tidak tercampur dengan mesh baru.
+SOLVER_LOG_NAME = "log.run"
+# Batas baris log yang disimpan di memori per proses. Tampilan memakai 300 baris terakhir dan
+# riwayat SQLite 80 baris terakhir; log solver lengkap tersimpan di berkas log.run.
+MAX_STATE_LINES = 20000
+
 
 MESHING_STEPS = [
     ("Cleaning old mesh/run", "rm -rf processor* constant/polyMesh log.*", 10),
@@ -53,7 +60,8 @@ COMMANDS = {
         (
             "import subprocess, sys, os\n"
             "from pathlib import Path\n"
-            "case_root = Path(r'" + str(CASE_ROOT) + "')\n"
+            "case_root = Path(sys.argv[1])\n"
+            "resume = len(sys.argv) > 2 and sys.argv[2] == 'resume'\n"
             "decompose_dict = case_root / 'system' / 'decomposeParDict'\n"
             "np = 4\n"
             "try:\n"
@@ -70,11 +78,17 @@ COMMANDS = {
             "os.environ['OMPI_ALLOW_RUN_AS_ROOT_CONFIRM'] = '1'\n"
             "cmd = f'mpirun --allow-run-as-root --oversubscribe -np {np} reactingParcelFoam -parallel'\n"
             "print(f'Running solver with {np} processors...', flush=True)\n"
-            "process = subprocess.Popen(cmd, shell=True, cwd=case_root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)\n"
-            "if process.stdout:\n"
-            "    for line in process.stdout:\n"
-            "        print(line.rstrip(), flush=True)\n"
-            "returncode = process.wait()\n"
+            # Seluruh keluaran solver disalin ke log.run, sama seperti `| tee log.run` pada Allrun.
+            # Start baru menulis ulang berkas; Resume menambahkan di akhir agar grafik mencakup
+            # seluruh run. Berkas ditulis per baris sehingga grafik dapat diperbarui saat solver berjalan.
+            "log_path = case_root / '" + SOLVER_LOG_NAME + "'\n"
+            "with open(log_path, 'a' if resume else 'w', encoding='utf-8', buffering=1) as log_file:\n"
+            "    process = subprocess.Popen(cmd, shell=True, cwd=case_root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)\n"
+            "    if process.stdout:\n"
+            "        for line in process.stdout:\n"
+            "            log_file.write(line)\n"
+            "            print(line.rstrip(), flush=True)\n"
+            "    returncode = process.wait()\n"
             "if returncode != 0:\n"
             "    print(f'Solver error: {returncode}', flush=True)\n"
             "    sys.exit(returncode)\n"
@@ -152,7 +166,7 @@ def start_command(task_key, history_service=None):
             state["progress"] = 0
             state["current_step"] = 0
 
-    thread = threading.Thread(target=_run_command, args=(task_key,), daemon=True)
+    thread = threading.Thread(target=_run_command, args=(task_key, is_resume), daemon=True)
     thread.start()
     return get_command_state(task_key)
 
@@ -229,14 +243,24 @@ def is_meshing_ready():
         return _meshing_ready_unlocked()
 
 
-def _run_command(task_key):
+def solver_log_path():
+    return CASE_ROOT / SOLVER_LOG_NAME
+
+
+def _process_command(task_key, is_resume=False):
+    if task_key == "solver":
+        return [*COMMANDS["solver"], str(CASE_ROOT), "resume" if is_resume else "new"]
+    return COMMANDS[task_key]
+
+
+def _run_command(task_key, is_resume=False):
     if task_key == "meshing":
         _run_meshing_command()
         return
 
     try:
         process = subprocess.Popen(
-            COMMANDS[task_key],
+            _process_command(task_key, is_resume),
             cwd=PROJECT_ROOT,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -475,7 +499,10 @@ def _finish_interrupted_meshing(cancelled):
 
 def _append_line(task_key, line):
     with _lock:
-        _states[task_key]["lines"].append(line)
+        lines = _states[task_key]["lines"]
+        lines.append(line)
+        if len(lines) > MAX_STATE_LINES:
+            del lines[: len(lines) - MAX_STATE_LINES]
 
 
 def _update_progress(task_key, progress):

@@ -1,4 +1,6 @@
+import os
 import sqlite3
+import subprocess
 import tempfile
 import time
 import unittest
@@ -9,6 +11,7 @@ from unittest.mock import patch
 
 from app import create_app
 from models.simulation_run_repository import SimulationRunRepository
+from models import terminal_runner
 from models.terminal_runner import get_command_state, start_command
 from services import (
     DATABASE_SEEDER_KEY,
@@ -507,6 +510,106 @@ class SimulationHistoryServiceTestCase(unittest.TestCase):
         self.assertEqual(version, 3)
         self.assertEqual(result["created"], 12)
         self.assertNotIn("WHERE", index_sql.upper())
+
+
+class SolverLogTestCase(unittest.TestCase):
+    """Log solver disimpan ke CASE_ROOT/log.run agar grafik dan unduhan log memakai run platform."""
+
+    def setUp(self):
+        self.temporary_directory = tempfile.TemporaryDirectory()
+        root = Path(self.temporary_directory.name)
+        self.case_root = root / "case"
+        (self.case_root / "system").mkdir(parents=True)
+        (self.case_root / "system" / "decomposeParDict").write_text(
+            "numberOfSubdomains 2;\n", encoding="utf-8"
+        )
+        # mpirun tiruan: mencetak dua baris log tanpa menjalankan OpenFOAM/MPI.
+        self.bin_dir = root / "bin"
+        self.bin_dir.mkdir()
+        if os.name == "nt":
+            (self.bin_dir / "mpirun.cmd").write_text(
+                "@echo off\r\n"
+                "echo Courant Number mean: 0.01 max: 0.2\r\n"
+                "echo Time = 0.1\r\n",
+                encoding="utf-8",
+            )
+        else:
+            fake = self.bin_dir / "mpirun"
+            fake.write_text(
+                "#!/bin/sh\nprintf 'Courant Number mean: 0.01 max: 0.2\\nTime = 0.1\\n'\n",
+                encoding="utf-8",
+            )
+            fake.chmod(0o755)
+
+    def tearDown(self):
+        self.temporary_directory.cleanup()
+
+    def _run_solver_wrapper(self, mode):
+        environment = dict(os.environ)
+        environment["PATH"] = str(self.bin_dir) + os.pathsep + environment.get("PATH", "")
+        with patch("models.terminal_runner.CASE_ROOT", self.case_root):
+            command = terminal_runner._process_command("solver", is_resume=(mode == "resume"))
+        return subprocess.run(
+            command, capture_output=True, text=True, env=environment, timeout=60, check=False
+        )
+
+    def test_solver_output_is_written_to_log_run_and_appended_on_resume(self):
+        log_path = self.case_root / "log.run"
+
+        first = self._run_solver_wrapper("new")
+        self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
+        self.assertIn("Time = 0.1", first.stdout)
+        self.assertEqual(log_path.read_text(encoding="utf-8").count("Time = 0.1"), 1)
+
+        resumed = self._run_solver_wrapper("resume")
+        self.assertEqual(resumed.returncode, 0, resumed.stdout + resumed.stderr)
+        self.assertEqual(log_path.read_text(encoding="utf-8").count("Time = 0.1"), 2)
+
+        restarted = self._run_solver_wrapper("new")
+        self.assertEqual(restarted.returncode, 0, restarted.stdout + restarted.stderr)
+        self.assertEqual(log_path.read_text(encoding="utf-8").count("Time = 0.1"), 1)
+
+    def test_in_memory_log_lines_are_capped(self):
+        state = terminal_runner._states["meshing"]
+        original_lines = state["lines"]
+        state["lines"] = []
+        try:
+            with patch("models.terminal_runner.MAX_STATE_LINES", 5):
+                for index in range(12):
+                    terminal_runner._append_line("meshing", f"line {index}")
+            self.assertEqual(state["lines"], [f"line {index}" for index in range(7, 12)])
+        finally:
+            state["lines"] = original_lines
+
+    def test_solver_log_download_serves_full_log_run(self):
+        root = Path(self.temporary_directory.name)
+        app = create_app(
+            {
+                "TESTING": True,
+                "SECRET_KEY": "test-secret",
+                "PROJECT_ROOT": root,
+                "CASE_ROOT": self.case_root,
+                "GRAPH_OUTPUT_PATH": root / "graphs",
+                "GRAPH_SCRIPT_PATH": root / "plot.py",
+                "GRAPH_LOG_PATH": self.case_root / "log.run",
+                "REPORT_ROOT": root / "reports",
+                "DATABASE_PATH": root / "simulation_history.sqlite3",
+                "DECOMPOSE_PAR_DICT": self.case_root / "system" / "decomposeParDict",
+            }
+        )
+        client = app.test_client()
+        with client.session_transaction() as session:
+            session.update(authenticated=True, username="engineer", csrf_token="test-token")
+        full_log = "".join(f"Time = {step}\n" for step in range(1000))
+        (self.case_root / "log.run").write_text(full_log, encoding="utf-8")
+
+        with patch("models.terminal_runner.CASE_ROOT", self.case_root):
+            response = client.get("/terminal/solver/download-logs")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("solver_log.txt", response.headers["Content-Disposition"])
+        self.assertEqual(response.get_data(as_text=True).replace("\r\n", "\n"), full_log)
+        response.close()
 
 
 if __name__ == "__main__":

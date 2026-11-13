@@ -468,7 +468,9 @@ Browser melakukan polling status proses setiap sekitar satu detik. Response beri
 - ketersediaan resume;
 - kesiapan meshing untuk solver.
 
-Log yang tampil dapat diunduh sebagai file `meshing_log.txt` atau `solver_log.txt`. Riwayat database hanya menyimpan maksimal 80 baris terakhir dan dibatasi 12.000 karakter sebagai excerpt.
+Seluruh keluaran solver juga ditulis ke `CASE_ROOT/log.run`, sama seperti `| tee log.run` pada `Allrun`. Start baru menulis ulang berkas, sedangkan Resume menambahkan baris di akhir agar grafik mencakup seluruh run. Berkas ini dibaca oleh fitur Graph dan dihapus oleh tahap pembersihan meshing (`log.*`), sehingga log run lama tidak tercampur dengan mesh baru.
+
+Log meshing yang tampil dapat diunduh sebagai `meshing_log.txt`. Unduhan log solver (`solver_log.txt`) berisi `log.run` lengkap; bila berkas belum ada, yang diunduh adalah log yang tampil. Di memori, setiap task menyimpan maksimal 20.000 baris terakhir (`MAX_STATE_LINES`). Riwayat database hanya menyimpan maksimal 80 baris terakhir dan dibatasi 12.000 karakter sebagai excerpt.
 
 ### 7.8 Indikator kestabilan solver
 
@@ -1585,7 +1587,7 @@ Keberhasilan test aplikasi web tidak sama dengan validitas hasil CFD.
 - Meshing dan solver berjalan di background thread dalam proses web.
 - State task tersimpan pada dictionary global di memory.
 - Hanya satu meshing/solver boleh aktif.
-- Log task di memory tidak mempunyai batas total selama proses, walaupun response hanya mengirim 300 baris terakhir.
+- Log task di memory dibatasi 20.000 baris terakhir; response hanya mengirim 300 baris terakhir, dan log solver lengkap tersimpan di `CASE_ROOT/log.run`.
 - History persisten di SQLite.
 - Remote pvserver mempunyai state file dan lock lintas worker.
 - Grafik dijalankan sinkron terhadap request dengan timeout lima menit.

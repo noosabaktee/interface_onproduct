@@ -8,6 +8,7 @@ from controllers import dashboard_bp
 from models.terminal_runner import (
     cancel_command,
     get_command_state,
+    solver_log_path,
     start_command,
     stop_command,
 )
@@ -63,6 +64,19 @@ def terminal_logs(task_key):
 def download_terminal_logs(task_key):
     if task_key not in SUPPORTED_TASKS:
         abort(404)
+
+    # Log solver lengkap tersimpan di log.run; state di memori hanya memuat baris terakhir.
+    log_path = solver_log_path() if task_key == "solver" else None
+    if log_path is not None and log_path.is_file():
+        return send_file(
+            log_path,
+            as_attachment=True,
+            download_name="solver_log.txt",
+            mimetype="text/plain",
+            conditional=False,
+            max_age=0,
+        )
+
     state = get_command_state(task_key)
     if not state["lines"]:
         abort(404)
