@@ -31,23 +31,42 @@ function initSynchronizedInputs() {
             return;
         }
 
-        const syncValue = () => {
-            const processorGrid = document.getElementById("core-grid");
-            const min = Number(control.min || syncTarget.min || 1);
-            const max = Number(control.max || syncTarget.max || (processorGrid && processorGrid.dataset.maxCores) || 32);
-            let value = Number(control.value || syncTarget.value || min);
-            if (Number.isNaN(value)) {
-                value = min;
+        const processorGrid = document.getElementById("core-grid");
+        const min = Number(control.min || syncTarget.min || 1);
+        const max = Number(control.max || syncTarget.max || (processorGrid && processorGrid.dataset.maxCores) || 32);
+        const clamp = (raw) => {
+            const value = Number(raw);
+            return Number.isNaN(value) ? min : Math.max(min, Math.min(max, value));
+        };
+
+        // Nilai selalu diambil dari elemen yang sedang diubah pengguna. Sebelumnya nilai dibaca dari
+        // elemen pertama, sehingga angka yang diketik pada kotak isian langsung kembali ke nilai slider.
+        const syncFrom = (source) => {
+            if (source.value === "") {
+                return; // pengguna sedang mengosongkan kotak isian untuk mengetik angka baru
             }
-            value = Math.max(min, Math.min(max, value));
+            const other = source === control ? syncTarget : control;
+            const value = clamp(source.value);
+            other.value = value;
+            updateCoreVisuals(value);
+        };
+        // Saat isian selesai diubah (misalnya kursor pindah ke tombol Apply), nilainya dibatasi ke rentang min-max.
+        const commit = (source) => {
+            const value = clamp(source.value === "" ? min : source.value);
             control.value = value;
             syncTarget.value = value;
             updateCoreVisuals(value);
         };
 
-        control.addEventListener("input", syncValue);
-        syncTarget.addEventListener("input", syncValue);
-        syncValue();
+        [control, syncTarget].forEach((element) => {
+            if (element.dataset.syncBound) {
+                return; // pasangan yang sama ditemukan dua kali oleh querySelectorAll
+            }
+            element.dataset.syncBound = "true";
+            element.addEventListener("input", () => syncFrom(element));
+            element.addEventListener("change", () => commit(element));
+        });
+        commit(control);
     });
 }
 
