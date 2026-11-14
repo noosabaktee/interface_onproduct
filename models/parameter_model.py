@@ -489,11 +489,20 @@ def _display_value(value):
 def _stored_value(old_value, new_value):
     old_value = old_value.strip()
     new_value = new_value.strip()
+    if _VECTOR_VALUE.match(_display_value(old_value)) and _SCALAR_VALUE.match(new_value):
+        # Field vektor (misalnya kecepatan inletGas pada 0/U) yang menerima besaran skalar dari rumus mode
+        # production: besaran ditulis pada komponen x, sesuai arah aliran pada case tim CAE `uniform (19 0 0)`.
+        # Tanpa ini nilai tertulis `uniform 10` dan decomposePar/solver gagal membaca VectorSpace.
+        new_value = f"({new_value} 0 0)"
     if old_value.startswith("uniform ") and not _has_openfoam_qualifier(new_value):
         return f"uniform {new_value}"
     if old_value.startswith("constant ") and not _has_openfoam_qualifier(new_value):
         return f"constant {new_value}"
     return new_value
+
+
+_VECTOR_VALUE = re.compile(r"^\(\s*\S+\s+\S+\s+\S+\s*\)$")
+_SCALAR_VALUE = re.compile(r"^[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?$")
 
 
 def _has_openfoam_qualifier(value):

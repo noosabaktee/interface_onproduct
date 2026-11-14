@@ -612,5 +612,44 @@ class SolverLogTestCase(unittest.TestCase):
         response.close()
 
 
+class ProductionParameterTestCase(unittest.TestCase):
+    """Mode production menulis hasil rumus ke file case dengan tipe field OpenFOAM yang tetap valid."""
+
+    FIELD = (
+        "FoamFile\n{{\n    class       {cls};\n    object      {obj};\n}}\n\n"
+        "boundaryField\n{{\n    inletGas\n    {{\n        type            fixedValue;\n"
+        "        value           {value};\n    }}\n}}\n"
+    )
+
+    def setUp(self):
+        self.temporary_directory = tempfile.TemporaryDirectory()
+        self.case_root = Path(self.temporary_directory.name)
+        (self.case_root / "0").mkdir()
+        for name, cls, value in (
+            ("U", "volVectorField", "uniform ( 19 0 0 )"),
+            ("T", "volScalarField", "uniform 300"),
+        ):
+            (self.case_root / "0" / name).write_text(
+                self.FIELD.format(cls=cls, obj=name, value=value), encoding="utf-8"
+            )
+
+    def tearDown(self):
+        self.temporary_directory.cleanup()
+
+    def test_scalar_result_on_vector_field_is_written_as_vector(self):
+        from models import parameter_model
+
+        with patch.object(parameter_model, "CASE_DIR", self.case_root):
+            parameter_model.save_production_parameter_values(
+                {"supply_air_fan_frequency": "50", "temp_inlet_chamber": "185"}, "ckr"
+            )
+
+        velocity = (self.case_root / "0" / "U").read_text(encoding="utf-8")
+        temperature = (self.case_root / "0" / "T").read_text(encoding="utf-8")
+        # 50 Hz x FanVelocityCoeff 0,2 = 10 m/s pada komponen x; field skalar tetap skalar.
+        self.assertIn("value           uniform (10 0 0);", velocity)
+        self.assertIn("value           uniform 458.15;", temperature)
+
+
 if __name__ == "__main__":
     unittest.main()

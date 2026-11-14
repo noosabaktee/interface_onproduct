@@ -106,7 +106,7 @@
         "field_name": "supply_air_fan_frequency",
         "rumus_logika": "input * FanVelocityCoeff",
         "location": "0/U > boundaryField inletGas > value",
-        "snippet_openfoam": "value uniform (0 0 -Hz);",
+        "snippet_openfoam": "value uniform (Hz 0 0);",
         "hidden": false
     },
     {
