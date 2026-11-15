@@ -651,5 +651,21 @@ class ProductionParameterTestCase(unittest.TestCase):
         self.assertIn("value           uniform 458.15;", temperature)
 
 
+class ReportOrderTestCase(unittest.TestCase):
+    """Report terbaru pada tanggal yang sama ditentukan oleh nomor urut, sehingga capture masuk ke report terakhir."""
+
+    def test_latest_report_uses_sequence_within_same_day(self):
+        from models import report_model
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in ("14_11_2026_009", "15_11_2026_001", "15_11_2026_002"):
+                (root / name / "screenshots").mkdir(parents=True)
+            with patch.object(report_model, "REPORT_ROOT", root):
+                names = [item["name"] for item in report_model.list_reports()]
+                self.assertEqual(names, ["15_11_2026_002", "15_11_2026_001", "14_11_2026_009"])
+                self.assertEqual(report_model.latest_report()["name"], "15_11_2026_002")
+
+
 if __name__ == "__main__":
     unittest.main()

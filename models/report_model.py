@@ -81,7 +81,9 @@ def get_report(report_name):
         "name": report_name,
         "path": report_dir,
         "created_label": created_label,
-        "created_sort": created or datetime.fromtimestamp(report_dir.stat().st_mtime),
+        # Nomor urut _NNN ikut diurutkan agar report terbaru pada tanggal yang sama (misalnya _002) berada di atas
+        # dan dipakai sebagai tujuan capture; tanpa ini report 001 dan 002 setara dan urutannya acak.
+        "created_sort": (created or datetime.fromtimestamp(report_dir.stat().st_mtime), _report_sequence(report_name)),
         "screenshots": screenshots,
         "graphs": graphs,
         "image_count": len(screenshots) + len(graphs),
@@ -169,6 +171,11 @@ def _image_items(folder, report_name, group):
             }
         )
     return items
+
+
+def _report_sequence(report_name):
+    parts = report_name.split("_")
+    return int(parts[3]) if len(parts) == 4 else 0
 
 
 def _parse_report_date(report_name):
