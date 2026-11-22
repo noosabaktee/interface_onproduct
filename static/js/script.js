@@ -166,6 +166,11 @@ function initTerminalBlocks() {
 }
 
 
+// Instance Chart.js disimpan agar dapat dihancurkan saat tema/ukuran berubah. Tanpa deklarasi ini,
+// nama activityChart/statusChart merujuk ke elemen <canvas> (akses global berdasarkan id) sehingga grafik gagal dibuat.
+let activityChart = null;
+let statusChart = null;
+
 function renderDashboardCharts() {
     const activityCanvas = document.getElementById("activityChart");
     const statusCanvas = document.getElementById("statusChart");
